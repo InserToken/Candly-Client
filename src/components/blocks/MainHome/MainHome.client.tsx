@@ -5,11 +5,13 @@ export default function LoginFormClient() {
   return (
     <div className="flex justify-center gap-20 bg-[#0B0B0D] min-h-screen items-center pt-28">
       {/* 연습문제 카드 */}
-      <div className="bg-[#161618]  rounded-2xl p-6 w-[430px] h-[550px] text-center shadow-lg flex flex-col ">
+      <div className="bg-[#1C1C20]  rounded-2xl p-6 w-[400px] h-[530px] text-center shadow-lg flex flex-col ">
         <div className="pt-16 pb-7">
-          <h2 className="text-white text-4xl font-semibold mb-3">연습문제</h2>
-          <p className="text-[#A3A3A3] text-xl ">
-            <span className="text-[#3B82F6] font-medium">과거 차트 데이터</span>
+          <h2 className="text-[#F4F4F4] text-4xl font-semibold mb-3">
+            연습문제
+          </h2>
+          <p className="text-[#F4F4F4] text-xl ">
+            <span className="text-[#396FFB] font-medium">과거 차트 데이터</span>
             를 통해
             <br />
             흐름 예측 능력을 길러보세요
@@ -25,11 +27,13 @@ export default function LoginFormClient() {
       </div>
 
       {/* 실전예측 카드 */}
-      <div className="bg-[#161618] rounded-2xl p-6 w-[430px] h-[550px] text-center shadow-lg flex flex-col ">
+      <div className="bg-[#1C1C20] rounded-2xl p-6 w-[400px] h-[530px] text-center shadow-lg flex flex-col ">
         <div className="pt-16 pb-7">
-          <h2 className="text-white text-4xl font-semibold mb-3">실전예측</h2>
-          <p className="text-[#A3A3A3] text-xl ">
-            <span className="text-[#3B82F6] font-medium">
+          <h2 className="text-[#F4F4F4] text-4xl font-semibold mb-3">
+            실전예측
+          </h2>
+          <p className="text-[#F4F4F4] text-xl ">
+            <span className="text-[#396FFB] font-medium">
               내 실제 주식 계좌
             </span>
             를 연결해
