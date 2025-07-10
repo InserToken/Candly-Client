@@ -1,3 +1,11 @@
+"use client";
+
+import MainHome from "@/components/blocks/MainHome";
+
 export default function Home() {
-  return <div></div>;
+  return (
+    <main>
+      <MainHome />
+    </main>
+  );
 }
