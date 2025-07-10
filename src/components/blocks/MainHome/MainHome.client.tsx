@@ -3,7 +3,7 @@ import React from "react";
 
 export default function LoginFormClient() {
   return (
-    <div className="flex justify-center gap-20 bg-[#0B0B0D]  items-center pt-28">
+    <div className="flex justify-center gap-20 bg-[#0f0f0f]  items-center pt-28">
       {/* 연습문제 카드 */}
       <div className="group bg-[#1C1C20] hover:bg-[#396FFB] transition-colors rounded-2xl p-6 w-[400px] h-[530px] text-center shadow-lg flex flex-col cursor-pointer">
         <div className="pt-16 pb-7">
