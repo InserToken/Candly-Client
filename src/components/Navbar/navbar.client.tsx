@@ -16,7 +16,7 @@ export default function Navbar() {
   const pathname = usePathname();
 
   return (
-    <nav className="h-[98px] flex items-center px-8 border-b border-white/10 pl-10 whitespace-nowrap">
+    <nav className="h-[98px] flex items-center px-8 pl-10 whitespace-nowrap">
       <img src="logo.svg" className="h-5 pr-2.5" />
       <div className="text-2xl pr-20">오르락내리락</div>
       <ul className="flex gap-15">
