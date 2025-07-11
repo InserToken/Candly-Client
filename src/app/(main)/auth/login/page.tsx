@@ -1,11 +1,12 @@
 "use client";
+import { useAuthStore } from "@/stores/authStore";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
 export default function Login() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  // const setAuth = useUserStore((s) => s.setAuth)
+  const setAuth = useAuthStore((s) => s.setAuth);
   const router = useRouter();
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -26,12 +27,13 @@ export default function Login() {
 
     const data = await res.json();
 
-    // const { email, nickname, token } = data;
-    // setUser({
-    //     email,
-    //     nickname,
-    //     token
-    // })
+    const { email, nickname, token } = data;
+    // stores/authStore에 email, nickname, token 저장
+    setAuth({
+      email,
+      nickname,
+      token,
+    });
 
     sessionStorage.setItem("token", data.token);
 
