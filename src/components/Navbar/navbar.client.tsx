@@ -17,8 +17,10 @@ export default function Navbar() {
 
   return (
     <nav className="h-[98px] flex items-center px-8 pl-10 whitespace-nowrap">
-      <img src="logo.svg" className="h-5 pr-2.5" />
-      <div className="text-2xl pr-20">오르락내리락</div>
+      <Link href="/" className="flex items-center pr-2.5">
+        <img src="logo.svg" className="h-5" alt="로고" />
+        <div className="text-2xl pr-20">오르락내리락</div>
+      </Link>
       <ul className="flex gap-15">
         {menuItems.map((item) => {
           const isActive = pathname === item.href;
