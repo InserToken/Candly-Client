@@ -5,7 +5,7 @@ import React, { useState } from "react";
 export default function Login() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  // const setUser = useUserStore((s) => s.setUser)
+  // const setAuth = useUserStore((s) => s.setAuth)
   const router = useRouter();
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
