@@ -1,10 +1,10 @@
 import React from "react";
-import HomeClient from "./MainHome.client";
+import MainHomeClient from "./MainHome.client";
 
-export default function Home() {
+export default function MainHome() {
   return (
     <main>
-      <HomeClient />
+      <MainHomeClient />
     </main>
   );
 }
