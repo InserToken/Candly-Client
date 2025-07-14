@@ -42,8 +42,8 @@ export default function Login() {
   }, [getAuth]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-8 sm:p-20">
-      <main className="w-full max-w-sm bg-[#1C1C20] p-8 rounded-lg shadow-md">
+    <div className="flex items-center justify-center min-h-[calc(100vh-98px)] p-8 sm:p-20">
+      <main className="w-full max-w-sm bg-[#1C1C20] border border-[#444444] shadow-md rounded-lg p-8">
         <form onSubmit={handleLoginSubmit} className="flex flex-col gap-4">
           {/* 이메일 */}
           <div>
@@ -55,7 +55,8 @@ export default function Login() {
               type="email"
               value={loginEmail}
               onChange={(e) => setLoginEmail(e.target.value)}
-              className="w-full mt-1 px-4 py-2 rounded-md bg-[#2A2A2E] text-white"
+              placeholder="이메일을 입력해주세요"
+              className="w-full mt-1 px-4 py-2 border border-[#444444] rounded-md focus:outline-none focus:ring-2 focus:ring-[#366FFB] text-white placeholder-[#777779]"
               required
             />
           </div>
@@ -70,14 +71,15 @@ export default function Login() {
               type="password"
               value={loginPassword}
               onChange={(e) => setLoginPassword(e.target.value)}
-              className="w-full mt-1 px-4 py-2 rounded-md bg-[#2A2A2E] text-white"
+              placeholder="비밀번호를 입력해주세요"
+              className="w-full mt-1 px-4 py-2 border border-[#444444] rounded-md focus:outline-none focus:ring-2 focus:ring-[#366FFB] text-white placeholder-[#777779]"
               required
             />
           </div>
 
           <button
             type="submit"
-            className="w-full py-2 mt-4 bg-white text-black rounded-md hover:bg-[#366FFB] hover:text-white transition"
+            className="w-full py-2 mt-4 text-[#121212] font-semibold rounded-md bg-white hover:bg-[#366FFB] hover:text-white transition"
           >
             로그인
           </button>
