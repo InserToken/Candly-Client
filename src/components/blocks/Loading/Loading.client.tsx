@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { getStock } from "@/services/userStock-service";
+import { useRouter } from "next/navigation";
 
 export default function LoadingPage() {
   const [status, setStatus] = useState<"loading" | "done" | "error">("loading");
@@ -9,6 +10,7 @@ export default function LoadingPage() {
     { stock_code: string; company: string }[]
   >([]);
   const [errorMessage, setErrorMessage] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,10 +34,17 @@ export default function LoadingPage() {
     fetchData();
   }, []);
 
+  const handleChart = () => {
+    if (stocks.length > 0) {
+      const firstStockCode = stocks[0].stock_code;
+      router.replace(`/investment/${firstStockCode}`);
+    }
+  };
+
   return (
     <div
       className={`flex flex-col items-center px-4 ${
-        status === "loading" ? "pt-64" : "pt-32"
+        status === "loading" ? "pt-64" : "pt-28"
       }`}
     >
       {status === "loading" && (
@@ -66,6 +75,12 @@ export default function LoadingPage() {
               ))}
             </div>
           </div>
+          <button
+            className="px-14 py-4 mt-8 text-xl bg-[#426FE5] rounded hover:bg-blue-500"
+            onClick={handleChart}
+          >
+            차트 에측하기
+          </button>
         </>
       )}
 
