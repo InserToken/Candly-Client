@@ -18,7 +18,7 @@ export default function InvestmentClient() {
       </p>
       <div className="flex">
         <button
-          className="px-14 py-4 text-xl bg-[#426FE5] rounded hover:bg-blue-500"
+          className="px-14 py-4 mt-8 text-xl bg-[#426FE5] rounded hover:bg-blue-500"
           onClick={handleLoading}
         >
           연결하기
