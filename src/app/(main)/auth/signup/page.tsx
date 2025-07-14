@@ -31,11 +31,16 @@ export default function Signup() {
       }),
     });
 
+    const data = await res.json();
+
     if (!res.ok) {
-      console.error("회원가입 실패", await res.text());
+      // toast로 에러 메시지 표시
+      toast.error(data.message || "회원가입에 실패했습니다.", {
+        autoClose: 2500,
+      });
       return;
     }
-    const data = await res.json();
+
     console.log("회원가입 성공 : ", data);
 
     toast.success("회원가입 완료! 로그인으로 이동합니다.", {
