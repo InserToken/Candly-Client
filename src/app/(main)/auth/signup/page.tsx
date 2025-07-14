@@ -1,6 +1,8 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { toast, ToastContainer } from "react-toastify";
 import React, { useState } from "react";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Signup() {
   const [signUpEmail, setSignUpEmail] = useState("");
@@ -17,7 +19,7 @@ export default function Signup() {
       return;
     }
 
-    const res = await fetch(`${process.env.NEXT_PUBLC_API_URL}/auth/signup`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/signup`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -36,8 +38,17 @@ export default function Signup() {
     const data = await res.json();
     console.log("회원가입 성공 : ", data);
 
+    toast.success("회원가입 완료! 로그인으로 이동합니다.", {
+      onClose: () => {
+        router.replace("/auth/login");
+      },
+      autoClose: 1500,
+    });
+
     setSignUpEmail("");
     setSignUpPassword("");
+    setConfirmPassword("");
+    setSignUpNickname("");
   };
 
   return (
@@ -138,6 +149,7 @@ export default function Signup() {
           </button>
         </div>
       </main>
+      <ToastContainer position="bottom-right" hideProgressBar limit={3} />
     </div>
   );
 }
