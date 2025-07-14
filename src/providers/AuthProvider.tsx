@@ -1,8 +1,7 @@
 "use client";
 
 import { useAuthStore } from "@/stores/authStore";
-import { usePathname } from "next/navigation";
-import { useRouter } from "next/router";
+import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect } from "react";
 
 interface Props {
@@ -24,7 +23,7 @@ export default function AuthProvider({ children }: Props) {
         router.replace("/auth/login");
       }
     } else {
-      if (pathname === "/auth/login" || pathname !== "/auth/signup") {
+      if (pathname === "/auth/login" || pathname === "/auth/signup") {
         router.replace("/");
       }
     }
