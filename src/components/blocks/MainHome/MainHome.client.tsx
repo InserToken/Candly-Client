@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 
-export default function LoginFormClient() {
+export default function MainHomeClient() {
   return (
     <div className="flex justify-center gap-20 bg-[#0f0f0f]  items-center pt-28">
       {/* 연습문제 카드 */}

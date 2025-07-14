@@ -1,4 +1,11 @@
+"use client";
 import React from "react";
-export default function Page() {
-  return <div>마이페이지</div>;
+
+import Ranking from "@/components/blocks/Ranking";
+export default function RankingPage() {
+  return (
+    <div>
+      <Ranking />
+    </div>
+  );
 }

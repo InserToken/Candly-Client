@@ -1,4 +1,11 @@
+"use client";
 import React from "react";
-export default function Page() {
-  return <div>마이페이지</div>;
+
+import PracticeRanking from "@/components/blocks/Ranking/PracticeRanking";
+export default function PracticeRankinggPage() {
+  return (
+    <div>
+      <PracticeRanking />
+    </div>
+  );
 }
