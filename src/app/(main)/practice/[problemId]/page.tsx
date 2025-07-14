@@ -1,4 +1,10 @@
+import Practice from "@/components/blocks/PracticePage";
 import React from "react";
-export default function Page() {
-  return <div>마이페이지</div>;
+
+export default function PracticePage() {
+  return (
+    <div>
+      <Practice />
+    </div>
+  );
 }
