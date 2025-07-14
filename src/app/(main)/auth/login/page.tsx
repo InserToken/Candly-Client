@@ -65,7 +65,7 @@ export default function Login() {
               id="loginemail"
               value={loginEmail}
               placeholder="example@email.com"
-              className="w-full mt-1 px-4 py-2 border border-[#444444] rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-black placeholder-[#777779]"
+              className="w-full mt-1 px-4 py-2 border border-[#444444] rounded-md focus:outline-none focus:ring-2 focus:ring-[#366FFB] text-white placeholder-[#777779]"
               onChange={(e) => setLoginEmail(e.target.value)}
               required
             />
@@ -83,7 +83,7 @@ export default function Login() {
               id="loginpassword"
               value={loginPassword}
               placeholder="비밀번호를 입력하세요"
-              className="w-full mt-1 px-4 py-2 border border-[#444444] rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-black placeholder-[#777779]"
+              className="w-full mt-1 px-4 py-2 border border-[#444444] rounded-md focus:outline-none focus:ring-2 focus:ring-[#366FFB] text-white placeholder-[#777779]"
               onChange={(e) => setLoginPassword(e.target.value)}
               required
             />

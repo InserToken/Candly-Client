@@ -52,17 +52,13 @@ export default function Signup() {
   };
 
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)] ">
-      <header className="text-center">
-        <h1 className="text-4xl font-bold text-gray-800 ">{"회원가입"}</h1>
-      </header>
-
-      <main className="w-full max-w-sm bg-white shadow-md rounded-lg p-8">
+    <div className="flex items-center justify-center min-h-screen p-8 pb-20 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+      <main className="w-full max-w-sm bg-[#1C1C20] border border-[#444444] shadow-md rounded-lg p-8">
         <form onSubmit={handleSignUpSubmit} className="flex flex-col gap-4">
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-white"
             >
               이메일
             </label>
@@ -71,7 +67,7 @@ export default function Signup() {
               id="signupemail"
               value={signUpEmail}
               placeholder="example@email.com"
-              className="w-full mt-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-black"
+              className="w-full mt-1 px-4 py-2 border border-[#444444] rounded-md focus:outline-none focus:ring-2 focus:ring-[#366FFB] text-white placeholder-[#777779]"
               onChange={(e) => setSignUpEmail(e.target.value)}
               required
             />
@@ -79,7 +75,7 @@ export default function Signup() {
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-white"
             >
               닉네임
             </label>
@@ -88,7 +84,7 @@ export default function Signup() {
               id="signupnickname"
               value={signUpNickname}
               placeholder="홍길동"
-              className="w-full mt-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-black"
+              className="w-full mt-1 px-4 py-2 border border-[#444444] rounded-md focus:outline-none focus:ring-2 focus:ring-[#366FFB] text-white placeholder-[#777779]"
               onChange={(e) => setSignUpNickname(e.target.value)}
               required
             />
@@ -97,7 +93,7 @@ export default function Signup() {
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-white"
             >
               비밀번호
             </label>
@@ -106,7 +102,7 @@ export default function Signup() {
               id="signuppassword"
               value={signUpPassword}
               placeholder="비밀번호를 입력하세요"
-              className="w-full mt-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-black"
+              className="w-full mt-1 px-4 py-2 border border-[#444444] rounded-md focus:outline-none focus:ring-2 focus:ring-[#366FFB] text-white placeholder-[#777779]"
               onChange={(e) => setSignUpPassword(e.target.value)}
               required
             />
@@ -115,7 +111,7 @@ export default function Signup() {
           <div>
             <label
               htmlFor="confirm-password"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-white"
             >
               비밀번호 확인
             </label>
@@ -124,7 +120,7 @@ export default function Signup() {
               id="confirm-password"
               value={confirmPassword}
               placeholder="비밀번호를 다시 입력하세요"
-              className="w-full mt-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-black"
+              className="w-full mt-1 px-4 py-2 border border-[#444444] rounded-md focus:outline-none focus:ring-2 focus:ring-[#366FFB] text-white placeholder-[#777779]"
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
             />
@@ -132,24 +128,33 @@ export default function Signup() {
 
           <button
             type="submit"
-            className="w-full py-2 mt-4  text-white font-semibold rounded-md bg-green-600 hover:bg-red-500 transition"
+            className="w-full py-2 mt-4 text-[#121212] font-semibold rounded-md bg-white hover:bg-[#366FFB] hover:text-white transition"
           >
             회원가입
           </button>
         </form>
 
-        <div className="text-sm text-center text-gray-600 mt-4 ">
+        <div className="text-sm text-center text-white mt-4 ">
           {"이미 계정이 있으신가요? "}
           <button
             type="button"
-            className="text-green-600 hover:underline"
+            className="text-[#366FFB] font-semibold hover:underline"
             onClick={() => router.replace("/auth/login")}
           >
             {"로그인 하기"}
           </button>
         </div>
       </main>
-      <ToastContainer position="bottom-right" hideProgressBar limit={3} />
+      <ToastContainer
+        position="bottom-right"
+        hideProgressBar
+        limit={3}
+        toastStyle={{
+          backgroundColor: "#366FFB",
+          fontWeight: 600,
+          color: "#FFFFFF",
+        }}
+      />
     </div>
   );
 }
