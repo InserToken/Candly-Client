@@ -2,8 +2,7 @@
 import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
-
-type ClickCardProps = { name: string; icon: string };
+import ClickCard from "@/components/buttons/ClickCard";
 
 // 뉴스 더미데이터
 const newsList = [
@@ -35,18 +34,6 @@ const newsList = [
       "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
   },
 ];
-
-function ClickCard({ name, icon }: ClickCardProps) {
-  return (
-    <div className="bg-[#16161A] rounded-2xl shadow-md h-[140px] w-[195px] p-5 flex flex-col justify-between">
-      <div className="flex justify-between">
-        <Image src={`/${icon}`} alt={`${name} 아이콘`} width={50} height={50} />
-        <Image src="/button.svg" alt="바로가기 버튼" width={37} height={37} />
-      </div>
-      <div>{`${name} 보기`}</div>
-    </div>
-  );
-}
 
 export default function PracticeClient() {
   const [input, setInput] = useState("");
