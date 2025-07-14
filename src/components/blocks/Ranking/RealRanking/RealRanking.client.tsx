@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 export default function RealRankingClient() {
   const solvedQuestions = [
@@ -50,10 +51,12 @@ export default function RealRankingClient() {
                     }`}
                 >
                   <div className="flex items-center gap-3">
-                    <img
+                    <Image
                       src={q.logo}
                       alt="logo"
                       className="w-8 h-8 rounded-full"
+                      width={32}
+                      height={32}
                     />
                     <span>{q.company}</span>
                   </div>
@@ -70,6 +73,7 @@ export default function RealRankingClient() {
                 <div>이름</div>
                 <div>점수</div>
               </div>
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {ranking.map((r: any, i: any) => (
                 <div
                   key={i}

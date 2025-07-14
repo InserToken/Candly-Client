@@ -9,7 +9,7 @@ export default function LoadingPage() {
   const [stocks, setStocks] = useState<
     { stock_code: string; company: string }[]
   >([]);
-  const [errorMessage, setErrorMessage] = useState("");
+  // const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -84,11 +84,11 @@ export default function LoadingPage() {
         </>
       )}
 
-      {status === "error" && (
+      {/* {status === "error" && (
         <h2 className="text-xl text-red-500">
           연동 실패: {errorMessage || "알 수 없는 오류"}
         </h2>
-      )}
+      )} */}
 
       <style jsx>{`
         .loader {
