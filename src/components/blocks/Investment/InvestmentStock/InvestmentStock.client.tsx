@@ -4,7 +4,8 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import MixedChart from "@/components/charts/Mixedchart";
 import { ChartData } from "@/components/charts/Mixedchart";
-
+import { parseDateString, dateToString, getNextDateString } from "@/utils/date";
+import { interpolateBetween } from "@/utils/interpolate";
 // 뉴스 더미데이터
 const newsList = [
   {
@@ -36,6 +37,7 @@ const newsList = [
   },
 ];
 
+//보유주식 더미데이터
 const holdings = [
   { name: "네이버", icon: "/button.svg" },
   { name: "신한투자증권", icon: "/button.svg" },
@@ -43,14 +45,12 @@ const holdings = [
   { name: "삼성전자", icon: "/button.svg" },
 ];
 
-const predictions = [
-  { date: "2025.01.06.", price: 62500 },
-  { date: "2025.01.07.", price: 62000 },
-];
+// 예측값 더미데이터
+// const prediction = [{ date: "2025-01-07", close: 62000 }];
 
 const mixedStockData: ChartData[] = [
   {
-    date: "1/1",
+    date: "2025-01-01",
     open: 59700,
     high: 59900,
     low: 59600,
@@ -58,7 +58,7 @@ const mixedStockData: ChartData[] = [
     type: "candle",
   },
   {
-    date: "1/2",
+    date: "2025-01-02",
     open: 60000,
     high: 60300,
     low: 59800,
@@ -66,7 +66,7 @@ const mixedStockData: ChartData[] = [
     type: "candle",
   },
   {
-    date: "1/3",
+    date: "2025-01-03",
     open: 60200,
     high: 60800,
     low: 59700,
@@ -74,7 +74,7 @@ const mixedStockData: ChartData[] = [
     type: "candle",
   },
   {
-    date: "1/4",
+    date: "2025-01-04",
     open: 59900,
     high: 62000,
     low: 60500,
@@ -82,7 +82,7 @@ const mixedStockData: ChartData[] = [
     type: "candle",
   },
   {
-    date: "1/5",
+    date: "2025-01-05",
     open: 61500,
     high: 62500,
     low: 62000,
@@ -90,48 +90,64 @@ const mixedStockData: ChartData[] = [
     type: "candle",
   },
   {
-    date: "1/6",
+    date: "2025-01-06",
     open: 62200,
     high: 62400,
     low: 60800,
     close: 61200,
     type: "candle",
   },
-  { date: "1/7", value: 62500, type: "dot" },
-  { date: "1/8", value: 62100, type: "dot" },
-  { date: "1/10", value: 62300, type: "dot" },
 ] satisfies ChartData[];
-
-function getNextDateString(dateStr: string): string {
-  const cleaned = dateStr.replace(/\.$/, ""); // 끝의 점 제거
-  const [year, month, day] = cleaned.split(".").map(Number);
-  const date = new Date(year, month - 1, day);
-  date.setDate(date.getDate() + 1);
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}.${m}.${d}.`;
-}
 
 export default function InvestmentStockClient() {
   const [tab, setTab] = useState<"chart" | "finance">("chart");
+  const [prediction, setPrediction] = useState<ChartData[]>([]);
+  const lastClose =
+    prediction.length > 0
+      ? prediction[prediction.length - 1].close
+      : mixedStockData[mixedStockData.length - 1].close ?? 0;
+  const latestDate =
+    prediction.length > 0
+      ? prediction[prediction.length - 1].date
+      : mixedStockData[mixedStockData.length - 1].date;
+  const initialLatestDate =
+    prediction && prediction.length > 0
+      ? prediction[prediction.length - 1].date
+      : mixedStockData[mixedStockData.length - 1].date;
+
   const [inputDate, setInputDate] = useState(
-    getNextDateString(predictions[predictions.length - 1].date)
+    getNextDateString(initialLatestDate)
   );
-  const [inputPrice, setInputPrice] = useState(
-    predictions[predictions.length - 1]?.price ?? 0
-  );
-  const [prediction, setPrediction] = useState(predictions);
+
+  const [inputclose, setInputclose] = useState(lastClose);
+
+  const [editIndex, setEditIndex] = useState<number | null>(null); // 수정 중인 인덱스 추적
+
+  const candleData = mixedStockData.filter((d) => d.type === "candle");
+  const lastCandle = candleData[candleData.length - 1];
+  const firstPrediction = prediction[0];
+
+  let interpolatedBetween: ChartData[] = [];
+
+  if (
+    firstPrediction &&
+    parseDateString(firstPrediction.date).getTime() -
+      parseDateString(lastCandle.date).getTime() >
+      24 * 60 * 60 * 1000
+  ) {
+    interpolatedBetween = interpolateBetween(lastCandle, firstPrediction);
+  }
 
   const chartData = [
-    ...mixedStockData.filter((d) => d.type === "candle"),
+    ...candleData,
+    ...interpolatedBetween,
     ...prediction.map((item) => ({
       date: (() => {
-        const parts = item.date.replace(/\.$/, "").split(".").map(Number);
-        return `${parts[1]}/${parts[2]}`;
+        const d = parseDateString(item.date);
+        return `${d.getMonth() + 1}/${d.getDate()}`;
       })(),
-      value: item.price,
-      type: "dot",
+      close: item.close,
+      type: "dot" as const,
     })),
   ];
 
@@ -228,7 +244,7 @@ export default function InvestmentStockClient() {
                           key={idx}
                           className="text-white px-4 min-w-[120px] whitespace-nowrap"
                         >
-                          {item.price}
+                          {item.close}
                         </td>
                       ))}
                     </tr>
@@ -244,10 +260,78 @@ export default function InvestmentStockClient() {
                           className="px-4 min-w-[120px] whitespace-nowrap"
                         >
                           <div className="flex justify-center gap-2">
-                            <button className="bg-[#396FFB] text-white px-3 py-1 rounded text-sm">
+                            <button
+                              className="bg-[#396FFB] text-white px-3 py-1 rounded text-sm"
+                              onClick={() => {
+                                setEditIndex(idx);
+                                setInputDate(item.date); // 날짜는 그대로 유지
+                                setInputclose(item.close); // 종가 입력창에 값 채움
+                              }}
+                            >
                               수정
                             </button>
-                            <button className="bg-[#2a2a2a] text-white px-3 py-1 rounded text-sm">
+                            <button
+                              className="bg-[#2a2a2a] text-white px-3 py-1 rounded text-sm"
+                              onClick={() => {
+                                const newList = [...prediction];
+                                const removed = newList.splice(idx, 1)[0]; // 삭제된 항목
+
+                                const prev = prediction[idx - 1];
+                                const next = prediction[idx + 1];
+
+                                // 양쪽 예측값이 존재할 경우 보간으로 다시 이어줌
+                                if (prev && next) {
+                                  const prevDate = parseDateString(prev.date);
+                                  const nextDate = parseDateString(next.date);
+                                  const daysDiff =
+                                    (nextDate.getTime() - prevDate.getTime()) /
+                                    (1000 * 60 * 60 * 24);
+
+                                  // 보간 필요시
+                                  if (daysDiff > 1) {
+                                    const interpolatedItems = [];
+
+                                    for (let i = 1; i < daysDiff; i++) {
+                                      const newDate = new Date(prevDate);
+                                      newDate.setDate(prevDate.getDate() + i);
+
+                                      const newclose = Math.round(
+                                        prev.close +
+                                          ((next.close - prev.close) * i) /
+                                            daysDiff
+                                      );
+
+                                      interpolatedItems.push({
+                                        date: dateToString(newDate),
+                                        close: newclose,
+                                        type: "dot" as const,
+                                      });
+                                    }
+
+                                    // prev 다음 위치에 삽입 (splice 위치 재계산 주의)
+                                    newList.splice(
+                                      idx - 1 + 1,
+                                      0,
+                                      ...interpolatedItems
+                                    );
+                                  }
+                                }
+
+                                setPrediction(newList);
+
+                                // 삭제된 항목이 수정 중이던 항목이라면 상태 초기화
+                                if (editIndex === idx) {
+                                  setEditIndex(null);
+                                  if (newList.length > 0) {
+                                    setInputDate(
+                                      getNextDateString(
+                                        newList[newList.length - 1].date
+                                      )
+                                    );
+                                  }
+                                }
+                              }}
+                            >
                               삭제
                             </button>
                           </div>
@@ -280,21 +364,21 @@ export default function InvestmentStockClient() {
                         <div className="flex items-center justify-center gap-2">
                           <button
                             className="w-8 h-8 bg-[#2a2a2a] text-white rounded"
-                            onClick={() => setInputPrice((prev) => prev - 100)}
+                            onClick={() => setInputclose((prev) => prev - 100)}
                           >
                             -
                           </button>
                           <input
                             type="text"
-                            value={inputPrice}
+                            value={inputclose}
                             onChange={(e) =>
-                              setInputPrice(Number(e.target.value))
+                              setInputclose(Number(e.target.value))
                             }
                             className="bg-[#1b1b1b] border border-[#2a2a2a] rounded px-3 py-1 text-white w-[80px] text-center"
                           />
                           <button
                             className="w-8 h-8 bg-[#2a2a2a] text-white rounded"
-                            onClick={() => setInputPrice((prev) => prev + 100)}
+                            onClick={() => setInputclose((prev) => prev + 100)}
                           >
                             +
                           </button>
@@ -306,22 +390,119 @@ export default function InvestmentStockClient() {
                     <tr className="h-12">
                       <td>
                         <div className="flex justify-center gap-2">
-                          <button
-                            className="bg-[#396FFB] text-white px-4 py-1.5 rounded text-sm"
-                            onClick={() => {
-                              if (!inputDate || !inputPrice) return;
+                          {/* 추가버튼 */}
+                          {editIndex === null ? (
+                            <button
+                              className="bg-[#396FFB] text-white px-4 py-1.5 rounded text-sm"
+                              onClick={() => {
+                                if (!inputDate || !inputclose) return;
 
-                              setPrediction((prev) => [
-                                ...prev,
-                                { date: inputDate, price: inputPrice },
-                              ]);
-                              // 입력 초기화해도 좋음
-                              // setInputDate("");
-                              // setInputPrice(0);
-                            }}
-                          >
-                            추가
-                          </button>
+                                const datePattern =
+                                  /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+                                if (!datePattern.test(inputDate)) {
+                                  alert(
+                                    "날짜 형식이 잘못되었습니다. 예: 2025-01-08"
+                                  );
+                                  return;
+                                }
+
+                                const existingDates = prediction.map(
+                                  (p) => p.date
+                                );
+                                if (existingDates.includes(inputDate)) {
+                                  alert("이미 같은 날짜의 예측이 있습니다.");
+                                  return;
+                                }
+
+                                const lastDateStr =
+                                  prediction.length > 0
+                                    ? prediction[prediction.length - 1].date
+                                    : mixedStockData[mixedStockData.length - 1]
+                                        .date;
+
+                                const lastDate = parseDateString(lastDateStr);
+                                const inputDateObj = parseDateString(inputDate);
+
+                                if (inputDateObj <= lastDate) {
+                                  alert(
+                                    "이전 날짜에는 예측을 추가할 수 없습니다."
+                                  );
+                                  return;
+                                }
+
+                                const daysDiff =
+                                  (inputDateObj.getTime() -
+                                    lastDate.getTime()) /
+                                  (1000 * 60 * 60 * 24);
+
+                                const newprediction = [...prediction];
+
+                                if (daysDiff > 1) {
+                                  for (let i = 1; i < daysDiff; i++) {
+                                    const interpolatedDate = new Date(lastDate);
+                                    interpolatedDate.setDate(
+                                      interpolatedDate.getDate() + i
+                                    );
+
+                                    const interpolatedStr =
+                                      dateToString(interpolatedDate);
+
+                                    const interpolatedclose = Math.round(
+                                      lastClose +
+                                        ((inputclose - lastClose) * i) /
+                                          daysDiff
+                                    );
+
+                                    newprediction.push({
+                                      date: interpolatedStr,
+                                      close: interpolatedclose,
+                                      type: "dot",
+                                    });
+                                  }
+                                }
+
+                                // 마지막 날짜 추가
+                                newprediction.push({
+                                  date: inputDate,
+                                  close: inputclose,
+                                  type: "dot",
+                                });
+
+                                // 정렬
+                                newprediction.sort(
+                                  (a, b) =>
+                                    parseDateString(a.date).getTime() -
+                                    parseDateString(b.date).getTime()
+                                );
+
+                                // set
+                                setPrediction(newprediction);
+                                setInputDate(getNextDateString(inputDate));
+                              }}
+                            >
+                              추가
+                            </button>
+                          ) : (
+                            <button
+                              className="bg-[#396FFB] text-white px-4 py-1.5 rounded text-sm"
+                              onClick={() => {
+                                const newList = [...prediction];
+                                newList[editIndex] = {
+                                  ...newList[editIndex],
+                                  close: inputclose,
+                                };
+                                setPrediction(newList);
+                                setEditIndex(null);
+                                setInputDate(
+                                  getNextDateString(
+                                    newList[newList.length - 1].date
+                                  )
+                                );
+                              }}
+                            >
+                              수정 저장
+                            </button>
+                          )}
 
                           <button className="bg-[#396FFB] text-white px-4 py-1.5 rounded text-sm">
                             제출
