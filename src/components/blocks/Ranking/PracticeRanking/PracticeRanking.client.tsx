@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 export default function PracticeRankingClient() {
   const [selectedUser, setSelectedUser] = useState(null);
@@ -62,10 +64,12 @@ export default function PracticeRankingClient() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <img
+                    <Image
                       src={q.logo}
                       alt="logo"
                       className="w-8 h-8 rounded-full"
+                      width={32} // w-8 = 2rem = 32px
+                      height={32}
                     />
                     <span>{q.company}</span>
                   </div>
@@ -108,7 +112,7 @@ export default function PracticeRankingClient() {
       </div>
       {isModalOpen && selectedUser && (
         <div className="fixed inset-0 bg-opacity-60 flex items-center justify-center ">
-          <div className="bg-black rounded-xl p-6 w-150 h-100 shadow-lg">
+          <div className="bg-[#16161A] rounded-xl p-6 w-150 h-100 shadow-lg">
             <h4 className="text-xl font-bold mb-4">사용자 상세 정보</h4>
             <div className="h-60">답변</div>
 

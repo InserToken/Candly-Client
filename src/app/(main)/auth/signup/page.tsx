@@ -57,7 +57,7 @@ export default function Signup() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-8 pb-20 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+    <div className="flex items-center justify-center min-h-[calc(100vh-98px)] p-8 sm:p-20">
       <main className="w-full max-w-sm bg-[#1C1C20] border border-[#444444] shadow-md rounded-lg p-8">
         <form onSubmit={handleSignUpSubmit} className="flex flex-col gap-4">
           <div>
