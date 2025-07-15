@@ -20,9 +20,9 @@
 // }
 
 // 나중에 변경
-export async function getStock(token: string) {
+export async function postStock(token: string) {
   try {
-    const res = await fetch(`http://localhost:3001/api/real`, {
+    const res = await fetch(`http://localhost:3001/api/userStock`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -43,7 +43,7 @@ export async function getStock(token: string) {
 }
 
 export async function checkUserStatus(token: string) {
-  const res = await fetch("http://localhost:3001/api/real/status", {
+  const res = await fetch("http://localhost:3001/api/userStock/status", {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
