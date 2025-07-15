@@ -1,7 +1,8 @@
 "use client";
 import React from "react";
+import Image from "next/image";
 
-export default function LoginFormClient() {
+export default function MainHomeClient() {
   return (
     <div className="flex justify-center gap-20 bg-[#0f0f0f]  items-center pt-28">
       {/* 연습문제 카드 */}
@@ -20,10 +21,13 @@ export default function LoginFormClient() {
           </p>
         </div>
         <div>
-          <img
-            src="./practice_logo.svg"
+          <Image
+            src="/practice_logo.svg"
             alt="연습문제 아이콘"
-            className="mx-auto w-[300px]"
+            className="mx-auto"
+            width={300}
+            height={0} // auto height
+            style={{ height: "auto" }}
           />
         </div>
       </div>
@@ -44,10 +48,13 @@ export default function LoginFormClient() {
           </p>
         </div>
         <div>
-          <img
-            src="./real_logo.svg"
+          <Image
+            src="/real_logo.svg"
             alt="실전예측 아이콘"
-            className="mx-auto w-[300px]"
+            className="mx-auto"
+            width={300}
+            height={0}
+            style={{ height: "auto" }}
           />
         </div>
       </div>
