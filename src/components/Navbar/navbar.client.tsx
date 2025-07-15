@@ -3,7 +3,7 @@
 import React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { getStock, checkUserStatus } from "@/services/userStock-service";
+import { postStock, checkUserStatus } from "@/services/userStock-service";
 import { useAuthStore } from "@/stores/authStore";
 import Image from "next/image";
 
@@ -31,7 +31,7 @@ export default function Navbar() {
       console.log("이미 연동 완료된 user: ", status.hasHoldings);
 
       if (status.hasHoldings) {
-        const stockData = await getStock(auth.token);
+        const stockData = await postStock(auth.token);
         const firstCode = stockData[0]?.pdno;
 
         if (firstCode) {
@@ -50,7 +50,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="h-[98px] flex items-center px-8 pl-10 whitespace-nowrap fixed bg-inherit w-screen">
+    <nav className="h-[98px] flex items-center px-8 pl-10 whitespace-nowrap fixed bg-inherit w-screen z-20">
       <Link href="/" className="flex items-center pr-2.5">
         <Image
           src="/logo.svg"
