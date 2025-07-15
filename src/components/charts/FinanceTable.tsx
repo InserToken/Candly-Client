@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 interface RowProps {
   name: string;
@@ -8,7 +8,102 @@ interface RowProps {
   value: string;
 }
 
-const financeData = [
+interface Section {
+  title: string;
+  rows: RowProps[];
+}
+
+export default function FinanceTable() {
+  const [updatedData, setUpdatedData] = useState<Section[]>([]);
+  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+
+  useEffect(() => {
+    const run = async () => {
+      const deepCopiedData: Section[] = JSON.parse(JSON.stringify(financeData));
+
+      const stockCode = deepCopiedData[0].rows.find(
+        (row) => row.keyName === "stock_code"
+      )?.value;
+      const epsRaw = deepCopiedData[2].rows.find(
+        (row) => row.keyName === "eps"
+      )?.value;
+
+      if (!stockCode || !epsRaw) return;
+
+      const eps = parseFloat(epsRaw.replace(/,/g, ""));
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/stock-price?code=${stockCode}`
+      );
+      const json = await res.json();
+      const price = json.price;
+
+      if (!price || !eps) return;
+
+      setCurrentPrice(price);
+      const calculatedPER = (price / eps).toFixed(2);
+
+      const investmentSection = deepCopiedData.find(
+        (section) => section.title === "주당 및 투자 지표"
+      );
+      const perRow = investmentSection?.rows.find(
+        (row) => row.keyName === "per"
+      );
+
+      if (perRow) {
+        perRow.value = calculatedPER.toString();
+      }
+
+      setUpdatedData(deepCopiedData);
+    };
+
+    run();
+  }, []);
+
+  const renderSection = (section: Section) => (
+    <div className="mb-6 min-w-[700px]" key={section.title}>
+      <h3 className="text-xl font-bold mb-3">{section.title}</h3>
+      <table className="w-full table-fixed border-collapse">
+        <thead className="text-left text-gray-400">
+          <tr>
+            <th className="w-1/3 px-2 py-1">항목명</th>
+            <th className="w-1/3 px-2 py-1">정보</th>
+          </tr>
+        </thead>
+        <tbody>
+          {section.rows.map((row, idx) => (
+            <tr key={idx} className="border-t border-gray-700">
+              <td className="px-2 py-2">{row.name}</td>
+              <td className="px-2 py-2">{row.value}</td>
+            </tr>
+          ))}
+          {/* 현재가 추가 표시 */}
+          {section.title === "주당 및 투자 지표" && currentPrice !== null && (
+            <tr className="border-t border-gray-700">
+              <td className="px-2 py-2 font-bold">현재 주가</td>
+              <td className="px-2 py-2 text-green-400">
+                {currentPrice.toLocaleString()} 원
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  return (
+    <div className="w-full h-full overflow-x-auto bg-[#1b1b1b] rounded-lg text-sm text-white">
+      <div className="p-6 min-w-[700px] max-h-full overflow-y-auto">
+        {(updatedData.length > 0 ? updatedData : financeData).map(
+          renderSection
+        )}
+      </div>
+    </div>
+  );
+}
+
+// 👉 기존 static financeData
+const financeData: Section[] = [
   {
     title: "기본 정보",
     rows: [
@@ -63,35 +158,3 @@ const financeData = [
     ],
   },
 ];
-
-const renderSection = (section: { title: string; rows: RowProps[] }) => (
-  <div className="mb-6 min-w-[700px]" key={section.title}>
-    <h3 className="text-xl font-bold mb-3">{section.title}</h3>
-    <table className="w-full table-fixed border-collapse">
-      <thead className="text-left text-gray-400">
-        <tr>
-          <th className="w-1/3 px-2 py-1">항목명</th>
-          <th className="w-1/3 px-2 py-1">정보</th>
-        </tr>
-      </thead>
-      <tbody>
-        {section.rows.map((row, idx) => (
-          <tr key={idx} className="border-t border-gray-700">
-            <td className="px-2 py-2">{row.name}</td>
-            <td className="px-2 py-2">{row.value}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-);
-
-export default function FinanceTable() {
-  return (
-    <div className="w-full h-full overflow-x-auto bg-[#1b1b1b] rounded-lg text-sm text-white">
-      <div className="p-6 min-w-[700px] max-h-full overflow-y-auto">
-        {financeData.map(renderSection)}
-      </div>
-    </div>
-  );
-}
