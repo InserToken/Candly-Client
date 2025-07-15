@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { getStock } from "@/services/userStock-service";
+import { postStock } from "@/services/userStock-service";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -22,7 +22,7 @@ export default function LoadingPage() {
 
     const fetchData = async () => {
       const start = Date.now(); // 요청 시작 시간
-      const result = await getStock(auth.token);
+      const result = await postStock(auth.token);
       const elapsed = Date.now() - start; // 요청 끝난 시간 - 시작 시간
       const minDelay = 1500; // 최소 로딩 시간
       const wait = elapsed < minDelay ? minDelay - elapsed : 0;
