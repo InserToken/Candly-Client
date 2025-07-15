@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import MixedChart from "@/components/charts/Mixedchart";
 import { ChartData } from "@/components/charts/Mixedchart";
+import FinanceTable from "../../../charts/FinanceTable";
 
 // 뉴스 더미데이터
 const newsList = [
@@ -187,8 +188,8 @@ export default function InvestmentStockClient() {
                 <MixedChart w={600} h={300} data={chartData} />
               </div>
             ) : (
-              <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400">
-                재무 정보 준비중...
+              <div className="h-[calc(100vh-300px)] w-full">
+                <FinanceTable />
               </div>
             )}
           </div>
