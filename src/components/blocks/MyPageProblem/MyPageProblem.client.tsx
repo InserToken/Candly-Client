@@ -1,7 +1,7 @@
 "use client";
 import CalendarHeatmap from "react-calendar-heatmap";
 import "react-calendar-heatmap/dist/styles.css";
-import ReactTooltip from "react-tooltip";
+import CircularProgressChart from "./CircularProgressChart";
 import { useEffect, useState } from "react";
 
 export default function MyPageProblemClient() {
@@ -11,7 +11,7 @@ export default function MyPageProblemClient() {
   useEffect(() => {
     const now = new Date();
     const past = new Date();
-    past.setDate(now.getDate() - 60);
+    past.setDate(now.getDate() - 40);
     setToday(now);
     setPastDate(past);
   }, []);
@@ -22,18 +22,21 @@ export default function MyPageProblemClient() {
     <div>
       <p className="text-2xl font-semibold mb-6">연습문제 히스토리</p>
       <div className="flex items-center gap-4 mb-8">
-        <div className="bg-[#16161A] rounded-lg px-10 py-3 text-center">
-          <p className="text-xl">푼 문제 수</p>
+        <div className="bg-[#16161A] w-55 h-20 rounded-lg items-baseline flex text-center gap-1.5 pt-4 justify-center">
+          <p className="text-xl font-semibold">푼 문제 수</p>
+          <p className="text-4xl font-bold">14</p>
         </div>
-        <div className="bg-[#16161A] rounded-lg px-6 py-3 text-center">
-          <p className="text-xl">평균 점수</p>
+        <div className="bg-[#16161A] w-60 h-20 rounded-lg items-baseline flex text-center gap-1.5 pt-4 justify-center">
+          <p className="text-xl font-semibold">평균 점수</p>
+          <p className="text-4xl font-bold">60</p>
+          <p className="text-xl font-semibold">점</p>
         </div>
-        <div className="bg-[#16161A] rounded-lg px-6 py-3 text-center">
-          <p className="text-xl">최근 푼 문제 확인</p>
+        <div className="bg-[#16161A] w-60 h-20 rounded-lg items-baseline flex text-center gap-1.5 pt-6 justify-center">
+          <p className="text-xl font-semibold ">최근 푼 문제 확인</p>
         </div>
       </div>
-      <div className="flex items-center gap-4   ">
-        <div className="w-1/2 bg-[#16161A] rounded-lg px-30 py-20 flex justify-center">
+      <div className="flex items-center gap-4">
+        <div className="w-80 h-70  bg-[#16161A] rounded-lg flex items-center justify-center p-8">
           <CalendarHeatmap
             startDate={pastDate}
             endDate={today}
@@ -49,19 +52,14 @@ export default function MyPageProblemClient() {
               { date: "2025-07-12", count: 6 },
               { date: "2025-07-13", count: 5 },
             ]}
-            // titleForValue={(value) => "날짜는 ${value.date}"}
-            tooltipDataAttrs={(value): { [key: string]: string } => {
-              if (!value || !value.date) return {};
-              return {
-                "data-tip": `${value.date} (${value.count ?? 0}개)`,
-              };
-            }}
-            showWeekdayLabels={true}
+            // showWeekdayLabels={true}
+            showMonthLabels={false}
+            weekdayLabels={["S", "M", "T", "W", "T", "F", "S"]}
             showOutOfRangeDays={true}
             horizontal={false}
             gutterSize={0}
             // onMouseOver={(event, value) => console.log(event, value)}
-            weekdayLabels={["S", "M", "T", "W", "T", "F", "S"]}
+
             classForValue={(value) => {
               if (!value || value.count === 0) {
                 return "fill-[#313136]";
@@ -78,14 +76,22 @@ export default function MyPageProblemClient() {
               }
             }}
           />
-          <ReactTooltip
-            place="top"
-            type="light"
-            effect="solid"
-            className="!text-sm !rounded-md !px-3 !py-2 !bg-white !text-black shadow-lg"
-          />
         </div>
-        <div className="bg-[#16161A]"></div>
+
+        <div className="w-200 h-70 bg-[#16161A] rounded-lg flex items-center justify-center gap-6 px-6 py-8 font-semibold">
+          {[
+            { label: "예측 논리", value: 55 },
+            { label: "모멘텀 인식", value: 65 },
+            { label: "거시경제", value: 75 },
+            { label: "시황 이슈", value: 85 },
+            { label: "정량적 근거", value: 100 },
+          ].map((item, idx) => (
+            <div key={idx} className="flex flex-col items-center">
+              <CircularProgressChart value={item.value} />
+              <span className="text-sm text-white mt-3">{item.label}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
