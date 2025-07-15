@@ -2,7 +2,7 @@
 import React from "react";
 
 type CandleData = {
-  date: string;
+  date: string; // e.g., "2025-01-01"
   open: number;
   high: number;
   low: number;
@@ -11,8 +11,8 @@ type CandleData = {
 };
 
 type DotData = {
-  date: string;
-  value: number;
+  date: string; // e.g., "2025-01-01"
+  close: number;
   type: "dot";
 };
 
@@ -25,14 +25,13 @@ type MixedChartProps = {
 };
 
 export default function MixedChart({ w, h, data }: MixedChartProps) {
-  // 모든 데이터에서 최대/최소값 계산
   const getAllValues = () => {
     const values: number[] = [];
     data.forEach((item) => {
       if (item.type === "candle") {
         values.push(item.high, item.low, item.open, item.close);
       } else {
-        values.push(item.value);
+        values.push(item.close);
       }
     });
     return values;
@@ -41,8 +40,7 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
   const allValues = getAllValues();
   const maxPrice = Math.max(...allValues);
   const minPrice = Math.min(...allValues);
-  const priceRange = maxPrice - minPrice;
-  const padding = priceRange * 0.1;
+  const padding = (maxPrice - minPrice) * 0.1;
   const chartMax = maxPrice + padding;
   const chartMin = minPrice - padding;
   const chartRange = chartMax - chartMin;
@@ -50,15 +48,12 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
   const chartWidth = w;
   const chartHeight = h;
 
-  // 10개 이상일 때와 이하일 때 다른 로직 적용
   const maxVisibleItems = 10;
   const shouldScroll = data.length > maxVisibleItems;
 
-  // 항목 크기 고정 (스크롤 시에도 일정한 크기 유지)
   const fixedItemWidth = 40;
   const fixedItemSpacing = 60;
 
-  // 실제 SVG 너비 계산
   const actualChartWidth = shouldScroll
     ? data.length * fixedItemSpacing
     : chartWidth;
@@ -71,9 +66,8 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
     ? fixedItemSpacing
     : chartWidth / Math.max(data.length, 1);
 
-  const getY = (price: number) => {
-    return chartHeight - ((price - chartMin) / chartRange) * chartHeight;
-  };
+  const getY = (price: number) =>
+    chartHeight - ((price - chartMin) / chartRange) * chartHeight;
 
   const getGridLines = () => {
     const lines = [];
@@ -99,6 +93,11 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
     }
 
     return lines;
+  };
+
+  const formatDateShort = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return `${d.getMonth() + 1}/${d.getDate()}`;
   };
 
   return (
@@ -145,9 +144,7 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
                   </g>
                 ))}
 
-                {/* 차트 아이템들 */}
-
-                {/* 선 그래프 path */}
+                {/* 선형 그래프 */}
                 {(() => {
                   const dotItems = data
                     .map((item, i) => ({ item, i }))
@@ -158,7 +155,7 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
                   const pathD = dotItems
                     .map(({ item, i }, idx) => {
                       const x = 60 + i * itemSpacing + itemSpacing / 2;
-                      const y = getY((item as DotData).value) + 40;
+                      const y = getY((item as DotData).close) + 40;
                       return `${idx === 0 ? "M" : "L"} ${x} ${y}`;
                     })
                     .join(" ");
@@ -173,11 +170,11 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
                   );
                 })()}
 
+                {/* 개별 데이터 렌더링 */}
                 {data.map((item, i) => {
                   const x = 60 + i * itemSpacing + itemSpacing / 2;
 
                   if (item.type === "candle") {
-                    // 캔들스틱 렌더링
                     const isRising = item.close > item.open;
                     const bodyTop = getY(Math.max(item.open, item.close)) + 40;
                     const bodyBottom =
@@ -188,7 +185,6 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
 
                     return (
                       <g key={i}>
-                        {/* 상하 심지 */}
                         <line
                           x1={x}
                           y1={wickTop}
@@ -197,8 +193,6 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
                           stroke={isRising ? "#3B82F6" : "#EF4444"}
                           strokeWidth="2"
                         />
-
-                        {/* 캔들 몸통 */}
                         <rect
                           x={x - itemWidth / 2}
                           y={bodyTop}
@@ -209,8 +203,6 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
                           strokeWidth="1"
                           rx={10}
                         />
-
-                        {/* 날짜 라벨 */}
                         <text
                           x={x}
                           y={chartHeight + 60}
@@ -218,20 +210,16 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
                           fontSize="12"
                           textAnchor="middle"
                         >
-                          {item.date}
+                          {formatDateShort(item.date)}
                         </text>
                       </g>
                     );
                   } else {
-                    // 막대그래프 렌더링
-                    const y = getY(item.value) + 40;
+                    const y = getY(item.close) + 40;
 
                     return (
                       <g key={i}>
-                        {/* 점 */}
                         <circle cx={x} cy={y} r={4} fill="#10B981" />
-
-                        {/* 값 라벨 */}
                         <text
                           x={x}
                           y={y - 10}
@@ -239,10 +227,8 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
                           fontSize="10"
                           textAnchor="middle"
                         >
-                          {item.value.toLocaleString()}
+                          {item.close.toLocaleString()}
                         </text>
-
-                        {/* 날짜 라벨 */}
                         <text
                           x={x}
                           y={chartHeight + 60}
@@ -250,7 +236,7 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
                           fontSize="12"
                           textAnchor="middle"
                         >
-                          {item.date}
+                          {formatDateShort(item.date)}
                         </text>
                       </g>
                     );
