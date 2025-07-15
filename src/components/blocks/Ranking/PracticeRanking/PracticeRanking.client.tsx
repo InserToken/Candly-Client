@@ -112,7 +112,7 @@ export default function PracticeRankingClient() {
       </div>
       {isModalOpen && selectedUser && (
         <div className="fixed inset-0 bg-opacity-60 flex items-center justify-center ">
-          <div className="bg-black rounded-xl p-6 w-150 h-100 shadow-lg">
+          <div className="bg-[#16161A] rounded-xl p-6 w-150 h-100 shadow-lg">
             <h4 className="text-xl font-bold mb-4">사용자 상세 정보</h4>
             <div className="h-60">답변</div>
 

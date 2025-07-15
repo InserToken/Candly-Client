@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import ClickCard from "@/components/buttons/ClickCard";
+import CandleChart from "@/components/charts/Candlechart";
 
 // 뉴스 더미데이터
 const newsList = [
@@ -33,6 +34,16 @@ const newsList = [
     content:
       "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
   },
+];
+
+const stockData = [
+  { date: "1/1", open: 59700, high: 59900, low: 59600, close: 60000 },
+  { date: "1/2", open: 60000, high: 60300, low: 59800, close: 60200 },
+  { date: "1/3", open: 60200, high: 60800, low: 59700, close: 59900 },
+  { date: "1/4", open: 59900, high: 62000, low: 60500, close: 61500 },
+  { date: "1/5", open: 61500, high: 62500, low: 62000, close: 62200 },
+  { date: "1/6", open: 62200, high: 62400, low: 60800, close: 61200 },
+  { date: "1/7", open: 61200, high: 62700, low: 61000, close: 62500 },
 ];
 
 export default function PracticeClient() {
@@ -72,7 +83,7 @@ export default function PracticeClient() {
                 재무 정보
               </button>
 
-              {/* 지표 (차트 탭에서만 보임) */}
+              {/* 지표  */}
               {tab === "chart" && (
                 <div className="flex flex-wrap gap-4 items-center justify-end text-sm text-gray-300 ml-auto pr-3">
                   <span className="flex items-center gap-1">
@@ -91,11 +102,13 @@ export default function PracticeClient() {
             </div>
 
             {/* 콘텐츠 영역 */}
-            {tab === "chart" ? (
-              <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400">
-                차트 정보 준비중...
+            {tab === "chart" && (
+              <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400 ">
+                <CandleChart w={600} h={300} data={stockData} />
               </div>
-            ) : (
+            )}
+
+            {tab === "finance" && (
               <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400">
                 재무 정보 준비중...
               </div>
