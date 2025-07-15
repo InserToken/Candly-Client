@@ -1,9 +1,9 @@
+// 원본
 "use client";
 import React, { useState } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import MixedChart from "@/components/charts/Mixedchart";
-import { ChartData } from "@/components/charts/Mixedchart";
+import CandleChart from "@/components/charts/Candlechart";
 
 // 뉴스 더미데이터
 const newsList = [
@@ -45,96 +45,25 @@ const holdings = [
 
 const predictions = [
   { date: "2025.01.06.", price: 62500 },
-  { date: "2025.01.07.", price: 62000 },
+  { date: "2025.01.07.", price: 62500 },
+  { date: "2025.01.07.", price: 62500 },
+  { date: "2025.01.07.", price: 62500 },
 ];
 
-const mixedStockData: ChartData[] = [
-  {
-    date: "1/1",
-    open: 59700,
-    high: 59900,
-    low: 59600,
-    close: 60000,
-    type: "candle",
-  },
-  {
-    date: "1/2",
-    open: 60000,
-    high: 60300,
-    low: 59800,
-    close: 60200,
-    type: "candle",
-  },
-  {
-    date: "1/3",
-    open: 60200,
-    high: 60800,
-    low: 59700,
-    close: 59900,
-    type: "candle",
-  },
-  {
-    date: "1/4",
-    open: 59900,
-    high: 62000,
-    low: 60500,
-    close: 61500,
-    type: "candle",
-  },
-  {
-    date: "1/5",
-    open: 61500,
-    high: 62500,
-    low: 62000,
-    close: 62200,
-    type: "candle",
-  },
-  {
-    date: "1/6",
-    open: 62200,
-    high: 62400,
-    low: 60800,
-    close: 61200,
-    type: "candle",
-  },
-  { date: "1/7", value: 62500, type: "dot" },
-  { date: "1/8", value: 62100, type: "dot" },
-  { date: "1/10", value: 62300, type: "dot" },
-] satisfies ChartData[];
-
-function getNextDateString(dateStr: string): string {
-  const cleaned = dateStr.replace(/\.$/, ""); // 끝의 점 제거
-  const [year, month, day] = cleaned.split(".").map(Number);
-  const date = new Date(year, month - 1, day);
-  date.setDate(date.getDate() + 1);
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}.${m}.${d}.`;
-}
+const stockData = [
+  { date: "1/1", open: 59700, high: 59900, low: 59600, close: 60000 },
+  { date: "1/2", open: 60000, high: 60300, low: 59800, close: 60200 },
+  { date: "1/3", open: 60200, high: 60800, low: 59700, close: 59900 },
+  { date: "1/4", open: 59900, high: 62000, low: 60500, close: 61500 },
+  { date: "1/5", open: 61500, high: 62500, low: 62000, close: 62200 },
+  { date: "1/6", open: 62200, high: 62400, low: 60800, close: 61200 },
+  { date: "1/7", open: 61200, high: 62700, low: 61000, close: 62500 },
+];
 
 export default function InvestmentStockClient() {
   const [tab, setTab] = useState<"chart" | "finance">("chart");
-  const [inputDate, setInputDate] = useState(
-    getNextDateString(predictions[predictions.length - 1].date)
-  );
-  const [inputPrice, setInputPrice] = useState(
-    predictions[predictions.length - 1]?.price ?? 0
-  );
-  const [prediction, setPrediction] = useState(predictions);
-
-  const chartData = [
-    ...mixedStockData.filter((d) => d.type === "candle"),
-    ...prediction.map((item) => ({
-      date: (() => {
-        const parts = item.date.replace(/\.$/, "").split(".").map(Number);
-        return `${parts[1]}/${parts[2]}`;
-      })(),
-      value: item.price,
-      type: "dot",
-    })),
-  ];
-
+  const [inputDate, setInputDate] = useState("2025.01.06.");
+  const [inputPrice, setInputPrice] = useState(62500);
   const params = useParams<{
     stock_code: string;
   }>();
@@ -184,7 +113,7 @@ export default function InvestmentStockClient() {
             </div>
             {tab === "chart" ? (
               <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400">
-                <MixedChart w={600} h={300} data={chartData} />
+                <CandleChart w={600} h={300} data={stockData} />
               </div>
             ) : (
               <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400">
@@ -208,7 +137,7 @@ export default function InvestmentStockClient() {
                       <th className="text-left px-2 text-gray-300 font-medium w-[80px] sticky left-0 bg-[#0f0f0f] z-10 whitespace-nowrap">
                         날짜
                       </th>
-                      {prediction.map((item, idx) => (
+                      {predictions.map((item, idx) => (
                         <td
                           key={idx}
                           className="text-white px-4 min-w-[120px] whitespace-nowrap"
@@ -223,7 +152,7 @@ export default function InvestmentStockClient() {
                       <th className="text-left px-2 text-gray-300 font-medium sticky left-0 bg-[#0f0f0f] z-10 whitespace-nowrap">
                         종가
                       </th>
-                      {prediction.map((item, idx) => (
+                      {predictions.map((item, idx) => (
                         <td
                           key={idx}
                           className="text-white px-4 min-w-[120px] whitespace-nowrap"
@@ -238,7 +167,7 @@ export default function InvestmentStockClient() {
                       <th className="text-left px-2 text-gray-300 font-medium sticky left-0 bg-[#0f0f0f] z-10">
                         {" "}
                       </th>
-                      {prediction.map((item, idx) => (
+                      {predictions.map((item, idx) => (
                         <td
                           key={idx}
                           className="px-4 min-w-[120px] whitespace-nowrap"
@@ -306,23 +235,9 @@ export default function InvestmentStockClient() {
                     <tr className="h-12">
                       <td>
                         <div className="flex justify-center gap-2">
-                          <button
-                            className="bg-[#396FFB] text-white px-4 py-1.5 rounded text-sm"
-                            onClick={() => {
-                              if (!inputDate || !inputPrice) return;
-
-                              setPrediction((prev) => [
-                                ...prev,
-                                { date: inputDate, price: inputPrice },
-                              ]);
-                              // 입력 초기화해도 좋음
-                              // setInputDate("");
-                              // setInputPrice(0);
-                            }}
-                          >
+                          <button className="bg-[#396FFB] text-white px-4 py-1.5 rounded text-sm">
                             추가
                           </button>
-
                           <button className="bg-[#396FFB] text-white px-4 py-1.5 rounded text-sm">
                             제출
                           </button>
