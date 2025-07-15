@@ -55,8 +55,8 @@ export default function Navbar() {
         <Image
           src="/logo.svg"
           alt="로고"
-          width={20}
-          height={20}
+          width={30}
+          height={30}
           className="pr-2.5"
         />
         <div className="text-2xl pr-20">오르락내리락</div>

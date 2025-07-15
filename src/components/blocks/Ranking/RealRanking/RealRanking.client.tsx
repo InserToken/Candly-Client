@@ -1,32 +1,60 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
+import { Stocks, UserStock } from "@/types/UserStock";
+import { useAuthStore } from "@/stores/authStore";
+import { getStock, getRanking } from "@/services/userStock-service";
 
 export default function RealRankingClient() {
-  const solvedQuestions = [
-    { company: "삼성전자", logo: "/samsung.png", date: "2025년 5월" },
-    { company: "네이버", logo: "/naver.png", date: "2021년 4월" },
-    { company: "신한투자증권", logo: "/shinhan.png", date: "2015년 11월" },
-  ];
+  const [stock, setStock] = useState<Stocks[]>([]);
+  const auth = useAuthStore((s) => s.auth);
+  const [rankingData, setRankingData] = useState<{
+    [key: string]: { name: string; score: number }[];
+  }>({});
 
-  // 각 종목별 랭킹 (데모용)
-  const rankingData: { [key: string]: { name: string; score: number }[] } = {
-    삼성전자: [
-      { name: "예경", score: 70 },
-      { name: "은서", score: 65 },
-    ],
-    네이버: [
-      { name: "은동", score: 60 },
-      { name: "지환", score: 55 },
-    ],
-    신한투자증권: [
-      { name: "민선", score: 10 },
-      { name: "예경", score: 50 },
-    ],
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      const result = await getStock(auth.token);
+      setStock(result.stocks);
+      console.log("사용자의 보유주식 조회:", result.stocks);
+    };
 
-  const [selectedCompany, setSelectedCompany] = useState("삼성전자");
+    const fetchRankingData = async () => {
+      const result = await getRanking();
+      const grouped: {
+        [key: string]: { name: string; score: number }[];
+      } = {};
+
+      (result.userStock as UserStock[]).forEach((item) => {
+        const company = item.stock_code.name;
+        const nickname = item.user_id?.nickname ?? "알 수 없음";
+        const score = item.cumulative_score ?? 0;
+
+        if (!grouped[company]) grouped[company] = [];
+        grouped[company].push({ name: nickname, score });
+      });
+
+      // 점수 기준 내림차순 정렬
+      for (const key in grouped) {
+        grouped[key].sort((a, b) => b.score - a.score);
+      }
+
+      setRankingData(grouped);
+    };
+
+    fetchData();
+    fetchRankingData();
+  }, []);
+
+  const [selectedCompany, setSelectedCompany] = useState<string>("");
+
+  // stock이 바뀌고 나서 초기값 설정
+  useEffect(() => {
+    if (stock.length > 0 && !selectedCompany) {
+      setSelectedCompany(stock[0].name);
+    }
+  }, [stock]);
 
   const ranking = rankingData[selectedCompany] || [];
 
@@ -39,26 +67,26 @@ export default function RealRankingClient() {
           {/* 종목 목록 */}
           <div className="bg-[#16161A] rounded-2xl p-6 w-full h-[600px] max-w-md overflow-y-auto">
             <div className="space-y-2">
-              {solvedQuestions.map((q, idx) => (
+              {stock.map((s, idx) => (
                 <div
                   key={idx}
-                  onClick={() => setSelectedCompany(q.company)}
+                  onClick={() => setSelectedCompany(s.name)}
                   className={`flex items-center justify-between cursor-pointer px-5 py-4 rounded-lg
                     ${
-                      selectedCompany === q.company
+                      selectedCompany === s.name
                         ? "bg-[#396FFB]"
                         : "bg-[#313136]"
                     }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Image
-                      src={q.logo}
+                    {/* <Image
+                      src={s.stock_code.}
                       alt="logo"
                       className="w-8 h-8 rounded-full"
                       width={32}
                       height={32}
-                    />
-                    <span>{q.company}</span>
+                    /> */}
+                    <span>{s.name}</span>
                   </div>
                 </div>
               ))}
@@ -74,7 +102,7 @@ export default function RealRankingClient() {
                 <div>점수</div>
               </div>
               {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {ranking.map((r: any, i: any) => (
+              {ranking.map((r, i) => (
                 <div
                   key={i}
                   className={`grid grid-cols-3 items-center px-3 py-3 mb-2 rounded-lg text-left ${
