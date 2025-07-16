@@ -5,6 +5,16 @@ import Image from "next/image";
 import ClickCard from "@/components/buttons/ClickCard";
 import CandleChart from "@/components/charts/Candlechart";
 import { fetchPracticeProblem } from "@/services/fetchPracticeProblem";
+import { fetchPracticeNews } from "@/services/fetchPracticeNews";
+
+type NewsItem = {
+  _id: string;
+  title: string;
+  date: string;
+  context: string;
+  news_url: string;
+  img_url?: string;
+};
 
 // 뉴스 더미데이터
 const newsList = [
@@ -54,14 +64,21 @@ export default function PracticeClient() {
   const params = useParams<{
     problemId: string;
   }>();
-
   const [problemData, setProblemData] = useState([]);
+  const [news, setNews] = useState<NewsItem[]>([]);
 
   const stockData = problemData.prices;
 
   useEffect(() => {
     fetchPracticeProblem(params.problemId).then((data) => {
       setProblemData(data);
+    });
+  }, []);
+
+  useEffect(() => {
+    fetchPracticeNews(params.problemId).then((data) => {
+      setNews(data);
+      console.log(data);
     });
   }, []);
 
@@ -115,8 +132,10 @@ export default function PracticeClient() {
             {tab === "chart" && (
               <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400 pb-1">
                 {Array.isArray(stockData) ? (
+                  // 문제(20일)
                   <CandleChart w={780} h={320} data={stockData.slice(0, 20)} />
                 ) : (
+                  // 정답(40일)
                   // <CandleChart w={600} h={300} data={stockData} />
                   <div>로딩 중...</div>
                 )}
@@ -163,26 +182,40 @@ export default function PracticeClient() {
           <div className="mt-4">
             <p className="text-2xl font-semibold mb-3.5">관련 뉴스</p>
             <div className="flex flex-col gap-3 max-h-[450px] overflow-y-auto">
-              {newsList.map((news, idx) => (
+              {news.map((item, idx) => (
                 <div
                   key={idx}
-                  className="bg-[#1b1b1b] rounded-xl p-4 text-sm  "
+                  className="bg-[#1b1b1b] rounded-xl p-4 text-sm flex gap-4"
                 >
-                  <div className="flex pb-2">
+                  {item.img_url && (
                     <Image
-                      src={news.newsicon}
-                      alt="언론사 로고"
-                      height={40}
-                      width={40}
-                      className="pr-3"
+                      src={item.img_url}
+                      alt="뉴스 이미지"
+                      width={80}
+                      height={80}
+                      className="rounded object-cover flex-shrink-0" //잘림 허용
                     />
-                    <div className="font-semibold">{news.title}</div>
-                  </div>
-                  <div className="text-[#C7C7C7] text-xs font-thin">
-                    {news.content}
-                  </div>
-                  <div className="text-gray-400 mt-2 text-xs float-right">
-                    {news.source} · {news.date}
+                  )}
+
+                  <div className="flex flex-col justify-between w-full">
+                    <div>
+                      <div className="font-semibold mb-1">
+                        <a
+                          href={item.news_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:underline"
+                        >
+                          {item.title}
+                        </a>
+                      </div>
+                      <div className="text-[#C7C7C7] text-xs font-thin line-clamp-2">
+                        {item.context}
+                      </div>
+                    </div>
+                    <div className="text-gray-400 text-xs mt-2 self-end">
+                      {item.date}
+                    </div>
                   </div>
                 </div>
               ))}
