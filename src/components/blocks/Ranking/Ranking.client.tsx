@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default function RankingClient() {
   return (
-    <div className="flex justify-center items-center gap-10 bg-[#0f0f0f] pt-28">
+    <div className="flex justify-center items-center gap-10 bg-[#0f0f0f] pt-28 pb-20">
       {/* 연습문제 카드 */}
       <Link href="/ranking/practice" className="group">
         <div className="group bg-[#1C1C20] hover:bg-[#396FFB] rounded-2xl p-6 w-[450px] h-[450px] text-center  flex flex-col justify-center cursor-pointer">
