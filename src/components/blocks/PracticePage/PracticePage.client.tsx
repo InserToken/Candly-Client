@@ -1,9 +1,10 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import ClickCard from "@/components/buttons/ClickCard";
 import CandleChart from "@/components/charts/Candlechart";
+import { fetchPracticeProblem } from "@/services/fetchPracticeProblem";
 
 // 뉴스 더미데이터
 const newsList = [
@@ -36,15 +37,16 @@ const newsList = [
   },
 ];
 
-const stockData = [
-  { date: "1/1", open: 59700, high: 59900, low: 59600, close: 60000 },
-  { date: "1/2", open: 60000, high: 60300, low: 59800, close: 60200 },
-  { date: "1/3", open: 60200, high: 60800, low: 59700, close: 59900 },
-  { date: "1/4", open: 59900, high: 62000, low: 60500, close: 61500 },
-  { date: "1/5", open: 61500, high: 62500, low: 62000, close: 62200 },
-  { date: "1/6", open: 62200, high: 62400, low: 60800, close: 61200 },
-  { date: "1/7", open: 61200, high: 62700, low: 61000, close: 62500 },
-];
+// 주식 더미데이터
+// const stockData = [
+//   { date: "1/1", open: 59700, high: 59900, low: 59600, close: 60000 },
+//   { date: "1/2", open: 60000, high: 60300, low: 59800, close: 60200 },
+//   { date: "1/3", open: 60200, high: 60800, low: 59700, close: 59900 },
+//   { date: "1/4", open: 59900, high: 62000, low: 60500, close: 61500 },
+//   { date: "1/5", open: 61500, high: 62500, low: 62000, close: 62200 },
+//   { date: "1/6", open: 62200, high: 62400, low: 60800, close: 61200 },
+//   { date: "1/7", open: 61200, high: 62700, low: 61000, close: 62500 },
+// ];
 
 export default function PracticeClient() {
   const [input, setInput] = useState("");
@@ -53,11 +55,19 @@ export default function PracticeClient() {
     problemId: string;
   }>();
 
+  const [problemData, setProblemData] = useState([]);
+
+  const stockData = problemData.prices;
+
+  useEffect(() => {
+    fetchPracticeProblem(params.problemId).then((data) => {
+      setProblemData(data);
+    });
+  }, []);
+
   return (
     <div className="min-h-screen px-[80px] pt-1">
-      <h2 className=" mb-3 text-2xl">
-        {params.problemId}번 문제 - <span className="font-bold">삼성전자</span>
-      </h2>
+      <h2 className=" mb-3 text-2xl">{problemData.title}</h2>
       <main className=" flex flex-col lg:flex-row gap-6">
         {/* 왼쪽 영역 */}
         <section className="flex-1 max-w-[894px]">
@@ -103,8 +113,13 @@ export default function PracticeClient() {
 
             {/* 콘텐츠 영역 */}
             {tab === "chart" && (
-              <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400 ">
-                <CandleChart w={600} h={300} data={stockData} />
+              <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400 pb-1">
+                {Array.isArray(stockData) ? (
+                  <CandleChart w={780} h={320} data={stockData.slice(0, 20)} />
+                ) : (
+                  // <CandleChart w={600} h={300} data={stockData} />
+                  <div>로딩 중...</div>
+                )}
               </div>
             )}
 
