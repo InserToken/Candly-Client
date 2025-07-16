@@ -9,31 +9,62 @@ export default function PracticeListClient() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [keyword, setKeyword] = useState("");
+  const [category, setCategory] = useState("all"); // 문자열로 관리
+
+  const categories = [
+    { label: "전체", value: "all" },
+    { label: "유형 1", value: "1" },
+    { label: "유형 2", value: "2" },
+    { label: "유형 3", value: "3" },
+    { label: "유형 4", value: "4" },
+    { label: "유형 5", value: "5" },
+    { label: "유형 6", value: "6" },
+    { label: "유형 7", value: "7" },
+    { label: "유형 8", value: "8" },
+    { label: "유형 9", value: "9" },
+    { label: "유형 10", value: "10" },
+  ];
+
   useEffect(() => {
     const fetchData = async () => {
-      const result = await getPracticeList(page, keyword);
+      const result = await getPracticeList(page, keyword, category);
       setProblems(result.practiceProblem);
       setTotalPages(result.totalPages);
     };
     fetchData();
-  }, [page, keyword]);
+  }, [page, keyword, category]);
 
   return (
     <div className="p-6">
       <div className="max-w-2xl mx-auto">
         <h3 className="text-lg mb-4 ml-56">연습문제 목록</h3>
-        {/* ✅ 검색 입력창 */}
-        <div className="mb-6">
+        {/* 검색 및 카테고리 선택 */}
+        <div className="mb-6 flex gap-4">
           <input
             type="text"
             placeholder="제목 검색"
             value={keyword}
             onChange={(e) => {
-              setPage(1); // 검색 시 1페이지로 초기화
+              setPage(1);
               setKeyword(e.target.value);
             }}
-            className="w-full px-4 py-2 rounded bg-[#1f1f1f] text-white border border-gray-600"
+            className="flex-1 px-4 py-2 rounded bg-[#1f1f1f] text-white border border-gray-600"
           />
+
+          <select
+            value={category}
+            onChange={(e) => {
+              setPage(1);
+              setCategory(e.target.value);
+            }}
+            className="px-3 py-2 rounded bg-[#1f1f1f] text-white border border-gray-600"
+          >
+            {categories.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* 문제리스트 */}

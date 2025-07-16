@@ -1,7 +1,11 @@
 // user별 보유 주식 조회
-export async function getPracticeList(page: number, keyword = "") {
+export async function getPracticeList(
+  page: number,
+  keyword = "",
+  category: string
+) {
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/practice?page=${page}&keyword=${keyword}`
+    `${process.env.NEXT_PUBLIC_API_URL}/api/practice?page=${page}&keyword=${keyword}&category=${category}`
   );
 
   const data = await res.json();
