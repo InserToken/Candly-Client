@@ -92,7 +92,7 @@ export default function MainHomeClient() {
               className="mx-auto"
               width={300}
               height={0}
-              style={{ height: "auto" }}
+              style={{ height: "" }}
             />
           </div>
         </div>
