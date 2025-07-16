@@ -1,4 +1,4 @@
-interface UserStock {
+export interface UserStock {
   _id: string;
   user_id: {
     _id: string;
