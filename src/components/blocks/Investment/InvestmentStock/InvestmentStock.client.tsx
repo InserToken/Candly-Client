@@ -217,7 +217,7 @@ export default function InvestmentStockClient() {
             </div>
             {tab === "chart" ? (
               <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400">
-                <MixedChart w={600} h={300} data={chartData} />
+                <MixedChart w={750} h={300} data={chartData} />
               </div>
             ) : (
               <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400">
