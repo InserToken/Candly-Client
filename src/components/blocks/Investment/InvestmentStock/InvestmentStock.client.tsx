@@ -552,12 +552,16 @@ export default function InvestmentStockClient() {
                     router.push(`/investment/${s._id}`, { scroll: false });
                   }}
                 >
-                  {/* <Image
-                    src={stock.icon}
-                    alt={stock.name}
-                    width={28}
-                    height={28}
-                  /> */}
+                  {s.logo && (
+                    <Image
+                      src={s.logo}
+                      alt={s.name}
+                      width={28}
+                      height={28}
+                      className="rounded-full"
+                    />
+                  )}
+
                   <span>{s.name}</span>
                 </div>
               ))}
