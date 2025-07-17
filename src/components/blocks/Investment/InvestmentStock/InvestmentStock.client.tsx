@@ -12,6 +12,11 @@ import {
 } from "@/utils/date";
 import { interpolateBetween } from "@/utils/interpolate";
 import useHolidayStore from "@/stores/useHolidayStore";
+import { useAuthStore } from "@/stores/authStore";
+import { getStock } from "@/services/userStock-service";
+import { Stocks } from "@/types/UserStock";
+import { useRouter } from "next/navigation";
+
 // 뉴스 더미데이터
 const newsList = [
   {
@@ -41,14 +46,6 @@ const newsList = [
     content:
       "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
   },
-];
-
-//보유주식 더미데이터
-const holdings = [
-  { name: "네이버", icon: "/button.svg" },
-  { name: "신한투자증권", icon: "/button.svg" },
-  { name: "삼성전자", icon: "/button.svg" },
-  { name: "삼성전자", icon: "/button.svg" },
 ];
 
 // 예측값 더미데이터
@@ -106,6 +103,8 @@ const mixedStockData: ChartData[] = [
 ] satisfies ChartData[];
 
 export default function InvestmentStockClient() {
+  const router = useRouter();
+  const auth = useAuthStore((s) => s.auth);
   const [tab, setTab] = useState<"chart" | "finance">("chart");
   const [prediction, setPrediction] = useState<ChartData[]>([]);
   const lastClose =
@@ -142,6 +141,17 @@ export default function InvestmentStockClient() {
 
   let interpolatedBetween: ChartData[] = [];
 
+  const [stock, setStock] = useState<Stocks[]>([]);
+  useEffect(() => {
+    const fetchData = async () => {
+      const result = await getStock(auth.token);
+      setStock(result.stocks);
+      console.log("사용자의 보유주식 조회:", result.stocks);
+    };
+
+    fetchData();
+  }, []);
+
   if (
     firstPrediction &&
     parseDateString(firstPrediction.date).getTime() -
@@ -170,7 +180,14 @@ export default function InvestmentStockClient() {
 
   return (
     <div className="min-h-screen px-[80px] pt-1">
-      <h2 className="mb-3 text-2xl">{params.stock_code} 삼성전자</h2>
+      <h2 className="mb-3 text-2xl">
+        {stock.length === 0 ? (
+          <span className="invisible">.</span>
+        ) : (
+          stock.find((s) => s._id === params.stock_code)?.name || "종목 없음"
+        )}
+      </h2>
+
       <main className="flex flex-col lg:flex-row gap-6">
         {/* 왼쪽 영역 */}
         <section className="flex-1 max-w-[894px] w-full lg:max-w-[calc(100%-420px)] overflow-hidden">
@@ -568,18 +585,29 @@ export default function InvestmentStockClient() {
           <div>
             <p className="text-xl font-semibold mb-3">보유 주식</p>
             <div className="flex flex-col gap-2 overflow-y-auto max-h-[150px]">
-              {holdings.map((stock, idx) => (
+              {stock.map((s, idx) => (
                 <div
                   key={idx}
-                  className="bg-[#2a2a2a] px-4 py-2 rounded-lg flex items-center gap-3"
+                  className={`px-4 py-2 rounded-lg flex items-center gap-3 cursor-pointer ${
+                    s._id === params.stock_code
+                      ? "bg-[#396FFB]"
+                      : "bg-[#313136]"
+                  }`}
+                  onClick={() => {
+                    router.push(`/investment/${s._id}`, { scroll: false });
+                  }}
                 >
-                  <Image
-                    src={stock.icon}
-                    alt={stock.name}
-                    width={28}
-                    height={28}
-                  />
-                  <span>{stock.name}</span>
+                  {s.logo && (
+                    <Image
+                      src={s.logo}
+                      alt={s.name}
+                      width={28}
+                      height={28}
+                      className="rounded-full"
+                    />
+                  )}
+
+                  <span>{s.name}</span>
                 </div>
               ))}
             </div>
