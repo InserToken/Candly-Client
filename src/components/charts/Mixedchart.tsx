@@ -51,8 +51,8 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
   const maxVisibleItems = 10;
   const shouldScroll = data.length > maxVisibleItems;
 
-  const fixedItemWidth = 40;
-  const fixedItemSpacing = 60;
+  const fixedItemWidth = 30;
+  const fixedItemSpacing = 50;
 
   const actualChartWidth = shouldScroll
     ? data.length * fixedItemSpacing
