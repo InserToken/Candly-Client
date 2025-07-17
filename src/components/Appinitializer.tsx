@@ -8,6 +8,12 @@ export default function AppInitializer() {
 
   useEffect(() => {
     loadHolidays();
+
+    const interval = setInterval(() => {
+      loadHolidays();
+    }, 1000 * 60 * 60 * 24);
+
+    return () => clearInterval(interval);
   }, []);
 
   return null;

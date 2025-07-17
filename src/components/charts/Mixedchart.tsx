@@ -100,6 +100,8 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
     return `${d.getMonth() + 1}/${d.getDate()}`;
   };
 
+  // (이전 날짜 차이 기반 코드 제거)
+
   const gridLines = getGridLines();
 
   return (
@@ -210,7 +212,7 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
                         fill={isRising ? "#3B82F6" : "#EF4444"}
                         stroke={isRising ? "#3B82F6" : "#EF4444"}
                         strokeWidth="1"
-                        rx={10}
+                        rx={4}
                       />
                       <text
                         x={x}
