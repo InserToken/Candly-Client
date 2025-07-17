@@ -29,8 +29,8 @@ export default function CandleChart({ w, h, data }: CandleChartProps) {
   const maxVisibleCandles = 10;
   const shouldScroll = data.length > maxVisibleCandles;
 
-  const fixedCandleWidth = 40;
-  const fixedCandleSpacing = 60;
+  const fixedCandleWidth = 30;
+  const fixedCandleSpacing = 50;
 
   const actualChartWidth = shouldScroll
     ? data.length * fixedCandleSpacing
