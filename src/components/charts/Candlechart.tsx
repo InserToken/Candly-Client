@@ -65,7 +65,7 @@ export default function CandleChart({
 
   // 휠 줌 (마우스 위치 기준)
   const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
+    // e.preventDefault();
     const oldVisible = visibleCandles;
     let nextVisible = oldVisible;
     if (e.deltaY < 0)
@@ -105,17 +105,6 @@ export default function CandleChart({
     document.body.style.cursor = "";
   };
 
-  // 좌우 버튼 이동
-  const moveLeft = () =>
-    setStartIndex((cur) => Math.max(0, cur - Math.ceil(visibleCandles / 3)));
-  const moveRight = () =>
-    setStartIndex((cur) =>
-      Math.min(
-        data.length - visibleCandles,
-        cur + Math.ceil(visibleCandles / 3)
-      )
-    );
-
   // 보여줄 데이터 구간
   const slicedData = data.slice(startIndex, startIndex + visibleCandles);
 
@@ -148,8 +137,9 @@ export default function CandleChart({
 
   // TradingView 스타일: SVG width 고정, candleSpacing만 조절
   const chartWidth = w - LEFT_AXIS_WIDTH;
-  const candleSpacing = chartWidth / visibleCandles;
-  const candleWidth = Math.min(40, candleSpacing * 0.7);
+  const candleSpacing =
+    visibleCandles > 1 ? chartWidth / (visibleCandles - 1) : chartWidth;
+  const candleWidth = Math.min(40, candleSpacing * 0.7, 24);
 
   const getY = (price: number) =>
     chartHeight - ((price - chartMin) / chartRange) * chartHeight;
@@ -185,9 +175,7 @@ export default function CandleChart({
     return maArr
       .map((val, i) =>
         val !== null
-          ? `${i * candleSpacing + candleSpacing / 2},${
-              getY(val) + BOTTOM_PADDING
-            }`
+          ? `${i * candleSpacing},${getY(val) + BOTTOM_PADDING}`
           : null
       )
       .filter(Boolean)
@@ -201,17 +189,6 @@ export default function CandleChart({
   return (
     <div className="flex flex-col" style={{ width: w }}>
       {/* ==== 컨트롤 ==== */}
-      <div className="flex gap-2 mb-2 items-center">
-        <button onClick={moveLeft}>◀️</button>
-        <button onClick={moveRight}>▶️</button>
-        <span>
-          {startIndex + 1} ~{" "}
-          {Math.min(startIndex + visibleCandles, data.length)} / {data.length}
-        </span>
-        <span style={{ marginLeft: 10, fontSize: 12 }}>
-          (휠로 줌, 드래그로 이동)
-        </span>
-      </div>
       <div className="flex" style={{ width: w }}>
         {/* ==== 왼쪽 가격축 ==== */}
         <svg width={LEFT_AXIS_WIDTH} height={chartHeight + BOTTOM_PADDING * 2}>
@@ -247,7 +224,7 @@ export default function CandleChart({
           <svg
             width={chartWidth}
             height={chartHeight + BOTTOM_PADDING * 2}
-            style={{ userSelect: "none", background: "#000" }}
+            style={{ userSelect: "none", background: "#1b1b1b" }}
           >
             {/* === 그리드 === */}
             {getGridLines().map((line, i) => (
@@ -286,7 +263,7 @@ export default function CandleChart({
             />
             {/* === 캔들 === */}
             {slicedData.map((candle, i) => {
-              const x = i * candleSpacing + candleSpacing / 2;
+              const x = i * candleSpacing;
               const isRising = candle.close > candle.open;
               const bodyTop =
                 getY(Math.max(candle.open, candle.close)) + BOTTOM_PADDING;
