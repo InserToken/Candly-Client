@@ -65,7 +65,7 @@ export default function CandleChart({
 
   // 휠 줌 (마우스 위치 기준)
   const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
+    // e.preventDefault();
     const oldVisible = visibleCandles;
     let nextVisible = oldVisible;
     if (e.deltaY < 0)
