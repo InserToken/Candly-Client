@@ -1,5 +1,5 @@
 import MyPageInvestment from "@/components/blocks/MyPageInvestment";
-import MyPageProblem from "@/components/blocks/MyPageProblem";
+import MyPagePractice from "@/components/blocks/MyPagePractice";
 
 export default function MyPage() {
   return (
@@ -10,7 +10,7 @@ export default function MyPage() {
         <div className="px-5">
           {/* 연습문제 히스토리 */}
           <section className="mb-16">
-            <MyPageProblem />
+            <MyPagePractice />
           </section>
 
           {/* 실전투자 히스토리 */}
