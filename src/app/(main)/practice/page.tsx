@@ -1,4 +1,10 @@
 import React from "react";
-export default function Page() {
-  return <div>마이페이지</div>;
+import PracticeList from "@/components/blocks/PracticeList";
+
+export default function PracticeListPage() {
+  return (
+    <div>
+      <PracticeList />
+    </div>
+  );
 }

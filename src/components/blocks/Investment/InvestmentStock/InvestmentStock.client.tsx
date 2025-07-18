@@ -4,8 +4,14 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import MixedChart from "@/components/charts/Mixedchart";
 import { ChartData } from "@/components/charts/Mixedchart";
-import { parseDateString, dateToString, getNextDateString } from "@/utils/date";
+import {
+  parseDateString,
+  dateToString,
+  getNextDateString,
+  isValidTradingDate,
+} from "@/utils/date";
 import { interpolateBetween } from "@/utils/interpolate";
+import useHolidayStore from "@/stores/useHolidayStore";
 import { useAuthStore } from "@/stores/authStore";
 import { getStock } from "@/services/userStock-service";
 import { Stocks } from "@/types/UserStock";
@@ -109,14 +115,21 @@ export default function InvestmentStockClient() {
     prediction.length > 0
       ? prediction[prediction.length - 1].date
       : mixedStockData[mixedStockData.length - 1].date;
+  const holidaySet = useHolidayStore((state) => state.holidaySet);
+
   const initialLatestDate =
-    prediction && prediction.length > 0
+    prediction.length > 0
       ? prediction[prediction.length - 1].date
       : mixedStockData[mixedStockData.length - 1].date;
 
-  const [inputDate, setInputDate] = useState(
-    getNextDateString(initialLatestDate)
-  );
+  const [inputDate, setInputDate] = useState(initialLatestDate);
+
+  useEffect(() => {
+    if (holidaySet) {
+      const nextDate = getNextDateString(inputDate);
+      setInputDate(nextDate);
+    }
+  }, [holidaySet]);
 
   const [inputclose, setInputclose] = useState(lastClose);
 
@@ -298,40 +311,45 @@ export default function InvestmentStockClient() {
 
                                 // 양쪽 예측값이 존재할 경우 보간으로 다시 이어줌
                                 if (prev && next) {
-                                  const prevDate = parseDateString(prev.date);
-                                  const nextDate = parseDateString(next.date);
-                                  const daysDiff =
-                                    (nextDate.getTime() - prevDate.getTime()) /
+                                  const interpolatedItems: ChartData[] = [];
+
+                                  let current = parseDateString(prev.date);
+                                  const end = parseDateString(next.date);
+
+                                  const totalDays =
+                                    (end.getTime() - current.getTime()) /
                                     (1000 * 60 * 60 * 24);
 
-                                  // 보간 필요시
-                                  if (daysDiff > 1) {
-                                    const interpolatedItems = [];
+                                  let i = 1;
+                                  while (true) {
+                                    current.setDate(current.getDate() + 1);
+                                    const currentStr = dateToString(current);
 
-                                    for (let i = 1; i < daysDiff; i++) {
-                                      const newDate = new Date(prevDate);
-                                      newDate.setDate(prevDate.getDate() + i);
+                                    if (!isValidTradingDate(currentStr))
+                                      continue;
+                                    if (currentStr === next.date) break;
 
-                                      const newclose = Math.round(
-                                        prev.close +
-                                          ((next.close - prev.close) * i) /
-                                            daysDiff
-                                      );
-
-                                      interpolatedItems.push({
-                                        date: dateToString(newDate),
-                                        close: newclose,
-                                        type: "dot" as const,
-                                      });
-                                    }
-
-                                    // prev 다음 위치에 삽입 (splice 위치 재계산 주의)
-                                    newList.splice(
-                                      idx - 1 + 1,
-                                      0,
-                                      ...interpolatedItems
+                                    const interpolatedClose = Math.round(
+                                      prev.close +
+                                        ((next.close - prev.close) * i) /
+                                          totalDays
                                     );
+
+                                    interpolatedItems.push({
+                                      date: currentStr,
+                                      close: interpolatedClose,
+                                      type: "dot",
+                                    });
+
+                                    i++;
                                   }
+
+                                  // prev 다음 위치에 삽입
+                                  newList.splice(
+                                    idx - 1 + 1,
+                                    0,
+                                    ...interpolatedItems
+                                  );
                                 }
 
                                 setPrediction(newList);
@@ -370,7 +388,10 @@ export default function InvestmentStockClient() {
                           type="text"
                           value={inputDate}
                           onChange={(e) => setInputDate(e.target.value)}
-                          className="bg-[#1b1b1b] border border-[#2a2a2a] rounded px-3 py-1 text-white w-full"
+                          readOnly={editIndex !== null}
+                          className={`bg-[#1b1b1b] border border-[#2a2a2a] rounded px-3 py-1 text-white w-full ${
+                            editIndex !== null ? "cursor-not-allowed" : ""
+                          }`}
                         />
                       </td>
                     </tr>
@@ -423,6 +444,13 @@ export default function InvestmentStockClient() {
                                   return;
                                 }
 
+                                const inputDateObj = parseDateString(inputDate);
+
+                                if (inputDateObj.getFullYear() >= 2027) {
+                                  alert("2026년까지의 날짜만 예측 가능합니다.");
+                                  return;
+                                }
+
                                 const existingDates = prediction.map(
                                   (p) => p.date
                                 );
@@ -438,7 +466,6 @@ export default function InvestmentStockClient() {
                                         .date;
 
                                 const lastDate = parseDateString(lastDateStr);
-                                const inputDateObj = parseDateString(inputDate);
 
                                 if (inputDateObj <= lastDate) {
                                   alert(
@@ -447,52 +474,70 @@ export default function InvestmentStockClient() {
                                   return;
                                 }
 
-                                const daysDiff =
-                                  (inputDateObj.getTime() -
-                                    lastDate.getTime()) /
-                                  (1000 * 60 * 60 * 24);
+                                if (!isValidTradingDate(inputDate)) {
+                                  alert(
+                                    "입력한 날짜는 공휴일 또는 주말입니다. 영업일만 입력 가능합니다."
+                                  );
+                                  return;
+                                }
 
                                 const newprediction = [...prediction];
 
-                                if (daysDiff > 1) {
-                                  for (let i = 1; i < daysDiff; i++) {
-                                    const interpolatedDate = new Date(lastDate);
-                                    interpolatedDate.setDate(
-                                      interpolatedDate.getDate() + i
-                                    );
+                                let current = new Date(lastDate);
+                                const msPerDay = 24 * 60 * 60 * 1000;
+                                let businessDayCount = 0;
 
-                                    const interpolatedStr =
-                                      dateToString(interpolatedDate);
+                                // 먼저 영업일 수 계산 (중간 날짜)
+                                // 영업일 날짜 배열 생성
+                                const holidaySet =
+                                  useHolidayStore.getState().holidaySet;
+                                const intermediateDates: string[] = [];
 
-                                    const interpolatedclose = Math.round(
-                                      lastClose +
-                                        ((inputclose - lastClose) * i) /
-                                          daysDiff
-                                    );
+                                while (current < inputDateObj) {
+                                  current = new Date(
+                                    current.getTime() + msPerDay
+                                  );
+                                  const currentStr = dateToString(current);
 
-                                    newprediction.push({
-                                      date: interpolatedStr,
-                                      close: interpolatedclose,
-                                      type: "dot",
-                                    });
-                                  }
+                                  // 영업일 체크
+                                  if (!isValidTradingDate(currentStr)) continue;
+
+                                  if (currentStr === inputDate) break;
+                                  intermediateDates.push(currentStr);
                                 }
 
-                                // 마지막 날짜 추가
+                                const totalBusinessDays =
+                                  intermediateDates.length + 1; // 중간 영업일 + 마지막 입력일
+
+                                // 중간 보간값 추가
+                                intermediateDates.forEach((dateStr, idx) => {
+                                  const interpolatedClose = Math.round(
+                                    lastClose +
+                                      ((inputclose - lastClose) * (idx + 1)) /
+                                        totalBusinessDays
+                                  );
+
+                                  newprediction.push({
+                                    date: dateStr,
+                                    close: interpolatedClose,
+                                    type: "dot",
+                                  });
+                                });
+
+                                // 마지막 입력 예측 추가
                                 newprediction.push({
                                   date: inputDate,
                                   close: inputclose,
                                   type: "dot",
                                 });
 
-                                // 정렬
+                                // 날짜 기준 정렬
                                 newprediction.sort(
                                   (a, b) =>
                                     parseDateString(a.date).getTime() -
                                     parseDateString(b.date).getTime()
                                 );
 
-                                // set
                                 setPrediction(newprediction);
                                 setInputDate(getNextDateString(inputDate));
                               }}
@@ -552,12 +597,16 @@ export default function InvestmentStockClient() {
                     router.push(`/investment/${s._id}`, { scroll: false });
                   }}
                 >
-                  {/* <Image
-                    src={stock.icon}
-                    alt={stock.name}
-                    width={28}
-                    height={28}
-                  /> */}
+                  {s.logo && (
+                    <Image
+                      src={s.logo}
+                      alt={s.name}
+                      width={28}
+                      height={28}
+                      className="rounded-full"
+                    />
+                  )}
+
                   <span>{s.name}</span>
                 </div>
               ))}

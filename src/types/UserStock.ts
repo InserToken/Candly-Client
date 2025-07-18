@@ -7,6 +7,7 @@ export interface UserStock {
   stock_code: {
     _id: string;
     name: string;
+    logo: string;
   };
   cumulative_score: number;
 }
@@ -14,4 +15,5 @@ export interface UserStock {
 export interface Stocks {
   _id: string;
   name: string;
+  logo: string;
 }
