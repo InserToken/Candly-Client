@@ -1,11 +1,27 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import ClickCard from "@/components/buttons/ClickCard";
 import CandleChart from "@/components/charts/Candlechart";
 import { fetchPracticeProblem } from "@/services/fetchPracticeProblem";
 import { fetchPracticeNews } from "@/services/fetchPracticeNews";
+
+type PriceItem = {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+};
+
+type PracticeProblemData = {
+  title: string;
+  prices: PriceItem[];
+  stock_code: string;
+  date: string;
+  problemtype: string;
+};
 
 type NewsItem = {
   _id: string;
@@ -17,35 +33,35 @@ type NewsItem = {
 };
 
 // 뉴스 더미데이터
-const newsList = [
-  {
-    title:
-      "‘반도체 쇼크’ 삼성전자, 2분기 영업익 4조6000억원... 전년보다 56% 추락",
-    source: "Chosun Biz",
-    date: "2025.07.08.",
-    newsicon: "/button.svg",
-    content:
-      "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
-  },
-  {
-    title:
-      "‘반도체 쇼크’ 삼성전자, 2분기 영업익 4조6000억원... 전년보다 56% 추락",
-    source: "MK 뉴스",
-    date: "2025.07.08.",
-    newsicon: "/button.svg",
-    content:
-      "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
-  },
-  {
-    title:
-      "‘반도체 쇼크’ 삼성전자, 2분기 영업익 4조6000억원... 전년보다 56% 추락",
-    source: "SBS 뉴스",
-    date: "2025.07.08.",
-    newsicon: "/button.svg",
-    content:
-      "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
-  },
-];
+// const newsList = [
+//   {
+//     title:
+//       "‘반도체 쇼크’ 삼성전자, 2분기 영업익 4조6000억원... 전년보다 56% 추락",
+//     source: "Chosun Biz",
+//     date: "2025.07.08.",
+//     newsicon: "/button.svg",
+//     content:
+//       "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
+//   },
+//   {
+//     title:
+//       "‘반도체 쇼크’ 삼성전자, 2분기 영업익 4조6000억원... 전년보다 56% 추락",
+//     source: "MK 뉴스",
+//     date: "2025.07.08.",
+//     newsicon: "/button.svg",
+//     content:
+//       "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
+//   },
+//   {
+//     title:
+//       "‘반도체 쇼크’ 삼성전자, 2분기 영업익 4조6000억원... 전년보다 56% 추락",
+//     source: "SBS 뉴스",
+//     date: "2025.07.08.",
+//     newsicon: "/button.svg",
+//     content:
+//       "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
+//   },
+// ];
 
 // 주식 더미데이터
 // const stockData = [
@@ -61,31 +77,56 @@ const newsList = [
 export default function PracticeClient() {
   const [input, setInput] = useState("");
   const [tab, setTab] = useState<"chart" | "finance">("chart");
-  const params = useParams<{
-    problemId: string;
-  }>();
-  const [problemData, setProblemData] = useState([]);
+  const params = useParams<{ problemId: string }>();
+  const [problemData, setProblemData] = useState<PracticeProblemData | null>(
+    null
+  );
   const [news, setNews] = useState<NewsItem[]>([]);
+  const stockData = problemData?.prices;
 
-  const stockData = problemData.prices;
+  // === 차트 부모 width 동적 측정 ===
+  const chartBoxRef = useRef<HTMLDivElement>(null);
+  const [parentWidth, setParentWidth] = useState(780); // 초기값: 적당히 780
 
+  useEffect(() => {
+    function updateWidth() {
+      if (chartBoxRef.current) {
+        setParentWidth(chartBoxRef.current.offsetWidth);
+      }
+    }
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
+  }, []);
+
+  // ===== 데이터 패칭 =====
   useEffect(() => {
     fetchPracticeProblem(params.problemId).then((data) => {
       setProblemData(data);
     });
-  }, []);
+  }, [params.problemId]);
 
   useEffect(() => {
     fetchPracticeNews(params.problemId).then((data) => {
       setNews(data);
-      console.log(data);
     });
-  }, []);
+  }, [params.problemId]);
+
+  // ===== 이동평균 계산 함수 (for CandleChart) =====
+  function getMovingAverage(data: PriceItem[], period: number) {
+    if (!Array.isArray(data)) return [];
+    return data.map((d, i) => {
+      if (i < period - 1) return null;
+      const slice = data.slice(i - period + 1, i + 1);
+      const avg = slice.reduce((acc, cur) => acc + cur.close, 0) / period;
+      return avg;
+    });
+  }
 
   return (
     <div className="min-h-screen px-[80px] pt-1">
-      <h2 className=" mb-3 text-2xl">{problemData.title}</h2>
-      <main className=" flex flex-col lg:flex-row gap-6">
+      <h2 className="mb-3 text-2xl">{problemData?.title}</h2>
+      <main className="flex flex-col lg:flex-row gap-6">
         {/* 왼쪽 영역 */}
         <section className="flex-1 max-w-[894px]">
           <div className="text-sm text-gray-300 mb-4">
@@ -109,8 +150,6 @@ export default function PracticeClient() {
               >
                 재무 정보
               </button>
-
-              {/* 지표  */}
               {tab === "chart" && (
                 <div className="flex flex-wrap gap-4 items-center justify-end text-sm text-gray-300 ml-auto pr-3">
                   <span className="flex items-center gap-1">
@@ -118,7 +157,7 @@ export default function PracticeClient() {
                     <span className="text-[#00D5C0]">5</span> ·
                     <span className="text-[#E8395F]">20</span> ·
                     <span className="text-[#F87800]">60</span> ·
-                    <span className="text-[#7339FB]">120</span>
+                    <span className="text-[#]">120</span>
                   </span>
                   <span className="text-[#EDCB37]">볼린저밴드</span> |
                   <span className="text-[#396FFB]">거래량</span>
@@ -127,21 +166,24 @@ export default function PracticeClient() {
                 </div>
               )}
             </div>
-
             {/* 콘텐츠 영역 */}
             {tab === "chart" && (
-              <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400 pb-1">
+              <div
+                className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center w-full text-gray-400 pb-1"
+                ref={chartBoxRef}
+              >
                 {Array.isArray(stockData) ? (
-                  // 문제(20일)
-                  <CandleChart w={780} h={320} data={stockData.slice(0, 20)} />
+                  <CandleChart
+                    w={parentWidth}
+                    h={320}
+                    data={stockData}
+                    indi_data={stockData}
+                  />
                 ) : (
-                  // 정답(40일)
-                  // <CandleChart w={600} h={300} data={stockData} />
-                  <div>로딩 중...</div>
+                  <div>문제가 없습니다.</div>
                 )}
               </div>
             )}
-
             {tab === "finance" && (
               <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400">
                 재무 정보 준비중...
@@ -170,55 +212,56 @@ export default function PracticeClient() {
             </div>
           </div>
         </section>
-
         {/* 오른쪽 영역 */}
         <aside className="w-full lg:w-[400px] shrink-0 flex flex-col gap-4">
           <div className="flex justify-between">
             <ClickCard name="힌트" icon="hint.svg" />
             <ClickCard name="답변 랭킹" icon="ranking.svg" />
           </div>
-
           {/* 뉴스 */}
           <div className="mt-4">
             <p className="text-2xl font-semibold mb-3.5">관련 뉴스</p>
             <div className="flex flex-col gap-3 max-h-[450px] overflow-y-auto">
-              {news.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="bg-[#1b1b1b] rounded-xl p-4 text-sm flex gap-4"
-                >
-                  {item.img_url && (
-                    <Image
-                      src={item.img_url}
-                      alt="뉴스 이미지"
-                      width={80}
-                      height={80}
-                      className="rounded object-cover flex-shrink-0" //잘림 허용
-                    />
-                  )}
-
-                  <div className="flex flex-col justify-between w-full">
-                    <div>
-                      <div className="font-semibold mb-1">
-                        <a
-                          href={item.news_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:underline"
-                        >
-                          {item.title}
-                        </a>
+              {Array.isArray(news) && news.length > 0 ? (
+                news.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-[#1b1b1b] rounded-xl p-4 text-sm flex gap-4"
+                  >
+                    {item.img_url && (
+                      <Image
+                        src={item.img_url}
+                        alt="뉴스 이미지"
+                        width={80}
+                        height={80}
+                        className="rounded object-cover flex-shrink-0"
+                      />
+                    )}
+                    <div className="flex flex-col justify-between w-full">
+                      <div>
+                        <div className="font-semibold mb-1">
+                          <a
+                            href={item.news_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline"
+                          >
+                            {item.title}
+                          </a>
+                        </div>
+                        <div className="text-[#C7C7C7] text-xs font-thin line-clamp-2">
+                          {item.context}
+                        </div>
                       </div>
-                      <div className="text-[#C7C7C7] text-xs font-thin line-clamp-2">
-                        {item.context}
+                      <div className="text-gray-400 text-xs mt-2 self-end">
+                        {item.date}
                       </div>
-                    </div>
-                    <div className="text-gray-400 text-xs mt-2 self-end">
-                      {item.date}
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <div className="text-gray-400 text-sm">뉴스가 없습니다.</div>
+              )}
             </div>
           </div>
         </aside>
