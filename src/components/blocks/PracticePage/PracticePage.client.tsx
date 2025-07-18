@@ -69,9 +69,53 @@ export default function PracticeClient() {
 
   const stockData = problemData.prices;
 
+  // 이동평균 계산 함수 (컴포넌트 안에 선언)
+  function getMovingAverage(data, period) {
+    if (!Array.isArray(data)) return [];
+    return data.map((d, i) => {
+      if (i < period - 1) return null;
+      const slice = data.slice(i - period + 1, i + 1);
+      const avg = slice.reduce((acc, cur) => acc + cur.close, 0) / period;
+      return avg;
+    });
+  }
+
+  // 120일치 데이터 준비
+  const chartData = Array.isArray(stockData) ? stockData.slice(0, 140) : [];
+
+  // // MA20, MA60, MA120 계산
+  // const ma20 = getMovingAverage(chartData, 20);
+  // const ma60 = getMovingAverage(chartData, 60);
+  // const ma120 = getMovingAverage(chartData, 120);
+
+  // const last20MA20 = ma20.slice(-20); // 20일 전~기준일까지 MA20
+  // const last20MA60 = ma60.slice(-20);
+  // const last20MA120 = ma120.slice(-20);
+
+  // // 값 콘솔 출력
+  // useEffect(() => {
+  //   if (ma20.length > 0) {
+  //     console.log("MA20:", ma20);
+  //     console.log("MA60:", ma60);
+  //     console.log("MA120:", ma120);
+
+  //     console.log("slice MA20:", last20MA20);
+  //     console.log("slice MA60:", last20MA60);
+  //     console.log("slice MA120:", last20MA120);
+  //   }
+  // }, [stockData]);
+
   useEffect(() => {
     fetchPracticeProblem(params.problemId).then((data) => {
       setProblemData(data);
+    });
+  }, []);
+
+  // 찍어보기
+  useEffect(() => {
+    fetchPracticeProblem(params.problemId).then((data) => {
+      setProblemData(data);
+      console.log("🔥 fetchPracticeProblem 결과:", data);
     });
   }, []);
 
@@ -118,7 +162,7 @@ export default function PracticeClient() {
                     <span className="text-[#00D5C0]">5</span> ·
                     <span className="text-[#E8395F]">20</span> ·
                     <span className="text-[#F87800]">60</span> ·
-                    <span className="text-[#7339FB]">120</span>
+                    <span className="text-[#]">120</span>
                   </span>
                   <span className="text-[#EDCB37]">볼린저밴드</span> |
                   <span className="text-[#396FFB]">거래량</span>
@@ -127,13 +171,17 @@ export default function PracticeClient() {
                 </div>
               )}
             </div>
-
             {/* 콘텐츠 영역 */}
             {tab === "chart" && (
               <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400 pb-1">
                 {Array.isArray(stockData) ? (
                   // 문제(20일)
-                  <CandleChart w={780} h={320} data={stockData.slice(0, 20)} />
+                  <CandleChart
+                    w={780}
+                    h={320}
+                    data={stockData.slice(120, 140)}
+                    indi_data={stockData.slice(0, 140)}
+                  />
                 ) : (
                   // 정답(40일)
                   // <CandleChart w={600} h={300} data={stockData} />
@@ -141,7 +189,6 @@ export default function PracticeClient() {
                 )}
               </div>
             )}
-
             {tab === "finance" && (
               <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400">
                 재무 정보 준비중...
