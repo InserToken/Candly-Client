@@ -33,7 +33,7 @@ export default function FinanceTable() {
       const eps = parseFloat(epsRaw.replace(/,/g, ""));
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/stock-price?code=${stockCode}`
+        `${process.env.NEXT_PUBLIC_API_URL}/api/currentStock/stock-price?code=${stockCode}`
       );
       const json = await res.json();
       const price = json.price;
@@ -113,11 +113,6 @@ const financeData: Section[] = [
       { name: "사업 연도", keyName: "bsns_year", value: "2024" },
       { name: "보고서 코드", keyName: "report_code", value: "11011" },
       { name: "보고서명", keyName: "report_name", value: "2024년 1분기" },
-      {
-        name: "재무제표 요약",
-        keyName: "summary",
-        value: "전년 대비 매출 증가",
-      },
     ],
   },
   {

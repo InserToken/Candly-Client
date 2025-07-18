@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import MixedChart from "@/components/charts/Mixedchart";
@@ -156,6 +156,10 @@ export default function InvestmentStockClient() {
   const params = useParams<{
     stock_code: string;
   }>();
+
+  useEffect(() => {
+    console.log(`${tab} 바뀜`);
+  }, [tab]);
 
   return (
     <div className="min-h-screen px-[80px] pt-1">
@@ -547,7 +551,10 @@ export default function InvestmentStockClient() {
             <p className="text-2xl font-semibold mb-3.5">관련 뉴스</p>
             <div className="flex flex-col gap-3 max-h-[450px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-[#444] scrollbar-track-transparent">
               {newsList.map((news, idx) => (
-                <div key={idx} className="bg-[#1b1b1b] rounded-xl p-4 text-sm">
+                <div
+                  key={idx}
+                  className="bg-[#1b1b1b] rounded-xl p-4 text-sm relative z-0"
+                >
                   <div className="flex pb-2">
                     <Image
                       src={news.newsicon}

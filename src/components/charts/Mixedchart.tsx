@@ -101,7 +101,7 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 rounded-lg">
+    <div className="max-w-6xl mx-auto rounded-lg">
       {data.length > 0 && (
         <div className="mb-6">
           <div className="relative rounded-lg p-4">
