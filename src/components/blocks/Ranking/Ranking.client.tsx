@@ -7,9 +7,9 @@ export default function RankingClient() {
     <div className="flex justify-center items-center gap-20 bg-[#0f0f0f] pt-28 pb-20">
       {/* 연습문제 카드 */}
       <Link href="/ranking/practice" className="group">
-        <div className="group bg-[#1C1C20] hover:bg-[#396FFB] rounded-2xl p-6 w-[450px] h-[450px] text-center shadow-lg flex items-center justify-center cursor-pointer">
-          <div>
-            <h2 className="text-[#F4F4F4] text-3xl font-semibold mb-3">
+        <div className="group bg-[#1C1C20] hover:bg-[#396FFB] transition-colors rounded-2xl p-6 pb-20 w-[400px] h-[530px] text-center shadow-lg flex flex-col cursor-pointer">
+          <div className="pt-16 pb-5">
+            <h2 className="text-[#F4F4F4] text-4xl font-semibold mb-3">
               연습문제 랭킹
             </h2>
             <p className="text-[#F4F4F4] text-xl whitespace-nowrap">
@@ -35,8 +35,8 @@ export default function RankingClient() {
 
       {/* 실전예측 카드 */}
       <Link href="/ranking/real" className="group">
-        <div className="group bg-[#1C1C20] hover:bg-[#396FFB] rounded-2xl p-6 w-[450px] h-[450px] text-center shadow-lg flex items-center justify-center cursor-pointer">
-          <div>
+        <div className="group bg-[#1C1C20] hover:bg-[#396FFB] rounded-2xl p-6 w-[400px] h-[530px] text-center shadow-lg flex flex-col cursor-pointer">
+          <div className="pt-16 pb-9">
             <h2 className="text-[#F4F4F4] text-3xl font-semibold mb-3">
               실전예측 랭킹
             </h2>
