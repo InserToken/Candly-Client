@@ -17,37 +17,38 @@ import { getStock } from "@/services/userStock-service";
 import { Stocks } from "@/types/UserStock";
 import { useRouter } from "next/navigation";
 import FinanceTable from "@/components/charts/FinanceTable";
+import { fetchRealNews } from "@/services/fetchRealNews";
 
 // 뉴스 더미데이터
-const newsList = [
-  {
-    title:
-      "‘반도체 쇼크’ 삼성전자, 2분기 영업익 4조6000억원... 전년보다 56% 추락",
-    source: "Chosun Biz",
-    date: "2025.07.08.",
-    newsicon: "/button.svg",
-    content:
-      "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
-  },
-  {
-    title:
-      "‘반도체 쇼크’ 삼성전자, 2분기 영업익 4조6000억원... 전년보다 56% 추락",
-    source: "MK 뉴스",
-    date: "2025.07.08.",
-    newsicon: "/button.svg",
-    content:
-      "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
-  },
-  {
-    title:
-      "‘반도체 쇼크’ 삼성전자, 2분기 영업익 4조6000억원... 전년보다 56% 추락",
-    source: "SBS 뉴스",
-    date: "2025.07.08.",
-    newsicon: "/button.svg",
-    content:
-      "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
-  },
-];
+// const newsList = [
+//   {
+//     title:
+//       "‘반도체 쇼크’ 삼성전자, 2분기 영업익 4조6000억원... 전년보다 56% 추락",
+//     source: "Chosun Biz",
+//     date: "2025.07.08.",
+//     newsicon: "/button.svg",
+//     content:
+//       "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
+//   },
+//   {
+//     title:
+//       "‘반도체 쇼크’ 삼성전자, 2분기 영업익 4조6000억원... 전년보다 56% 추락",
+//     source: "MK 뉴스",
+//     date: "2025.07.08.",
+//     newsicon: "/button.svg",
+//     content:
+//       "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
+//   },
+//   {
+//     title:
+//       "‘반도체 쇼크’ 삼성전자, 2분기 영업익 4조6000억원... 전년보다 56% 추락",
+//     source: "SBS 뉴스",
+//     date: "2025.07.08.",
+//     newsicon: "/button.svg",
+//     content:
+//       "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
+//   },
+// ];
 
 // 예측값 더미데이터
 // const prediction = [{ date: "2025-01-07", close: 62000 }];
@@ -106,6 +107,7 @@ const mixedStockData: ChartData[] = [
 export default function InvestmentStockClient() {
   const router = useRouter();
   const auth = useAuthStore((s) => s.auth);
+
   const [tab, setTab] = useState<"chart" | "finance">("chart");
   const [prediction, setPrediction] = useState<ChartData[]>([]);
   const lastClose =
@@ -146,6 +148,8 @@ export default function InvestmentStockClient() {
   useEffect(() => {
     const fetchData = async () => {
       const token = sessionStorage.getItem("token");
+      if (!token) return;
+
       const result = await getStock(token);
       setStock(result.stocks);
       console.log("사용자의 보유주식 조회:", result.stocks);
@@ -183,6 +187,21 @@ export default function InvestmentStockClient() {
   useEffect(() => {
     console.log(`${tab} 바뀜`);
   }, [tab]);
+  type NewsItem = {
+    _id: string;
+    title: string;
+    date: string;
+    context: string;
+    news_url: string;
+    img_url?: string;
+  };
+
+  const [news, setNews] = useState<NewsItem[]>([]);
+  useEffect(() => {
+    fetchRealNews(params.stock_code).then((data) => {
+      setNews(data);
+    });
+  }, []);
 
   return (
     <div className="min-h-screen px-[80px] pt-1">
@@ -589,7 +608,7 @@ export default function InvestmentStockClient() {
         <aside className="w-full lg:w-[400px] shrink-0 flex flex-col gap-4">
           {/* 보유 주식 */}
           <div>
-            <p className="text-xl font-semibold mb-3">보유 주식</p>
+            <p className="text-2xl  mb-3.5">보유 주식</p>
             <div className="flex flex-col gap-2 overflow-y-auto max-h-[150px]">
               {stock.map((s, idx) => (
                 <div
@@ -621,35 +640,75 @@ export default function InvestmentStockClient() {
 
           {/* 뉴스 */}
           <div className="mt-4">
-            <p className="text-2xl font-semibold mb-3.5">관련 뉴스</p>
-            <div className="flex flex-col gap-3 max-h-[450px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-[#444] scrollbar-track-transparent">
-              {newsList.map((news, idx) => (
-                <div
-                  key={idx}
-                  className="bg-[#1b1b1b] rounded-xl p-4 text-sm relative z-0"
-                >
-                  <div className="flex pb-2">
-                    <Image
-                      src={news.newsicon}
-                      alt="언론사 로고"
-                      height={40}
-                      width={40}
-                      className="pr-3"
-                    />
-                    <div className="font-semibold">{news.title}</div>
+            <p className="text-2xl mb-3.5">관련 뉴스</p>
+            <div className="flex flex-col gap-3 max-h-[450px] overflow-y-auto">
+              {Array.isArray(news) && news.length > 0 ? (
+                news.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-[#1b1b1b] rounded-xl p-4 text-sm flex gap-4"
+                  >
+                    {item.img_url && (
+                      <Image
+                        src={item.img_url}
+                        alt="뉴스 이미지"
+                        width={80}
+                        height={80}
+                        className="rounded object-cover flex-shrink-0"
+                      />
+                    )}
+
+                    <div className="flex flex-col justify-between w-full">
+                      <div>
+                        <div className="font-semibold mb-1">
+                          <a
+                            href={item.news_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline"
+                          >
+                            {item.title}
+                          </a>
+                        </div>
+                        <div className="text-[#C7C7C7] text-xs font-thin line-clamp-2">
+                          {item.context}
+                        </div>
+                      </div>
+                      <div className="text-gray-400 text-xs mt-2 self-end">
+                        {item.date}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-[#C7C7C7] text-xs font-thin">
-                    {news.content}
-                  </div>
-                  <div className="text-gray-400 mt-2 text-xs float-right">
-                    {news.source} · {news.date}
-                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center">
+                  <div className="loader mb-6" />
+                  <div className="text-gray-400 text-sm">뉴스 로딩중...</div>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </aside>
       </main>
+      <style jsx>{`
+        .loader {
+          border: 4px solid #e2e8f0;
+          border-top: 4px solid #3b82f6;
+          border-radius: 50%;
+          width: 36px;
+          height: 36px;
+          animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
     </div>
   );
 }
