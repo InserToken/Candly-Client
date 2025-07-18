@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import ClickCard from "@/components/buttons/ClickCard";
@@ -77,19 +77,43 @@ type NewsItem = {
 export default function PracticeClient() {
   const [input, setInput] = useState("");
   const [tab, setTab] = useState<"chart" | "finance">("chart");
-  const params = useParams<{
-    problemId: string;
-  }>();
+  const params = useParams<{ problemId: string }>();
   const [problemData, setProblemData] = useState<PracticeProblemData | null>(
     null
   );
-
   const [news, setNews] = useState<NewsItem[]>([]);
-
   const stockData = problemData?.prices;
 
-  // 이동평균 계산 함수 (컴포넌트 안에 선언)
-  function getMovingAverage(data, period) {
+  // === 차트 부모 width 동적 측정 ===
+  const chartBoxRef = useRef<HTMLDivElement>(null);
+  const [parentWidth, setParentWidth] = useState(780); // 초기값: 적당히 780
+
+  useEffect(() => {
+    function updateWidth() {
+      if (chartBoxRef.current) {
+        setParentWidth(chartBoxRef.current.offsetWidth);
+      }
+    }
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
+  }, []);
+
+  // ===== 데이터 패칭 =====
+  useEffect(() => {
+    fetchPracticeProblem(params.problemId).then((data) => {
+      setProblemData(data);
+    });
+  }, [params.problemId]);
+
+  useEffect(() => {
+    fetchPracticeNews(params.problemId).then((data) => {
+      setNews(data);
+    });
+  }, [params.problemId]);
+
+  // ===== 이동평균 계산 함수 (for CandleChart) =====
+  function getMovingAverage(data: PriceItem[], period: number) {
     if (!Array.isArray(data)) return [];
     return data.map((d, i) => {
       if (i < period - 1) return null;
@@ -99,56 +123,10 @@ export default function PracticeClient() {
     });
   }
 
-  // 120일치 데이터 준비
-  const chartData = Array.isArray(stockData) ? stockData.slice(0, 140) : [];
-
-  // // MA20, MA60, MA120 계산
-  // const ma20 = getMovingAverage(chartData, 20);
-  // const ma60 = getMovingAverage(chartData, 60);
-  // const ma120 = getMovingAverage(chartData, 120);
-
-  // const last20MA20 = ma20.slice(-20); // 20일 전~기준일까지 MA20
-  // const last20MA60 = ma60.slice(-20);
-  // const last20MA120 = ma120.slice(-20);
-
-  // // 값 콘솔 출력
-  // useEffect(() => {
-  //   if (ma20.length > 0) {
-  //     console.log("MA20:", ma20);
-  //     console.log("MA60:", ma60);
-  //     console.log("MA120:", ma120);
-
-  //     console.log("slice MA20:", last20MA20);
-  //     console.log("slice MA60:", last20MA60);
-  //     console.log("slice MA120:", last20MA120);
-  //   }
-  // }, [stockData]);
-
-  useEffect(() => {
-    fetchPracticeProblem(params.problemId).then((data) => {
-      setProblemData(data);
-    });
-  }, []);
-
-  // 찍어보기
-  useEffect(() => {
-    fetchPracticeProblem(params.problemId).then((data) => {
-      setProblemData(data);
-      console.log("🔥 fetchPracticeProblem 결과:", data);
-    });
-  }, []);
-
-  useEffect(() => {
-    fetchPracticeNews(params.problemId).then((data) => {
-      setNews(data);
-      console.log(data);
-    });
-  }, []);
-
   return (
     <div className="min-h-screen px-[80px] pt-1">
-      <h2 className=" mb-3 text-2xl">{problemData?.title}</h2>
-      <main className=" flex flex-col lg:flex-row gap-6">
+      <h2 className="mb-3 text-2xl">{problemData?.title}</h2>
+      <main className="flex flex-col lg:flex-row gap-6">
         {/* 왼쪽 영역 */}
         <section className="flex-1 max-w-[894px]">
           <div className="text-sm text-gray-300 mb-4">
@@ -172,8 +150,6 @@ export default function PracticeClient() {
               >
                 재무 정보
               </button>
-
-              {/* 지표  */}
               {tab === "chart" && (
                 <div className="flex flex-wrap gap-4 items-center justify-end text-sm text-gray-300 ml-auto pr-3">
                   <span className="flex items-center gap-1">
@@ -192,18 +168,18 @@ export default function PracticeClient() {
             </div>
             {/* 콘텐츠 영역 */}
             {tab === "chart" && (
-              <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400 pb-1">
+              <div
+                className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center w-full text-gray-400 pb-1"
+                ref={chartBoxRef}
+              >
                 {Array.isArray(stockData) ? (
-                  // 문제(20일)
                   <CandleChart
-                    w={780}
+                    w={parentWidth}
                     h={320}
                     data={stockData}
                     indi_data={stockData}
                   />
                 ) : (
-                  // 정답(40일)
-                  // <CandleChart w={600} h={300} data={stockData} />
                   <div>문제가 없습니다.</div>
                 )}
               </div>
@@ -236,14 +212,12 @@ export default function PracticeClient() {
             </div>
           </div>
         </section>
-
         {/* 오른쪽 영역 */}
         <aside className="w-full lg:w-[400px] shrink-0 flex flex-col gap-4">
           <div className="flex justify-between">
             <ClickCard name="힌트" icon="hint.svg" />
             <ClickCard name="답변 랭킹" icon="ranking.svg" />
           </div>
-
           {/* 뉴스 */}
           <div className="mt-4">
             <p className="text-2xl font-semibold mb-3.5">관련 뉴스</p>
@@ -263,7 +237,6 @@ export default function PracticeClient() {
                         className="rounded object-cover flex-shrink-0"
                       />
                     )}
-
                     <div className="flex flex-col justify-between w-full">
                       <div>
                         <div className="font-semibold mb-1">
