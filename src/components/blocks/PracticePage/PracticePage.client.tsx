@@ -198,8 +198,8 @@ export default function PracticeClient() {
                   <CandleChart
                     w={780}
                     h={320}
-                    data={stockData.slice(120, 140)}
-                    indi_data={stockData.slice(0, 140)}
+                    data={stockData}
+                    indi_data={stockData}
                   />
                 ) : (
                   // 정답(40일)
