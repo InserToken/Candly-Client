@@ -1,12 +1,22 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import MixedChart from "@/components/charts/Mixedchart";
 import { ChartData } from "@/components/charts/Mixedchart";
-import FinanceTable from "../../../charts/FinanceTable";
-import { parseDateString, dateToString, getNextDateString } from "@/utils/date";
+import {
+  parseDateString,
+  dateToString,
+  getNextDateString,
+  isValidTradingDate,
+} from "@/utils/date";
 import { interpolateBetween } from "@/utils/interpolate";
+import useHolidayStore from "@/stores/useHolidayStore";
+import { useAuthStore } from "@/stores/authStore";
+import { getStock } from "@/services/userStock-service";
+import { Stocks } from "@/types/UserStock";
+import { useRouter } from "next/navigation";
+import FinanceTable from "@/components/charts/FinanceTable";
 
 // 뉴스 더미데이터
 const newsList = [
@@ -37,14 +47,6 @@ const newsList = [
     content:
       "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
   },
-];
-
-//보유주식 더미데이터
-const holdings = [
-  { name: "네이버", icon: "/button.svg" },
-  { name: "신한투자증권", icon: "/button.svg" },
-  { name: "삼성전자", icon: "/button.svg" },
-  { name: "삼성전자", icon: "/button.svg" },
 ];
 
 // 예측값 더미데이터
@@ -102,6 +104,8 @@ const mixedStockData: ChartData[] = [
 ] satisfies ChartData[];
 
 export default function InvestmentStockClient() {
+  const router = useRouter();
+  const auth = useAuthStore((s) => s.auth);
   const [tab, setTab] = useState<"chart" | "finance">("chart");
   const [prediction, setPrediction] = useState<ChartData[]>([]);
   const lastClose =
@@ -112,14 +116,21 @@ export default function InvestmentStockClient() {
     prediction.length > 0
       ? prediction[prediction.length - 1].date
       : mixedStockData[mixedStockData.length - 1].date;
+  const holidaySet = useHolidayStore((state) => state.holidaySet);
+
   const initialLatestDate =
-    prediction && prediction.length > 0
+    prediction.length > 0
       ? prediction[prediction.length - 1].date
       : mixedStockData[mixedStockData.length - 1].date;
 
-  const [inputDate, setInputDate] = useState(
-    getNextDateString(initialLatestDate)
-  );
+  const [inputDate, setInputDate] = useState(initialLatestDate);
+
+  useEffect(() => {
+    if (holidaySet) {
+      const nextDate = getNextDateString(inputDate);
+      setInputDate(nextDate);
+    }
+  }, [holidaySet]);
 
   const [inputclose, setInputclose] = useState(lastClose);
 
@@ -130,6 +141,18 @@ export default function InvestmentStockClient() {
   const firstPrediction = prediction[0];
 
   let interpolatedBetween: ChartData[] = [];
+
+  const [stock, setStock] = useState<Stocks[]>([]);
+  useEffect(() => {
+    const fetchData = async () => {
+      const token = sessionStorage.getItem("token");
+      const result = await getStock(token);
+      setStock(result.stocks);
+      console.log("사용자의 보유주식 조회:", result.stocks);
+    };
+
+    fetchData();
+  }, []);
 
   if (
     firstPrediction &&
@@ -163,7 +186,14 @@ export default function InvestmentStockClient() {
 
   return (
     <div className="min-h-screen px-[80px] pt-1">
-      <h2 className="mb-3 text-2xl">{params.stock_code} 삼성전자</h2>
+      <h2 className="mb-3 text-2xl">
+        {stock.length === 0 ? (
+          <span className="invisible">.</span>
+        ) : (
+          stock.find((s) => s._id === params.stock_code)?.name || "종목 없음"
+        )}
+      </h2>
+
       <main className="flex flex-col lg:flex-row gap-6">
         {/* 왼쪽 영역 */}
         <section className="flex-1 max-w-[894px] w-full lg:max-w-[calc(100%-420px)] overflow-hidden">
@@ -206,7 +236,7 @@ export default function InvestmentStockClient() {
             </div>
             {tab === "chart" ? (
               <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400">
-                <MixedChart w={600} h={300} data={chartData} />
+                <MixedChart w={750} h={300} data={chartData} />
               </div>
             ) : (
               <div className="h-[calc(100vh-300px)] w-full">
@@ -287,40 +317,45 @@ export default function InvestmentStockClient() {
 
                                 // 양쪽 예측값이 존재할 경우 보간으로 다시 이어줌
                                 if (prev && next) {
-                                  const prevDate = parseDateString(prev.date);
-                                  const nextDate = parseDateString(next.date);
-                                  const daysDiff =
-                                    (nextDate.getTime() - prevDate.getTime()) /
+                                  const interpolatedItems: ChartData[] = [];
+
+                                  let current = parseDateString(prev.date);
+                                  const end = parseDateString(next.date);
+
+                                  const totalDays =
+                                    (end.getTime() - current.getTime()) /
                                     (1000 * 60 * 60 * 24);
 
-                                  // 보간 필요시
-                                  if (daysDiff > 1) {
-                                    const interpolatedItems = [];
+                                  let i = 1;
+                                  while (true) {
+                                    current.setDate(current.getDate() + 1);
+                                    const currentStr = dateToString(current);
 
-                                    for (let i = 1; i < daysDiff; i++) {
-                                      const newDate = new Date(prevDate);
-                                      newDate.setDate(prevDate.getDate() + i);
+                                    if (!isValidTradingDate(currentStr))
+                                      continue;
+                                    if (currentStr === next.date) break;
 
-                                      const newclose = Math.round(
-                                        prev.close +
-                                          ((next.close - prev.close) * i) /
-                                            daysDiff
-                                      );
-
-                                      interpolatedItems.push({
-                                        date: dateToString(newDate),
-                                        close: newclose,
-                                        type: "dot" as const,
-                                      });
-                                    }
-
-                                    // prev 다음 위치에 삽입 (splice 위치 재계산 주의)
-                                    newList.splice(
-                                      idx - 1 + 1,
-                                      0,
-                                      ...interpolatedItems
+                                    const interpolatedClose = Math.round(
+                                      prev.close +
+                                        ((next.close - prev.close) * i) /
+                                          totalDays
                                     );
+
+                                    interpolatedItems.push({
+                                      date: currentStr,
+                                      close: interpolatedClose,
+                                      type: "dot",
+                                    });
+
+                                    i++;
                                   }
+
+                                  // prev 다음 위치에 삽입
+                                  newList.splice(
+                                    idx - 1 + 1,
+                                    0,
+                                    ...interpolatedItems
+                                  );
                                 }
 
                                 setPrediction(newList);
@@ -359,7 +394,10 @@ export default function InvestmentStockClient() {
                           type="text"
                           value={inputDate}
                           onChange={(e) => setInputDate(e.target.value)}
-                          className="bg-[#1b1b1b] border border-[#2a2a2a] rounded px-3 py-1 text-white w-full"
+                          readOnly={editIndex !== null}
+                          className={`bg-[#1b1b1b] border border-[#2a2a2a] rounded px-3 py-1 text-white w-full ${
+                            editIndex !== null ? "cursor-not-allowed" : ""
+                          }`}
                         />
                       </td>
                     </tr>
@@ -412,6 +450,13 @@ export default function InvestmentStockClient() {
                                   return;
                                 }
 
+                                const inputDateObj = parseDateString(inputDate);
+
+                                if (inputDateObj.getFullYear() >= 2027) {
+                                  alert("2026년까지의 날짜만 예측 가능합니다.");
+                                  return;
+                                }
+
                                 const existingDates = prediction.map(
                                   (p) => p.date
                                 );
@@ -427,7 +472,6 @@ export default function InvestmentStockClient() {
                                         .date;
 
                                 const lastDate = parseDateString(lastDateStr);
-                                const inputDateObj = parseDateString(inputDate);
 
                                 if (inputDateObj <= lastDate) {
                                   alert(
@@ -436,52 +480,70 @@ export default function InvestmentStockClient() {
                                   return;
                                 }
 
-                                const daysDiff =
-                                  (inputDateObj.getTime() -
-                                    lastDate.getTime()) /
-                                  (1000 * 60 * 60 * 24);
+                                if (!isValidTradingDate(inputDate)) {
+                                  alert(
+                                    "입력한 날짜는 공휴일 또는 주말입니다. 영업일만 입력 가능합니다."
+                                  );
+                                  return;
+                                }
 
                                 const newprediction = [...prediction];
 
-                                if (daysDiff > 1) {
-                                  for (let i = 1; i < daysDiff; i++) {
-                                    const interpolatedDate = new Date(lastDate);
-                                    interpolatedDate.setDate(
-                                      interpolatedDate.getDate() + i
-                                    );
+                                let current = new Date(lastDate);
+                                const msPerDay = 24 * 60 * 60 * 1000;
+                                let businessDayCount = 0;
 
-                                    const interpolatedStr =
-                                      dateToString(interpolatedDate);
+                                // 먼저 영업일 수 계산 (중간 날짜)
+                                // 영업일 날짜 배열 생성
+                                const holidaySet =
+                                  useHolidayStore.getState().holidaySet;
+                                const intermediateDates: string[] = [];
 
-                                    const interpolatedclose = Math.round(
-                                      lastClose +
-                                        ((inputclose - lastClose) * i) /
-                                          daysDiff
-                                    );
+                                while (current < inputDateObj) {
+                                  current = new Date(
+                                    current.getTime() + msPerDay
+                                  );
+                                  const currentStr = dateToString(current);
 
-                                    newprediction.push({
-                                      date: interpolatedStr,
-                                      close: interpolatedclose,
-                                      type: "dot",
-                                    });
-                                  }
+                                  // 영업일 체크
+                                  if (!isValidTradingDate(currentStr)) continue;
+
+                                  if (currentStr === inputDate) break;
+                                  intermediateDates.push(currentStr);
                                 }
 
-                                // 마지막 날짜 추가
+                                const totalBusinessDays =
+                                  intermediateDates.length + 1; // 중간 영업일 + 마지막 입력일
+
+                                // 중간 보간값 추가
+                                intermediateDates.forEach((dateStr, idx) => {
+                                  const interpolatedClose = Math.round(
+                                    lastClose +
+                                      ((inputclose - lastClose) * (idx + 1)) /
+                                        totalBusinessDays
+                                  );
+
+                                  newprediction.push({
+                                    date: dateStr,
+                                    close: interpolatedClose,
+                                    type: "dot",
+                                  });
+                                });
+
+                                // 마지막 입력 예측 추가
                                 newprediction.push({
                                   date: inputDate,
                                   close: inputclose,
                                   type: "dot",
                                 });
 
-                                // 정렬
+                                // 날짜 기준 정렬
                                 newprediction.sort(
                                   (a, b) =>
                                     parseDateString(a.date).getTime() -
                                     parseDateString(b.date).getTime()
                                 );
 
-                                // set
                                 setPrediction(newprediction);
                                 setInputDate(getNextDateString(inputDate));
                               }}
@@ -529,18 +591,29 @@ export default function InvestmentStockClient() {
           <div>
             <p className="text-xl font-semibold mb-3">보유 주식</p>
             <div className="flex flex-col gap-2 overflow-y-auto max-h-[150px]">
-              {holdings.map((stock, idx) => (
+              {stock.map((s, idx) => (
                 <div
                   key={idx}
-                  className="bg-[#2a2a2a] px-4 py-2 rounded-lg flex items-center gap-3"
+                  className={`px-4 py-2 rounded-lg flex items-center gap-3 cursor-pointer ${
+                    s._id === params.stock_code
+                      ? "bg-[#396FFB]"
+                      : "bg-[#313136]"
+                  }`}
+                  onClick={() => {
+                    router.push(`/investment/${s._id}`, { scroll: false });
+                  }}
                 >
-                  <Image
-                    src={stock.icon}
-                    alt={stock.name}
-                    width={28}
-                    height={28}
-                  />
-                  <span>{stock.name}</span>
+                  {s.logo && (
+                    <Image
+                      src={s.logo}
+                      alt={s.name}
+                      width={28}
+                      height={28}
+                      className="rounded-full"
+                    />
+                  )}
+
+                  <span>{s.name}</span>
                 </div>
               ))}
             </div>

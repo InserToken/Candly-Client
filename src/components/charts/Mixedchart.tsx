@@ -2,7 +2,7 @@
 import React from "react";
 
 type CandleData = {
-  date: string; // e.g., "2025-01-01"
+  date: string;
   open: number;
   high: number;
   low: number;
@@ -11,7 +11,7 @@ type CandleData = {
 };
 
 type DotData = {
-  date: string; // e.g., "2025-01-01"
+  date: string;
   close: number;
   type: "dot";
 };
@@ -51,8 +51,8 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
   const maxVisibleItems = 10;
   const shouldScroll = data.length > maxVisibleItems;
 
-  const fixedItemWidth = 40;
-  const fixedItemSpacing = 60;
+  const fixedItemWidth = 30;
+  const fixedItemSpacing = 50;
 
   const actualChartWidth = shouldScroll
     ? data.length * fixedItemSpacing
@@ -100,150 +100,159 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
     return `${d.getMonth() + 1}/${d.getDate()}`;
   };
 
+  // (이전 날짜 차이 기반 코드 제거)
+
+  const gridLines = getGridLines();
+
   return (
     <div className="max-w-6xl mx-auto rounded-lg">
       {data.length > 0 && (
-        <div className="mb-6">
-          <div className="relative rounded-lg p-4">
-            <div
-              className={`${shouldScroll ? "overflow-x-auto" : ""}`}
-              style={{
-                width: shouldScroll ? chartWidth + 100 : "auto",
-                maxWidth: shouldScroll ? chartWidth + 100 : "none",
-              }}
-            >
-              <svg
-                width={actualChartWidth + 100}
-                height={chartHeight + 80}
-                className="overflow-visible"
-                style={{
-                  minWidth: shouldScroll ? actualChartWidth + 100 : "auto",
-                }}
+        <div className="mb-6 flex">
+          {/* 왼쪽 가격 축 고정 */}
+          <svg
+            width={60}
+            height={chartHeight + 80}
+            className="shrink-0"
+            style={{ backgroundColor: "transparent" }}
+          >
+            {gridLines.map((line, i) => (
+              <text
+                key={i}
+                x={50}
+                y={line.y + 45}
+                fill="#9CA3AF"
+                fontSize="12"
+                textAnchor="end"
               >
-                {/* 격자선 */}
-                {getGridLines().map((line, i) => (
-                  <g key={i}>
-                    <line
-                      x1={60}
-                      y1={line.y + 40}
-                      x2={actualChartWidth + 60}
-                      y2={line.y + 40}
-                      stroke="#374151"
-                      strokeDasharray="3,3"
-                      strokeWidth="1"
-                    />
-                    <text
-                      x={50}
-                      y={line.y + 45}
-                      fill="#9CA3AF"
-                      fontSize="12"
-                      textAnchor="end"
-                    >
-                      {line.price.toLocaleString()}
-                    </text>
-                  </g>
-                ))}
+                {line.price.toLocaleString()}
+              </text>
+            ))}
+          </svg>
 
-                {/* 선형 그래프 */}
-                {(() => {
-                  const dotItems = data
-                    .map((item, i) => ({ item, i }))
-                    .filter(({ item }) => item.type === "dot");
+          {/* 오른쪽 스크롤 차트 */}
+          <div
+            className={`${shouldScroll ? "overflow-x-auto" : ""}`}
+            style={{
+              width: shouldScroll ? chartWidth : "auto",
+              maxWidth: shouldScroll ? chartWidth : "none",
+            }}
+          >
+            <svg
+              width={actualChartWidth + 60}
+              height={chartHeight + 80}
+              className="overflow-visible"
+            >
+              {/* 그리드 선 */}
+              {gridLines.map((line, i) => (
+                <line
+                  key={i}
+                  x1={0}
+                  y1={line.y + 40}
+                  x2={actualChartWidth}
+                  y2={line.y + 40}
+                  stroke="#374151"
+                  strokeDasharray="3,3"
+                  strokeWidth="1"
+                />
+              ))}
 
-                  if (dotItems.length < 2) return null;
+              {/* 점 선 연결 (DotData) */}
+              {(() => {
+                const dotItems = data
+                  .map((item, i) => ({ item, i }))
+                  .filter(({ item }) => item.type === "dot");
 
-                  const pathD = dotItems
-                    .map(({ item, i }, idx) => {
-                      const x = 60 + i * itemSpacing + itemSpacing / 2;
-                      const y = getY((item as DotData).close) + 40;
-                      return `${idx === 0 ? "M" : "L"} ${x} ${y}`;
-                    })
-                    .join(" ");
+                if (dotItems.length < 2) return null;
+
+                const pathD = dotItems
+                  .map(({ item, i }, idx) => {
+                    const x = i * itemSpacing + itemSpacing / 2;
+                    const y = getY((item as DotData).close) + 40;
+                    return `${idx === 0 ? "M" : "L"} ${x} ${y}`;
+                  })
+                  .join(" ");
+
+                return (
+                  <path
+                    d={pathD}
+                    fill="none"
+                    stroke="#10B981"
+                    strokeWidth="2"
+                  />
+                );
+              })()}
+
+              {/* 데이터 렌더링 */}
+              {data.map((item, i) => {
+                const x = i * itemSpacing + itemSpacing / 2;
+
+                if (item.type === "candle") {
+                  const isRising = item.close > item.open;
+                  const bodyTop = getY(Math.max(item.open, item.close)) + 40;
+                  const bodyBottom = getY(Math.min(item.open, item.close)) + 40;
+                  const bodyHeight = Math.max(bodyBottom - bodyTop, 1);
+                  const wickTop = getY(item.high) + 40;
+                  const wickBottom = getY(item.low) + 40;
 
                   return (
-                    <path
-                      d={pathD}
-                      fill="none"
-                      stroke="#10B981"
-                      strokeWidth="2"
-                    />
+                    <g key={i}>
+                      <line
+                        x1={x}
+                        y1={wickTop}
+                        x2={x}
+                        y2={wickBottom}
+                        stroke={isRising ? "#3B82F6" : "#EF4444"}
+                        strokeWidth="2"
+                      />
+                      <rect
+                        x={x - itemWidth / 2}
+                        y={bodyTop}
+                        width={itemWidth}
+                        height={bodyHeight}
+                        fill={isRising ? "#3B82F6" : "#EF4444"}
+                        stroke={isRising ? "#3B82F6" : "#EF4444"}
+                        strokeWidth="1"
+                        rx={4}
+                      />
+                      <text
+                        x={x}
+                        y={chartHeight + 60}
+                        fill="#9CA3AF"
+                        fontSize="12"
+                        textAnchor="middle"
+                      >
+                        {formatDateShort(item.date)}
+                      </text>
+                    </g>
                   );
-                })()}
-
-                {/* 개별 데이터 렌더링 */}
-                {data.map((item, i) => {
-                  const x = 60 + i * itemSpacing + itemSpacing / 2;
-
-                  if (item.type === "candle") {
-                    const isRising = item.close > item.open;
-                    const bodyTop = getY(Math.max(item.open, item.close)) + 40;
-                    const bodyBottom =
-                      getY(Math.min(item.open, item.close)) + 40;
-                    const bodyHeight = Math.max(bodyBottom - bodyTop, 1);
-                    const wickTop = getY(item.high) + 40;
-                    const wickBottom = getY(item.low) + 40;
-
-                    return (
-                      <g key={i}>
-                        <line
-                          x1={x}
-                          y1={wickTop}
-                          x2={x}
-                          y2={wickBottom}
-                          stroke={isRising ? "#3B82F6" : "#EF4444"}
-                          strokeWidth="2"
-                        />
-                        <rect
-                          x={x - itemWidth / 2}
-                          y={bodyTop}
-                          width={itemWidth}
-                          height={bodyHeight}
-                          fill={isRising ? "#3B82F6" : "#EF4444"}
-                          stroke={isRising ? "#3B82F6" : "#EF4444"}
-                          strokeWidth="1"
-                          rx={10}
-                        />
-                        <text
-                          x={x}
-                          y={chartHeight + 60}
-                          fill="#9CA3AF"
-                          fontSize="12"
-                          textAnchor="middle"
-                        >
-                          {formatDateShort(item.date)}
-                        </text>
-                      </g>
-                    );
-                  } else {
-                    const y = getY(item.close) + 40;
-
-                    return (
-                      <g key={i}>
-                        <circle cx={x} cy={y} r={4} fill="#10B981" />
-                        <text
-                          x={x}
-                          y={y - 10}
-                          fill="#10B981"
-                          fontSize="10"
-                          textAnchor="middle"
-                        >
-                          {item.close.toLocaleString()}
-                        </text>
-                        <text
-                          x={x}
-                          y={chartHeight + 60}
-                          fill="#9CA3AF"
-                          fontSize="12"
-                          textAnchor="middle"
-                        >
-                          {formatDateShort(item.date)}
-                        </text>
-                      </g>
-                    );
-                  }
-                })}
-              </svg>
-            </div>
+                } else {
+                  const y = getY(item.close) + 40;
+                  return (
+                    <g key={i}>
+                      <circle cx={x} cy={y} r={4} fill="#10B981" />
+                      <text
+                        x={x}
+                        y={y - 10}
+                        fill="#10B981"
+                        fontSize="10"
+                        textAnchor="middle"
+                      >
+                        {item.close.toLocaleString()}
+                      </text>
+                      <text
+                        x={x}
+                        y={chartHeight + 60}
+                        fill="#9CA3AF"
+                        fontSize="12"
+                        textAnchor="middle"
+                      >
+                        {formatDateShort(item.date)}
+                      </text>
+                    </g>
+                  );
+                }
+              })}
+            </svg>
           </div>
         </div>
       )}

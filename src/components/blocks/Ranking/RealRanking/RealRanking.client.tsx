@@ -79,13 +79,15 @@ export default function RealRankingClient() {
                     }`}
                 >
                   <div className="flex items-center gap-3">
-                    {/* <Image
-                      src={s.stock_code.}
-                      alt="logo"
-                      className="w-8 h-8 rounded-full"
-                      width={32}
-                      height={32}
-                    /> */}
+                    {s.logo && (
+                      <Image
+                        src={s.logo}
+                        alt={s.name}
+                        width={24}
+                        height={24}
+                        className="rounded-full"
+                      />
+                    )}
                     <span>{s.name}</span>
                   </div>
                 </div>
