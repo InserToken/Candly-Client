@@ -1,12 +1,10 @@
+// next.config.ts
+
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-};
-
-module.exports = {
   images: {
-    domains: ["img.hankyung.com"], // ← 이 부분 추가
+    domains: ["static.toss.im", "img.hankyung.com", "rcd1.rassiro.com"],
   },
 };
 

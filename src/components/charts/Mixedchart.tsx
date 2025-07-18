@@ -51,8 +51,8 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
   const maxVisibleItems = 10;
   const shouldScroll = data.length > maxVisibleItems;
 
-  const fixedItemWidth = 40;
-  const fixedItemSpacing = 60;
+  const fixedItemWidth = 30;
+  const fixedItemSpacing = 50;
 
   const actualChartWidth = shouldScroll
     ? data.length * fixedItemSpacing
@@ -99,6 +99,8 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
     const d = new Date(dateStr);
     return `${d.getMonth() + 1}/${d.getDate()}`;
   };
+
+  // (이전 날짜 차이 기반 코드 제거)
 
   const gridLines = getGridLines();
 
@@ -210,7 +212,7 @@ export default function MixedChart({ w, h, data }: MixedChartProps) {
                         fill={isRising ? "#3B82F6" : "#EF4444"}
                         stroke={isRising ? "#3B82F6" : "#EF4444"}
                         strokeWidth="1"
-                        rx={10}
+                        rx={4}
                       />
                       <text
                         x={x}

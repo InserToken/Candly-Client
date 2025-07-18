@@ -1,3 +1,5 @@
+import useHolidayStore from "@/stores/useHolidayStore";
+
 // "2025-01-08" → Date 객체
 export function parseDateString(dateStr: string): Date {
   const [year, month, day] = dateStr.split("-").map(Number);
@@ -12,10 +14,26 @@ export function dateToString(dateObj: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-// "2025-01-08" → 다음날 "2025-01-09"
-export function getNextDateString(dateStr?: string) {
-  if (!dateStr) return "2025-01-01"; // 기본값 혹은 오류 방지용
-  const d = new Date(dateStr);
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().split("T")[0]; // "YYYY-MM-DD"
+// 다음 영업일
+export function getNextDateString(dateStr?: string): string {
+  if (!dateStr) return "2025-01-01";
+
+  const holidaySet = useHolidayStore.getState().holidaySet;
+  if (!holidaySet) return dateStr; // 로딩 전이면 변경하지 않음
+
+  let currentDate = parseDateString(dateStr);
+
+  while (true) {
+    currentDate.setDate(currentDate.getDate() + 1);
+    const formatted = dateToString(currentDate);
+    if (!holidaySet.has(formatted)) {
+      return formatted;
+    }
+  }
+}
+
+export function isValidTradingDate(date: string): boolean {
+  const holidaySet = useHolidayStore.getState().holidaySet;
+  if (!holidaySet) return false; // 아직 로딩 전이면 false 처리
+  return !holidaySet.has(date); // 휴일이 아니면 true
 }
