@@ -27,20 +27,17 @@ function getDateTickFormat(
   candle: Candle,
   visibleCandles: number
 ) {
-  // 매우 축소: 월별만
   if (visibleCandles > 60) {
     if (candle.date.slice(8, 10) === "01" || index === 0)
       return candle.date.slice(2, 7).replace("-0", "-"); // '25-7'
     return "";
   }
-  // 보통: 5일 단위 + 월 시작
   if (visibleCandles > 20) {
     if (candle.date.slice(8, 10) === "01" || index === 0)
       return candle.date.slice(2, 7).replace("-0", "-");
     if (index % 5 === 0) return candle.date.slice(5); // MM-DD
     return "";
   }
-  // 확대: 일별 + 월 시작은 월만
   if (candle.date.slice(8, 10) === "01" || index === 0)
     return candle.date.slice(2, 7).replace("-0", "-");
   return candle.date.slice(8); // 'DD'
@@ -65,7 +62,6 @@ export default function CandleChart({
 
   // 휠 줌 (마우스 위치 기준)
   const handleWheel = (e: React.WheelEvent) => {
-    // e.preventDefault();
     const oldVisible = visibleCandles;
     let nextVisible = oldVisible;
     if (e.deltaY < 0)
@@ -108,24 +104,38 @@ export default function CandleChart({
   // 보여줄 데이터 구간
   const slicedData = data.slice(startIndex, startIndex + visibleCandles);
 
-  // 이동평균 구간 맞추기
+  // === 이동평균 계산 (전체 구간)
+  const ma5_full = getMovingAverage(indi_data, 5);
   const ma20_full = getMovingAverage(indi_data, 20);
-  const ma20 = ma20_full.slice(
-    startIndex + ma20_full.length - data.length,
-    startIndex + ma20_full.length - data.length + visibleCandles
-  );
-  const ma60_data = indi_data.slice(
-    Math.max(0, startIndex + indi_data.length - data.length - 60)
-  );
-  const ma60_full = getMovingAverage(ma60_data, 60);
-  const ma60 = ma60_full.slice(-visibleCandles);
+  const ma60_full = getMovingAverage(indi_data, 60);
   const ma120_full = getMovingAverage(indi_data, 120);
-  const ma120 = ma120_full.slice(
-    startIndex + ma120_full.length - data.length,
-    startIndex + ma120_full.length - data.length + visibleCandles
+
+  // === 보여줄 구간 슬라이스
+  const ma5_visible = ma5_full.slice(startIndex, startIndex + visibleCandles);
+  const ma20_visible = ma20_full.slice(startIndex, startIndex + visibleCandles);
+  const ma60_visible = ma60_full.slice(startIndex, startIndex + visibleCandles);
+  const ma120_visible = ma120_full.slice(
+    startIndex,
+    startIndex + visibleCandles
   );
 
-  // 스케일
+  // === MA polyline 좌표 (null 아닌 곳만)
+  function getLinePoints(
+    maArr: (number | null)[],
+    candleSpacing: number,
+    getY: (v: number) => number
+  ) {
+    return maArr
+      .map((val, i) =>
+        val !== null
+          ? `${i * candleSpacing},${getY(val) + BOTTOM_PADDING}`
+          : null
+      )
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  // === 스케일 계산 ===
   const maxPrice = Math.max(...slicedData.map((d) => d.high));
   const minPrice = Math.min(...slicedData.map((d) => d.low));
   const priceRange = maxPrice - minPrice;
@@ -135,7 +145,6 @@ export default function CandleChart({
   const chartRange = chartMax - chartMin;
   const chartHeight = h;
 
-  // TradingView 스타일: SVG width 고정, candleSpacing만 조절
   const chartWidth = w - LEFT_AXIS_WIDTH;
   const candleSpacing =
     visibleCandles > 1 ? chartWidth / (visibleCandles - 1) : chartWidth;
@@ -167,24 +176,11 @@ export default function CandleChart({
     return lines;
   };
 
-  function getLinePoints(
-    maArr: (number | null)[],
-    candleSpacing: number,
-    getY: (v: number) => number
-  ) {
-    return maArr
-      .map((val, i) =>
-        val !== null
-          ? `${i * candleSpacing},${getY(val) + BOTTOM_PADDING}`
-          : null
-      )
-      .filter(Boolean)
-      .join(" ");
-  }
-
-  const ma20Points = getLinePoints(ma20, candleSpacing, getY);
-  const ma60Points = getLinePoints(ma60, candleSpacing, getY);
-  const ma120Points = getLinePoints(ma120, candleSpacing, getY);
+  // === polyline points ===
+  const ma5Points = getLinePoints(ma5_visible, candleSpacing, getY);
+  const ma20Points = getLinePoints(ma20_visible, candleSpacing, getY);
+  const ma60Points = getLinePoints(ma60_visible, candleSpacing, getY);
+  const ma120Points = getLinePoints(ma120_visible, candleSpacing, getY);
 
   return (
     <div className="flex flex-col" style={{ width: w }}>
@@ -242,7 +238,14 @@ export default function CandleChart({
             {/* === MA선 === */}
             <polyline
               fill="none"
-              stroke="#14B8A6"
+              stroke="#00D5C0"
+              strokeWidth="2"
+              points={ma5Points}
+              opacity={0.8}
+            />
+            <polyline
+              fill="none"
+              stroke="#E8395F"
               strokeWidth="2"
               points={ma20Points}
               opacity={0.8}

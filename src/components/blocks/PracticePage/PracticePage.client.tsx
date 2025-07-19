@@ -6,7 +6,7 @@ import ClickCard from "@/components/buttons/ClickCard";
 import CandleChart from "@/components/charts/Candlechart";
 import { fetchPracticeProblem } from "@/services/fetchPracticeProblem";
 import { fetchPracticeNews } from "@/services/fetchPracticeNews";
-
+import { getMovingAverage } from "@/utils/indicator";
 type PriceItem = {
   date: string;
   open: number;
@@ -32,48 +32,6 @@ type NewsItem = {
   img_url?: string;
 };
 
-// 뉴스 더미데이터
-// const newsList = [
-//   {
-//     title:
-//       "‘반도체 쇼크’ 삼성전자, 2분기 영업익 4조6000억원... 전년보다 56% 추락",
-//     source: "Chosun Biz",
-//     date: "2025.07.08.",
-//     newsicon: "/button.svg",
-//     content:
-//       "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
-//   },
-//   {
-//     title:
-//       "‘반도체 쇼크’ 삼성전자, 2분기 영업익 4조6000억원... 전년보다 56% 추락",
-//     source: "MK 뉴스",
-//     date: "2025.07.08.",
-//     newsicon: "/button.svg",
-//     content:
-//       "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
-//   },
-//   {
-//     title:
-//       "‘반도체 쇼크’ 삼성전자, 2분기 영업익 4조6000억원... 전년보다 56% 추락",
-//     source: "SBS 뉴스",
-//     date: "2025.07.08.",
-//     newsicon: "/button.svg",
-//     content:
-//       "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
-//   },
-// ];
-
-// 주식 더미데이터
-// const stockData = [
-//   { date: "1/1", open: 59700, high: 59900, low: 59600, close: 60000 },
-//   { date: "1/2", open: 60000, high: 60300, low: 59800, close: 60200 },
-//   { date: "1/3", open: 60200, high: 60800, low: 59700, close: 59900 },
-//   { date: "1/4", open: 59900, high: 62000, low: 60500, close: 61500 },
-//   { date: "1/5", open: 61500, high: 62500, low: 62000, close: 62200 },
-//   { date: "1/6", open: 62200, high: 62400, low: 60800, close: 61200 },
-//   { date: "1/7", open: 61200, high: 62700, low: 61000, close: 62500 },
-// ];
-
 export default function PracticeClient() {
   const [input, setInput] = useState("");
   const [tab, setTab] = useState<"chart" | "finance">("chart");
@@ -87,6 +45,15 @@ export default function PracticeClient() {
   // === 차트 부모 width 동적 측정 ===
   const chartBoxRef = useRef<HTMLDivElement>(null);
   const [parentWidth, setParentWidth] = useState(780); // 초기값: 적당히 780
+
+  useEffect(() => {
+    if (Array.isArray(stockData)) {
+      const ma20 = getMovingAverage(stockData, 5);
+      stockData.forEach((item, i) => {
+        console.log(`${item.date}, MA5: ${ma20[i]}`);
+      });
+    }
+  }, [stockData]);
 
   useEffect(() => {
     function updateWidth() {
@@ -111,17 +78,6 @@ export default function PracticeClient() {
       setNews(data);
     });
   }, [params.problemId]);
-
-  // ===== 이동평균 계산 함수 (for CandleChart) =====
-  function getMovingAverage(data: PriceItem[], period: number) {
-    if (!Array.isArray(data)) return [];
-    return data.map((d, i) => {
-      if (i < period - 1) return null;
-      const slice = data.slice(i - period + 1, i + 1);
-      const avg = slice.reduce((acc, cur) => acc + cur.close, 0) / period;
-      return avg;
-    });
-  }
 
   return (
     <div className="min-h-screen px-[80px] pt-1">
@@ -157,11 +113,10 @@ export default function PracticeClient() {
                     <span className="text-[#00D5C0]">5</span> ·
                     <span className="text-[#E8395F]">20</span> ·
                     <span className="text-[#F87800]">60</span> ·
-                    <span className="text-[#]">120</span>
+                    <span className="text-[#7339FB]">120</span>
                   </span>
                   <span className="text-[#EDCB37]">볼린저밴드</span> |
                   <span className="text-[#396FFB]">거래량</span>
-                  <span>MACD</span>
                   <span>RSI</span>
                 </div>
               )}
