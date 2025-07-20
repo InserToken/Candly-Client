@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Stocks, UserStock } from "@/types/UserStock";
 import { useAuthStore } from "@/stores/authStore";
-import { getStock, getRanking } from "@/services/userStock-service";
+import { getStock, getRankReal } from "@/services/userStock-service";
 
 export default function RealRankingClient() {
   const [stock, setStock] = useState<Stocks[]>([]);
@@ -21,7 +21,7 @@ export default function RealRankingClient() {
     };
 
     const fetchRankingData = async () => {
-      const result = await getRanking();
+      const result = await getRankReal();
       const grouped: {
         [key: string]: { name: string; score: number }[];
       } = {};

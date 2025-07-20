@@ -1,15 +1,78 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
+import { useState, useEffect, useMemo } from "react";
+import {
+  getRankPracProblem,
+  getRankPracScore,
+} from "@/services/ranking-service";
+import { GetPracticeScore, ProblemScore } from "@/types/ProblemScore";
+import { useAuthStore } from "@/stores/authStore";
 
 export default function PracticeRankingClient() {
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [problems, setProblem] = useState<ProblemScore[]>([]);
+  const auth = useAuthStore((s) => s.auth);
+  const [rankingData, setRankingData] = useState<{
+    [key: string]: { name: string; score: number; answer: string }[];
+  }>({});
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const result = await getRankPracProblem(auth.token);
+      setProblem(result.data);
+      console.log("내가 푼 문제 조회:", result);
+    };
+
+    const fetchRankingData = async () => {
+      const result = await getRankPracScore();
+      console.log("랭킹 조회", result);
+      const grouped: {
+        [key: string]: { name: string; score: number; answer: string }[];
+      } = {};
+
+      (result.data as GetPracticeScore[]).forEach((item) => {
+        const problemId = item.problem_id ?? "0";
+        const name = item.user_id?.nickname ?? "알 수 없음";
+        const score = item.score ?? 0;
+        const answer = item.answer ?? "";
+
+        if (!grouped[problemId]) grouped[problemId] = [];
+        grouped[problemId].push({ name, score, answer });
+      });
+
+      console.log("grouped", grouped);
+      setRankingData(grouped);
+    };
+
+    fetchData();
+    fetchRankingData();
+  }, []);
+
+  const uniqueProblems = problems.filter((p, idx, arr) => {
+    const id = p.problem_id?._id;
+    return id && arr.findIndex((other) => other.problem_id?._id === id) === idx;
+  });
+
+  const [selectedProblem, setSelectedProblem] = useState<string>("");
+
+  useEffect(() => {
+    if (uniqueProblems.length > 0 && !selectedProblem) {
+      const id = uniqueProblems[0].problem_id?._id;
+      if (id) setSelectedProblem(id);
+    }
+  }, [uniqueProblems, selectedProblem]);
+
+  const ranking = rankingData[selectedProblem] || [];
+
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const openModal = (user: any) => {
+  type RankUser = { name: string; score: number; answer: string };
+  const [selectedUser, setSelectedUser] = useState<RankUser | null>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState("");
+
+  const openModal = (user: RankUser) => {
     setSelectedUser(user);
+    setSelectedAnswer(user.answer);
     setIsModalOpen(true);
   };
 
@@ -17,32 +80,6 @@ export default function PracticeRankingClient() {
     setIsModalOpen(false);
     setSelectedUser(null);
   };
-
-  const solvedQuestions = [
-    { company: "삼성전자", logo: "/samsung.png", date: "2025년 5월" },
-    { company: "네이버", logo: "/naver.png", date: "2021년 4월" },
-    { company: "신한투자증권", logo: "/shinhan.png", date: "2015년 11월" },
-  ];
-
-  // 더미 랭킹 데이터 (종목별로)
-  const rankingData: { [key: string]: { name: string; score: number }[] } = {
-    삼성전자: [
-      { name: "예경", score: 70 },
-      { name: "은서", score: 65 },
-    ],
-    네이버: [
-      { name: "은동", score: 60 },
-      { name: "지환", score: 55 },
-    ],
-    신한투자증권: [
-      { name: "민선", score: 10 },
-      { name: "예경", score: 45 },
-    ],
-  };
-
-  const [selectedCompany, setSelectedCompany] = useState("삼성전자");
-
-  const ranking = rankingData[selectedCompany] || [];
 
   return (
     <div className="pt-4">
@@ -53,27 +90,20 @@ export default function PracticeRankingClient() {
           {/* 내가 푼 문제들 */}
           <div className="bg-[#16161A] rounded-2xl p-6 w-full h-[600px] max-w-md overflow-y-auto">
             <div className="space-y-2">
-              {solvedQuestions.map((q, idx) => (
+              {uniqueProblems.map((q, idx) => (
                 <div
-                  key={idx}
-                  onClick={() => setSelectedCompany(q.company)}
+                  key={q.problem_id?._id ?? idx}
+                  onClick={() => setSelectedProblem(q.problem_id?._id ?? "")}
                   className={`flex items-center justify-between px-5 py-4 rounded-lg cursor-pointer ${
-                    selectedCompany === q.company
+                    selectedProblem === q.problem_id?._id
                       ? "bg-[#396FFB]"
                       : "bg-[#313136]"
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Image
-                      src={q.logo}
-                      alt="logo"
-                      className="w-8 h-8 rounded-full"
-                      width={32} // w-8 = 2rem = 32px
-                      height={32}
-                    />
-                    <span>{q.company}</span>
+                    <span>{q.problem_id?.title}</span>
                   </div>
-                  <span>{q.date}</span>
+                  {/* <span>{q.problem_id?.date}</span> */}
                 </div>
               ))}
             </div>
@@ -88,7 +118,7 @@ export default function PracticeRankingClient() {
                 <div>점수</div>
                 <div>답변 보기</div>
               </div>
-              {ranking.map((r: any, i: any) => (
+              {ranking.map((r, i) => (
                 <div
                   key={i}
                   className={`grid grid-cols-4 items-center px-3 py-3 mb-2 rounded-lg text-left ${
@@ -113,8 +143,8 @@ export default function PracticeRankingClient() {
       {isModalOpen && selectedUser && (
         <div className="fixed inset-0 bg-opacity-60 flex items-center justify-center ">
           <div className="bg-[#16161A] rounded-xl p-6 w-150 h-100 shadow-lg">
-            <h4 className="text-xl font-bold mb-4">사용자 상세 정보</h4>
-            <div className="h-60">답변</div>
+            <h4 className="text-xl font-bold mb-4">답변</h4>
+            <div className="h-60">{selectedAnswer}</div>
 
             <button
               onClick={closeModal}
