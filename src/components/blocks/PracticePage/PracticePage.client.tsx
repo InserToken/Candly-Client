@@ -6,6 +6,8 @@ import ClickCard from "@/components/buttons/ClickCard";
 import CandleChart from "@/components/charts/Candlechart";
 import { fetchPracticeProblem } from "@/services/fetchPracticeProblem";
 import { fetchPracticeNews } from "@/services/fetchPracticeNews";
+import { useRouter } from "next/navigation";
+
 
 type PriceItem = {
   date: string;
@@ -94,6 +96,7 @@ const financeData = {
 };
 
 export default function PracticeClient() {
+  const router = useRouter();
   const [input, setInput] = useState("");
   const [tab, setTab] = useState<"chart" | "finance">("chart");
   const params = useParams<{ problemId: string }>();
@@ -147,7 +150,7 @@ export default function PracticeClient() {
   }, [params.problemId]);
 
   return (
-    <div className="min-h-screen px-[80px] pt-1">
+    <div className="min-h-screen px-[80px] pt-1 pb-16">
       <h2 className="mb-3 text-2xl">{problemData?.title}</h2>
       <main className="flex flex-col lg:flex-row gap-6">
         {/* 왼쪽 영역 */}
@@ -200,6 +203,7 @@ export default function PracticeClient() {
                     h={320}
                     data={stockData}
                     indi_data={stockData}
+                    news={news}
                     quizEndIndex={80} // ← 퀴즈 구간(오버레이 위치)
                   />
                 ) : (
@@ -477,7 +481,11 @@ export default function PracticeClient() {
         <aside className="w-full lg:w-[400px] shrink-0 flex flex-col gap-4">
           <div className="flex justify-between">
             <ClickCard name="힌트" icon="hint.svg" />
-            <ClickCard name="답변 랭킹" icon="ranking.svg" />
+            <ClickCard
+              name="답변 랭킹"
+              icon="ranking.svg"
+              onClick={() => router.push(`/ranking/practice`)}
+            />
           </div>
           {/* 뉴스 */}
           <div className="mt-4">
