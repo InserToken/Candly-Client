@@ -1,8 +1,7 @@
 "use client";
 import React, { useRef, useState } from "react";
-import { getMovingAverage, getBollingerBands, getRSI } from "@/utils/indicator";
 import dayjs from "dayjs";
-
+import { getMovingAverage, getBollingerBands, getRSI } from "@/utils/indicator";
 
 export type Candle = {
   date: string;
@@ -33,7 +32,7 @@ const LEFT_AXIS_WIDTH = 60;
 const CHART_HEIGHT = 220;
 const VOLUME_HEIGHT = 100;
 const DATE_AXIS_HEIGHT = 24;
-
+const TOTAL_HEIGHT = CHART_HEIGHT + VOLUME_HEIGHT + DATE_AXIS_HEIGHT;
 const MIN_CANDLES = 10;
 const SHOW_LEN = 200;
 const SKIP_LAST = 20;
@@ -59,17 +58,13 @@ function getDateTickFormat(
     return candle.date.slice(2, 7).replace("-0", "-");
   return candle.date.slice(8);
 }
-
-
 export default function CandleChart({
   w,
-  h = TOTAL_HEIGHT,
   data,
   indi_data,
   news,
 }: CandleChartProps) {
-export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
-  // 데이터 슬라이싱
+  // ==== 데이터 슬라이싱 ====
   const startIdx = Math.max(0, data.length - SHOW_LEN - SKIP_LAST);
   // const endIdx = Math.max(0, data.length - SKIP_LAST);
   const endIdx = data.length;
@@ -168,7 +163,9 @@ export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
     const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const idx = getNearestCandleIdx(offsetX);
-    if (idx < 0 || idx >= slicedData.length) {
+
+    // === overlay 영역이면 tooltip 안뜸! ===
+    if (idx < 0 || idx >= slicedData.length || isOverlayIdx(idx)) {
       setTooltip(null);
       return;
     }
@@ -181,6 +178,7 @@ export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
       section: "candle",
     });
   };
+
   const handleChartMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     handleCandleMouseMove(e);
     onMouseMove(e);
@@ -192,17 +190,19 @@ export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
     const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const idx = getNearestCandleIdx(offsetX);
-    if (idx < 0 || idx >= slicedData.length) {
+
+    // === overlay 영역이면 tooltip 안뜸! ===
+    if (idx < 0 || idx >= slicedData.length || isOverlayIdx(idx)) {
       setTooltip(null);
       return;
     }
     setTooltip({
       show: true,
       x: offsetX + LEFT_AXIS_WIDTH,
-      y: e.clientY + CHART_HEIGHT + 8,
+      y: e.clientY - rect.top,
       idx,
       data: slicedData[idx],
-      section: "volume",
+      section: "candle",
     });
   };
   const handleVolumeChartMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -313,6 +313,13 @@ export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
     numVisibleOverlay > 0 ? visibleOverlayStart - slicedStartGlobalIdx : 0;
   const overlayLeft = LEFT_AXIS_WIDTH + overlayLocalStart * candleSpacing;
   const overlayWidth = numVisibleOverlay * candleSpacing;
+  const overlayLocalEnd = overlayLocalStart + numVisibleOverlay - 1;
+
+  function isOverlayIdx(idx: number) {
+    return (
+      numVisibleOverlay > 0 && idx > overlayLocalStart && idx <= overlayLocalEnd
+    );
+  }
 
   // --- 렌더 ---
   return (
