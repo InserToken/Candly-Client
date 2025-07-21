@@ -27,7 +27,12 @@ export default function PracticeRankingClient() {
       const result = await getRankPracScore();
       console.log("랭킹 조회", result);
       const grouped: {
-        [key: string]: { name: string; score: number; answer: string }[];
+        [key: string]: {
+          name: string;
+          score: number;
+          answer: string;
+          feedback: string;
+        }[];
       } = {};
 
       (result.data as GetPracticeScore[]).forEach((item) => {
@@ -35,9 +40,10 @@ export default function PracticeRankingClient() {
         const name = item.user_id?.nickname ?? "알 수 없음";
         const score = item.score ?? 0;
         const answer = item.answer ?? "";
+        const feedback = item.feedback ?? "";
 
         if (!grouped[problemId]) grouped[problemId] = [];
-        grouped[problemId].push({ name, score, answer });
+        grouped[problemId].push({ name, score, answer, feedback });
       });
 
       console.log("grouped", grouped);
@@ -66,13 +72,20 @@ export default function PracticeRankingClient() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  type RankUser = { name: string; score: number; answer: string };
+  type RankUser = {
+    name: string;
+    score: number;
+    answer: string;
+    feedback: string;
+  };
   const [selectedUser, setSelectedUser] = useState<RankUser | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState("");
+  const [selectedFeedback, setSelectedFeedback] = useState("");
 
   const openModal = (user: RankUser) => {
     setSelectedUser(user);
     setSelectedAnswer(user.answer);
+    setSelectedFeedback(user.feedback);
     setIsModalOpen(true);
   };
 
@@ -141,11 +154,14 @@ export default function PracticeRankingClient() {
         </div>
       </div>
       {isModalOpen && selectedUser && (
-        <div className="fixed inset-0 bg-opacity-60 flex items-center justify-center ">
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-[3px] z-50">
           <div className="bg-[#16161A] rounded-xl p-6 w-150 h-100 shadow-lg">
-            <h4 className="text-xl font-bold mb-4">답변</h4>
-            <div className="h-60">{selectedAnswer}</div>
-
+            <div className="h-75">
+              <h4 className="text-xl font-bold mb-4">답변</h4>
+              <div className="mb-28">{selectedAnswer}</div>
+              <h4 className="text-xl">피드백</h4>
+              <div>{selectedFeedback}</div>
+            </div>
             <button
               onClick={closeModal}
               className="px-4 py-2 bg-[#396FFB] rounded hover:bg-blue-500 w-full"
