@@ -115,7 +115,7 @@ export default function MyPagePracticeClient() {
         <div className="bg-[#16161A] w-60 h-20 rounded-lg flex items-center justify-center">
           <button
             onClick={openModal}
-            className="text-xl font-semibold text-white"
+            className="text-xl font-semibold text-white cursor-pointer"
           >
             최근 푼 문제 확인
           </button>
@@ -201,7 +201,7 @@ export default function MyPagePracticeClient() {
             <div className="p-6 border-t border-[#2A2A30]">
               <button
                 onClick={closeModal}
-                className="px-4 py-2 bg-[#396FFB] text-white rounded hover:bg-blue-500 w-full"
+                className="px-4 py-2 bg-[#396FFB] text-white rounded hover:bg-blue-500 w-full cursor-pointer "
               >
                 닫기
               </button>
