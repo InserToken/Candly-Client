@@ -16,41 +16,10 @@ import { useAuthStore } from "@/stores/authStore";
 import { getStock } from "@/services/userStock-service";
 import { Stocks } from "@/types/UserStock";
 import { useRouter } from "next/navigation";
+import FinanceTable from "@/components/charts/FinanceTable";
 import { fetchRealNews } from "@/services/fetchRealNews";
-
-// 뉴스 더미데이터
-// const newsList = [
-//   {
-//     title:
-//       "‘반도체 쇼크’ 삼성전자, 2분기 영업익 4조6000억원... 전년보다 56% 추락",
-//     source: "Chosun Biz",
-//     date: "2025.07.08.",
-//     newsicon: "/button.svg",
-//     content:
-//       "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
-//   },
-//   {
-//     title:
-//       "‘반도체 쇼크’ 삼성전자, 2분기 영업익 4조6000억원... 전년보다 56% 추락",
-//     source: "MK 뉴스",
-//     date: "2025.07.08.",
-//     newsicon: "/button.svg",
-//     content:
-//       "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
-//   },
-//   {
-//     title:
-//       "‘반도체 쇼크’ 삼성전자, 2분기 영업익 4조6000억원... 전년보다 56% 추락",
-//     source: "SBS 뉴스",
-//     date: "2025.07.08.",
-//     newsicon: "/button.svg",
-//     content:
-//       "더 부진했고, 적자 규모를 줄일 것으로 기대됐던 파운드리(반도체 위탁생산)에서 여전히 2조원 이상의 영업손실이 난 탓이다. 삼성전자는 8일 잠정 실적 발표를 통해...",
-//   },
-// ];
-
-// 예측값 더미데이터
-// const prediction = [{ date: "2025-01-07", close: 62000 }];
+import postRealInvest from "@/services/postRealInvest";
+import fetchRealInvest from "@/services/fetchRealInvest";
 
 const mixedStockData: ChartData[] = [
   {
@@ -108,6 +77,20 @@ export default function InvestmentStockClient() {
   const auth = useAuthStore((s) => s.auth);
 
   const [tab, setTab] = useState<"chart" | "finance">("chart");
+
+  useEffect(() => {
+    if (!auth || !auth.token) {
+      return;
+    }
+    fetchRealInvest(params.stock_code, auth.token).then((data) => {
+      const dotFormatted: ChartData[] = data.prediction.map((item) => ({
+        date: item.date,
+        close: item.close,
+        type: "dot",
+      }));
+      setPrediction(dotFormatted);
+    });
+  }, []);
   const [prediction, setPrediction] = useState<ChartData[]>([]);
   const lastClose =
     prediction.length > 0
@@ -157,6 +140,7 @@ export default function InvestmentStockClient() {
     fetchData();
   }, []);
 
+  // 보간
   if (
     firstPrediction &&
     parseDateString(firstPrediction.date).getTime() -
@@ -254,8 +238,8 @@ export default function InvestmentStockClient() {
                 <MixedChart w={750} h={300} data={chartData} />
               </div>
             ) : (
-              <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400">
-                재무 정보 준비중...
+              <div className="h-[calc(100vh-300px)] w-full">
+                <FinanceTable />
               </div>
             )}
           </div>
@@ -587,7 +571,28 @@ export default function InvestmentStockClient() {
                             </button>
                           )}
 
-                          <button className="bg-[#396FFB] text-white px-4 py-1.5 rounded text-sm">
+                          <button
+                            className="bg-[#396FFB] text-white px-4 py-1.5 rounded text-sm"
+                            onClick={() => {
+                              if (!auth || !auth.token) {
+                                alert("로그인이 필요합니다.");
+                                return;
+                              }
+
+                              postRealInvest(
+                                params.stock_code,
+                                auth.token,
+                                prediction
+                              )
+                                .then(() => {
+                                  alert("예측이 성공적으로 제출되었습니다.");
+                                })
+                                .catch((err) => {
+                                  console.error("예측 제출 실패:", err);
+                                  alert("예측 제출 중 오류가 발생했습니다.");
+                                });
+                            }}
+                          >
                             제출
                           </button>
                         </div>
@@ -639,43 +644,47 @@ export default function InvestmentStockClient() {
             <p className="text-2xl mb-3.5">관련 뉴스</p>
             <div className="flex flex-col gap-3 max-h-[450px] overflow-y-auto">
               {Array.isArray(news) && news.length > 0 ? (
-                news.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-[#1b1b1b] rounded-xl p-4 text-sm flex gap-4"
-                  >
-                    {item.img_url && (
-                      <Image
-                        src={item.img_url}
-                        alt="뉴스 이미지"
-                        width={80}
-                        height={80}
-                        className="rounded object-cover flex-shrink-0"
-                      />
-                    )}
+                news
+                  .slice()
+                  .reverse()
+                  .map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-[#1b1b1b] rounded-xl p-4 text-sm flex gap-4"
+                    >
+                      {item.img_url && (
+                        <Image
+                          src={item.img_url}
+                          alt="뉴스 이미지"
+                          width={80}
+                          height={80}
+                          className="rounded object-cover flex-shrink-0"
+                          style={{ width: "80px", height: "80px" }}
+                        />
+                      )}
 
-                    <div className="flex flex-col justify-between w-full">
-                      <div>
-                        <div className="font-semibold mb-1">
-                          <a
-                            href={item.news_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:underline"
-                          >
-                            {item.title}
-                          </a>
+                      <div className="flex flex-col justify-between w-full">
+                        <div>
+                          <div className="font-semibold mb-1">
+                            <a
+                              href={item.news_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:underline"
+                            >
+                              {item.title}
+                            </a>
+                          </div>
+                          <div className="text-[#C7C7C7] text-xs font-thin line-clamp-2">
+                            {item.context}
+                          </div>
                         </div>
-                        <div className="text-[#C7C7C7] text-xs font-thin line-clamp-2">
-                          {item.context}
+                        <div className="text-gray-400 text-xs mt-2 self-end">
+                          {item.date}
                         </div>
-                      </div>
-                      <div className="text-gray-400 text-xs mt-2 self-end">
-                        {item.date}
                       </div>
                     </div>
-                  </div>
-                ))
+                  ))
               ) : (
                 <div className="flex flex-col items-center">
                   <div className="loader mb-6" />
