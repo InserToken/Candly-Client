@@ -9,7 +9,7 @@ type HolidayState = {
 const useHolidayStore = create<HolidayState>((set) => ({
   holidaySet: null,
   loadHolidays: async () => {
-    const res = await fetch("http://localhost:3001/api/holiday");
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/holiday`);
     const data: string[] = await res.json();
     set({ holidaySet: new Set(data) });
   },
