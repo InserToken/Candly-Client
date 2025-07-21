@@ -117,24 +117,32 @@ export default function CandleChart({
   );
   const bb_visible = bbands_full.slice(startIndex, startIndex + visibleCandles);
   const rsi_visible = rsi_full.slice(startIndex, startIndex + visibleCandles);
+
   // 팬/줌 핸들러
-  const handleWheel = (e: React.WheelEvent) => {
-    const oldVisible = visibleCandles;
-    let nextVisible = oldVisible;
-    if (e.deltaY < 0) nextVisible = Math.max(MIN_CANDLES, oldVisible - 2);
-    else nextVisible = Math.min(MAX_CANDLES, oldVisible + 2);
+  const handleWheelLikeReact = React.useCallback(
+    (e: any) => {
+      // deltaY, offsetX 등은 native, react event 모두 존재
+      let deltaY = e.deltaY;
+      let offsetX = e.offsetX || e.nativeEvent?.offsetX || 0;
 
-    const mouseX = e.nativeEvent.offsetX;
-    const chartW = w - LEFT_AXIS_WIDTH;
-    const centerRatio = mouseX / chartW;
-    const centerIdx = startIndex + Math.floor(centerRatio * oldVisible);
+      const oldVisible = visibleCandles;
+      let nextVisible = oldVisible;
+      if (deltaY < 0) nextVisible = Math.max(MIN_CANDLES, oldVisible - 2);
+      else nextVisible = Math.min(MAX_CANDLES, oldVisible + 2);
 
-    let nextStart = Math.round(centerIdx - centerRatio * nextVisible);
-    nextStart = Math.max(0, Math.min(MAX_CANDLES - nextVisible, nextStart));
+      const chartW = w - LEFT_AXIS_WIDTH;
+      const centerRatio = offsetX / chartW;
+      const centerIdx = startIndex + Math.floor(centerRatio * oldVisible);
 
-    setVisibleCandles(nextVisible);
-    setStartIndex(nextStart);
-  };
+      let nextStart = Math.round(centerIdx - centerRatio * nextVisible);
+      nextStart = Math.max(0, Math.min(MAX_CANDLES - nextVisible, nextStart));
+
+      setVisibleCandles(nextVisible);
+      setStartIndex(nextStart);
+    },
+    [visibleCandles, startIndex, MAX_CANDLES, w]
+  );
+
   const onMouseDown = (e: React.MouseEvent) => {
     dragging.current = true;
     dragStartX.current = e.clientX;
@@ -321,9 +329,29 @@ export default function CandleChart({
     );
   }
 
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  // addEventListener로 등록
+  React.useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      handleWheelLikeReact(e);
+    };
+    chart.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      chart.removeEventListener("wheel", onWheel);
+    };
+  }, [handleWheelLikeReact]);
+
   // --- 렌더 ---
   return (
-    <div className="flex flex-col" style={{ width: w, position: "relative" }}>
+    <div
+      className="flex flex-col"
+      style={{ width: w, position: "relative" }}
+      ref={chartRef}
+    >
       {/* 1. 캔들차트 (상단) */}
       <div className="flex">
         <svg width={LEFT_AXIS_WIDTH} height={CHART_HEIGHT}>
@@ -344,7 +372,6 @@ export default function CandleChart({
           width={chartWidth}
           height={CHART_HEIGHT}
           style={{ userSelect: "none", background: "#1b1b1b", outline: "none" }}
-          onWheel={handleWheel}
           onMouseDown={onMouseDown}
           onMouseUp={onMouseUp}
           onMouseMove={handleChartMouseMove}
@@ -524,7 +551,6 @@ export default function CandleChart({
           width={chartWidth}
           height={VOLUME_HEIGHT}
           style={{ background: "#1b1b1b", outline: "none" }}
-          onWheel={handleWheel}
           onMouseDown={onMouseDown}
           onMouseUp={onMouseUp}
           onMouseMove={handleVolumeChartMouseMove}
