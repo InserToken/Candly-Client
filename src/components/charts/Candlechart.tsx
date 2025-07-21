@@ -662,8 +662,9 @@ export default function CandleChart({
             fontSize: 13,
             boxShadow: "0 2px 10px #0003",
             zIndex: 100,
-            minWidth: 130,
-            whiteSpace: "nowrap",
+            width: 220, // <<--- 추가!
+            //minWidth: 130,     // 필요에 따라 minWidth는 지워도 됨
+            whiteSpace: "normal",
             border: "1px solid #396FFB88",
           }}
         >
@@ -693,19 +694,6 @@ export default function CandleChart({
                   >
                     {item.title}
                   </a>
-                  <div
-                    style={{
-                      color: "#d6d6d6",
-                      fontSize: 12,
-                      marginTop: 2,
-                      maxHeight: 40,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      lineHeight: "1.35",
-                    }}
-                  >
-                    {item.context}
-                  </div>
                 </div>
               ))}
             </div>
