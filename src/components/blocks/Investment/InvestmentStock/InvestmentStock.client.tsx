@@ -16,6 +16,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { getStock } from "@/services/userStock-service";
 import { Stocks } from "@/types/UserStock";
 import { useRouter } from "next/navigation";
+import FinanceTable from "@/components/charts/FinanceTable";
 import { fetchRealNews } from "@/services/fetchRealNews";
 
 // 뉴스 더미데이터
@@ -183,6 +184,9 @@ export default function InvestmentStockClient() {
     stock_code: string;
   }>();
 
+  useEffect(() => {
+    console.log(`${tab} 바뀜`);
+  }, [tab]);
   type NewsItem = {
     _id: string;
     title: string;
@@ -254,8 +258,8 @@ export default function InvestmentStockClient() {
                 <MixedChart w={750} h={300} data={chartData} />
               </div>
             ) : (
-              <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400">
-                재무 정보 준비중...
+              <div className="h-[calc(100vh-300px)] w-full">
+                <FinanceTable />
               </div>
             )}
           </div>
