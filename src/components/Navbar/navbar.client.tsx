@@ -63,7 +63,8 @@ export default function Navbar() {
       </Link>
       <ul className="flex gap-15">
         {menuItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive =
+            pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           if (item.dynamic) {
             return (
