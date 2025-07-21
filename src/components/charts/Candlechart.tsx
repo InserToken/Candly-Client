@@ -1,7 +1,7 @@
 "use client";
 import React, { useRef, useState } from "react";
-import { getMovingAverage, getBollingerBands } from "@/utils/indicator";
 import dayjs from "dayjs";
+import { getMovingAverage, getBollingerBands } from "@/utils/indicator";
 
 export type Candle = {
   date: string;
@@ -36,7 +36,7 @@ const TOTAL_HEIGHT = CHART_HEIGHT + VOLUME_HEIGHT + DATE_AXIS_HEIGHT;
 const MIN_CANDLES = 10;
 const SHOW_LEN = 200;
 const SKIP_LAST = 20;
-const HIDE_COUNT = 10; // 마지막 10개를 가림
+const HIDE_COUNT = 21; // 마지막 10개를 가림
 
 function getDateTickFormat(
   index: number,
@@ -67,7 +67,8 @@ export default function CandleChart({
 }: CandleChartProps) {
   // ==== 데이터 슬라이싱 ====
   const startIdx = Math.max(0, data.length - SHOW_LEN - SKIP_LAST);
-  const endIdx = Math.max(0, data.length - SKIP_LAST);
+  // const endIdx = Math.max(0, data.length - SKIP_LAST);
+  const endIdx = data.length;
   const chartData = data.slice(startIdx, endIdx);
 
   const ma5_full = getMovingAverage(indi_data, 5).slice(startIdx, endIdx);
@@ -75,7 +76,7 @@ export default function CandleChart({
   const ma60_full = getMovingAverage(indi_data, 60).slice(startIdx, endIdx);
   const ma120_full = getMovingAverage(indi_data, 120).slice(startIdx, endIdx);
   const bbands_full = getBollingerBands(data, 20, 2).slice(startIdx, endIdx);
-
+  const rsi_full = getRSI(data, 20).slice(startIdx, endIdx);
   const MAX_CANDLES = chartData.length;
   const [visibleCandles, setVisibleCandles] = useState(
     Math.min(40, MAX_CANDLES)
@@ -116,7 +117,7 @@ export default function CandleChart({
     startIndex + visibleCandles
   );
   const bb_visible = bbands_full.slice(startIndex, startIndex + visibleCandles);
-
+  const rsi_visible = rsi_full.slice(startIndex, startIndex + visibleCandles);
   // 팬/줌 핸들러
   const handleWheel = (e: React.WheelEvent) => {
     const oldVisible = visibleCandles;
@@ -464,7 +465,7 @@ export default function CandleChart({
               top: 0,
               width: overlayWidth,
               height: CHART_HEIGHT,
-              background: "rgba(20,20,20,0.8)",
+              background: "rgba(0,0,0)",
               pointerEvents: "none",
               zIndex: 5,
               borderLeft: "2px dashed #edcb37",
@@ -579,7 +580,7 @@ export default function CandleChart({
               top: 0,
               width: overlayWidth,
               height: VOLUME_HEIGHT,
-              background: "rgba(20,20,20,0.7)",
+              background: "rgba(0, 0, 0)",
               pointerEvents: "none",
               zIndex: 5,
               display: "block",
@@ -624,7 +625,7 @@ export default function CandleChart({
               top: 0,
               width: overlayWidth,
               height: DATE_AXIS_HEIGHT,
-              background: "rgba(20,20,20,0.55)",
+              background: "rgba(0, 0, 0)",
               pointerEvents: "none",
               zIndex: 5,
               display: "block",
