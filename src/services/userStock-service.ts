@@ -67,7 +67,7 @@ export async function getStock(token: string) {
 }
 
 // 종목별 보유 주식 DB 조회
-export async function getRanking() {
+export async function getRankReal() {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/userStock`);
   const data = await res.json();
   if (!res.ok) {

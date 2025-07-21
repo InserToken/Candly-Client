@@ -11,8 +11,25 @@ export type ProblemScore = {
   title?: string;
 
   problem_id?: {
+    _id?: string;
     title?: string;
     stock_code?: string;
     date?: string;
   };
+};
+
+export type GetPracticeScore = {
+  answer: string;
+  user_id?: {
+    nickname: string;
+  };
+  feedback?: string;
+  score: number;
+  logic: number;
+  momentum: number;
+  macroEconomy: number;
+  marketIssues: number;
+  quantEvidence: number;
+  date: Date;
+  problem_id?: string;
 };
