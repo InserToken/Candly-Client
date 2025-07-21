@@ -62,12 +62,19 @@ function getDateTickFormat(
     return candle.date.slice(2, 7).replace("-0", "-");
   return candle.date.slice(8);
 }
+
 export default function CandleChart({
   w,
   data,
   indi_data,
   news,
 }: CandleChartProps) {
+  // 예외값 보정
+  data = data.map((d) =>
+    d.open === 0 && d.high === 0 && d.low === 0 && d.close > 0
+      ? { ...d, open: d.close, high: d.close, low: d.close }
+      : d
+  );
   // ==== 데이터 슬라이싱 ====
   const startIdx = Math.max(0, data.length - SHOW_LEN - SKIP_LAST);
   const endIdx = data.length;
@@ -287,6 +294,32 @@ export default function CandleChart({
     getY
   );
 
+  // 볼린저 밴드 영역 채우기를 위한 path 데이터 생성
+  const createBollingerBandPath = () => {
+    const upperPoints = [];
+    const lowerPoints = [];
+
+    bb_visible.forEach((bb, i) => {
+      if (bb?.upper && bb?.lower) {
+        const x = i * candleSpacing;
+        upperPoints.push(`${x},${getY(bb.upper)}`);
+        lowerPoints.push(`${x},${getY(bb.lower)}`);
+      }
+    });
+
+    if (upperPoints.length === 0) return "";
+
+    // 상단선을 그리고, 하단선을 역순으로 연결해서 닫힌 영역 만들기
+    const pathData = [
+      `M ${upperPoints[0]}`, // 시작점으로 이동
+      `L ${upperPoints.slice(1).join(" L ")}`, // 상단선 그리기
+      `L ${lowerPoints.slice().reverse().join(" L ")}`, // 하단선을 역순으로 그리기
+      "Z", // path 닫기
+    ].join(" ");
+
+    return pathData;
+  };
+
   // --- [QUIZ Overlay: 보이는 영역만큼만 가림] ---
   const overlayStartGlobalIdx = startIdx + chartData.length - HIDE_COUNT;
   const chartLastGlobalIdx = startIdx + chartData.length - 1;
@@ -393,6 +426,15 @@ export default function CandleChart({
               opacity={0.7}
             />
           ))}
+
+          {/* 볼린저 밴드 영역 채우기 */}
+          <path
+            d={createBollingerBandPath()}
+            fill="#EDCB37"
+            fillOpacity={0.1}
+            stroke="none"
+          />
+
           {/* 이동평균선/BB */}
           <polyline
             fill="none"
@@ -406,7 +448,7 @@ export default function CandleChart({
             stroke="#E8395F"
             strokeWidth="2"
             points={ma20Points}
-            opacity={0.8}
+            opacity={0.85}
           />
           <polyline
             fill="none"
@@ -422,13 +464,13 @@ export default function CandleChart({
             points={ma120Points}
             opacity={0.7}
           />
-          <polyline
+          {/* <polyline
             fill="none"
             stroke="#EDCB37"
             strokeWidth="2"
             points={bb_middle_points}
             opacity={0.8}
-          />
+          /> */}
           <polyline
             fill="none"
             stroke="#EDCB37"
