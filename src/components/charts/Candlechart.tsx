@@ -1,8 +1,7 @@
 "use client";
 import React, { useRef, useState } from "react";
-import { getMovingAverage, getBollingerBands, getRSI } from "@/utils/indicator";
 import dayjs from "dayjs";
-
+import { getMovingAverage, getBollingerBands, getRSI } from "@/utils/indicator";
 
 export type Candle = {
   date: string;
@@ -32,12 +31,14 @@ type CandleChartProps = {
 const LEFT_AXIS_WIDTH = 60;
 const CHART_HEIGHT = 220;
 const VOLUME_HEIGHT = 100;
+const RSI_HEIGHT = 80;
 const DATE_AXIS_HEIGHT = 24;
-
+const TOTAL_HEIGHT =
+  CHART_HEIGHT + VOLUME_HEIGHT + RSI_HEIGHT + DATE_AXIS_HEIGHT;
 const MIN_CANDLES = 10;
 const SHOW_LEN = 200;
 const SKIP_LAST = 20;
-const HIDE_COUNT = 21; // 마지막 10개를 가림
+const HIDE_COUNT = 21; // 마지막 21개 가림
 
 function getDateTickFormat(
   index: number,
@@ -60,7 +61,6 @@ function getDateTickFormat(
   return candle.date.slice(8);
 }
 
-
 export default function CandleChart({
   w,
   h = TOTAL_HEIGHT,
@@ -68,10 +68,8 @@ export default function CandleChart({
   indi_data,
   news,
 }: CandleChartProps) {
-export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
-  // 데이터 슬라이싱
+  // ==== 데이터 슬라이싱 ====
   const startIdx = Math.max(0, data.length - SHOW_LEN - SKIP_LAST);
-  // const endIdx = Math.max(0, data.length - SKIP_LAST);
   const endIdx = data.length;
   const chartData = data.slice(startIdx, endIdx);
 
@@ -81,6 +79,7 @@ export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
   const ma120_full = getMovingAverage(indi_data, 120).slice(startIdx, endIdx);
   const bbands_full = getBollingerBands(data, 20, 2).slice(startIdx, endIdx);
   const rsi_full = getRSI(data, 20).slice(startIdx, endIdx);
+
   const MAX_CANDLES = chartData.length;
   const [visibleCandles, setVisibleCandles] = useState(
     Math.min(40, MAX_CANDLES)
@@ -122,6 +121,7 @@ export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
   );
   const bb_visible = bbands_full.slice(startIndex, startIndex + visibleCandles);
   const rsi_visible = rsi_full.slice(startIndex, startIndex + visibleCandles);
+
   // 팬/줌 핸들러
   const handleWheel = (e: React.WheelEvent) => {
     const oldVisible = visibleCandles;
@@ -216,6 +216,7 @@ export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
   const chartWidth = w - LEFT_AXIS_WIDTH;
   const maxPrice = Math.max(...slicedData.map((d) => d.high));
   const minPrice = Math.min(...slicedData.map((d) => d.low));
+  const midPrice = Math.round((maxPrice + minPrice) / 2);
   const priceRange = maxPrice - minPrice;
   const padding = priceRange * 0.1;
   const chartMax = maxPrice + padding;
@@ -224,37 +225,22 @@ export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
   const getY = (price: number) =>
     ((chartMax - price) / chartRange) * CHART_HEIGHT;
 
+  // 가격 축 3개만
+  const getPriceTicks = () => [
+    { y: getY(maxPrice), price: maxPrice },
+    { y: getY(midPrice), price: midPrice },
+    { y: getY(minPrice), price: minPrice },
+  ];
+
   const volumes = slicedData.map((d) => d.volume ?? 0);
   const maxVolume = Math.max(...volumes, 1);
   const getVolumeY = (volume: number) =>
     VOLUME_HEIGHT - (volume / maxVolume) * VOLUME_HEIGHT;
 
+  // candleSpacing은 항상 (visibleCandles - 1)로 나누기!
   const candleSpacing =
     visibleCandles > 1 ? chartWidth / (visibleCandles - 1) : chartWidth;
   const candleWidth = Math.min(40, candleSpacing * 0.7, 24);
-
-  // 그리드
-  const getGridLines = () => {
-    const lines = [];
-    const stepCount = 8;
-    const roughStep = chartRange / stepCount;
-    const pow10 = Math.pow(10, Math.floor(Math.log10(roughStep)));
-    const niceStep =
-      roughStep / pow10 < 2
-        ? pow10
-        : roughStep / pow10 < 5
-        ? 5 * pow10
-        : 10 * pow10;
-    const niceMin = Math.floor(chartMin / niceStep) * niceStep;
-    const niceMax = Math.ceil(chartMax / niceStep) * niceStep;
-    for (let price = niceMin; price <= niceMax; price += niceStep) {
-      const y = getY(price);
-      if (y >= 0 && y <= CHART_HEIGHT) {
-        lines.push({ y, price });
-      }
-    }
-    return lines;
-  };
 
   function getLinePoints(
     arr: (number | null)[],
@@ -290,15 +276,12 @@ export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
   );
 
   // --- [QUIZ Overlay: 보이는 영역만큼만 가림] ---
-  // 전체 chartData 기준 오버레이 적용 구간(global index)
   const overlayStartGlobalIdx = startIdx + chartData.length - HIDE_COUNT;
   const chartLastGlobalIdx = startIdx + chartData.length - 1;
 
-  // slicedData의 global index 구간
   const slicedStartGlobalIdx = startIdx + startIndex;
   const slicedEndGlobalIdx = slicedStartGlobalIdx + slicedData.length - 1;
 
-  // 실제 오버레이가 붙을 slicedData 내 인덱스 계산
   const visibleOverlayStart = Math.max(
     overlayStartGlobalIdx,
     slicedStartGlobalIdx
@@ -316,11 +299,20 @@ export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
 
   // --- 렌더 ---
   return (
-    <div className="flex flex-col" style={{ width: w, position: "relative" }}>
+    <div
+      className="flex flex-col"
+      style={{
+        width: "100%",
+        maxWidth: w,
+        position: "relative",
+        overflow: "hidden",
+        background: "inherit",
+      }}
+    >
       {/* 1. 캔들차트 (상단) */}
-      <div className="flex">
+      <div className="flex" style={{ width: "100%" }}>
         <svg width={LEFT_AXIS_WIDTH} height={CHART_HEIGHT}>
-          {getGridLines().map((line, i) => (
+          {getPriceTicks().map((line, i) => (
             <text
               key={i}
               x={LEFT_AXIS_WIDTH - 5}
@@ -336,7 +328,14 @@ export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
         <svg
           width={chartWidth}
           height={CHART_HEIGHT}
-          style={{ userSelect: "none", background: "#1b1b1b", outline: "none" }}
+          viewBox={`0 0 ${chartWidth} ${CHART_HEIGHT}`}
+          style={{
+            width: "100%",
+            background: "#1b1b1b",
+            outline: "none",
+            display: "block",
+            flex: 1,
+          }}
           onWheel={handleWheel}
           onMouseDown={onMouseDown}
           onMouseUp={onMouseUp}
@@ -344,8 +343,8 @@ export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
           onMouseLeave={handleCandleMouseLeave}
           tabIndex={0}
         >
-          {/* 그리드라인 */}
-          {getGridLines().map((line, i) => (
+          {/* 그리드 3개만 */}
+          {getPriceTicks().map((line, i) => (
             <line
               key={i}
               x1={0}
@@ -355,6 +354,7 @@ export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
               stroke="#374151"
               strokeDasharray="3,3"
               strokeWidth="1"
+              opacity={0.7}
             />
           ))}
           {/* 이동평균선/BB */}
@@ -469,7 +469,7 @@ export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
               top: 0,
               width: overlayWidth,
               height: CHART_HEIGHT,
-              background: "rgba(0,0,0)",
+              background: "rgba(0,0,0,1)",
               pointerEvents: "none",
               zIndex: 5,
               borderLeft: "2px dashed #edcb37",
@@ -492,16 +492,14 @@ export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
                 }}
               >
                 ?
-                {/* <br />
-                이후 구간을 예측해보세요 */}
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* 2. 거래량(볼륨) 차트 (하단) */}
-      <div className="flex" style={{ position: "relative" }}>
+      {/* 2. 거래량(볼륨) 차트 (중간) */}
+      <div className="flex" style={{ position: "relative", width: "100%" }}>
         <svg width={LEFT_AXIS_WIDTH} height={VOLUME_HEIGHT}>
           <text
             x={LEFT_AXIS_WIDTH - 5}
@@ -516,7 +514,14 @@ export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
         <svg
           width={chartWidth}
           height={VOLUME_HEIGHT}
-          style={{ background: "#1b1b1b", outline: "none" }}
+          viewBox={`0 0 ${chartWidth} ${VOLUME_HEIGHT}`}
+          style={{
+            width: "100%",
+            background: "#1b1b1b",
+            outline: "none",
+            display: "block",
+            flex: 1,
+          }}
           onWheel={handleWheel}
           onMouseDown={onMouseDown}
           onMouseUp={onMouseUp}
@@ -584,7 +589,7 @@ export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
               top: 0,
               width: overlayWidth,
               height: VOLUME_HEIGHT,
-              background: "rgba(0, 0, 0)",
+              background: "rgba(0, 0, 0, 1)",
               pointerEvents: "none",
               zIndex: 5,
               display: "block",
@@ -593,13 +598,111 @@ export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
         )}
       </div>
 
-      {/* 3. 날짜 라벨 (아래) */}
-      <div className="flex" style={{ position: "relative" }}>
+      {/* 3. RSI 차트 (중간) */}
+      <div className="flex" style={{ position: "relative", width: "100%" }}>
+        <svg width={LEFT_AXIS_WIDTH} height={RSI_HEIGHT}>
+          <text
+            x={LEFT_AXIS_WIDTH - 8}
+            y={16}
+            fill="#b9b9b9"
+            fontSize="11"
+            textAnchor="end"
+          >
+            RSI
+          </text>
+        </svg>
+        <svg
+          width={chartWidth}
+          height={RSI_HEIGHT}
+          viewBox={`0 0 ${chartWidth} ${RSI_HEIGHT}`}
+          style={{
+            width: "100%",
+            background: "#181818",
+            outline: "none",
+            display: "block",
+            flex: 1,
+          }}
+        >
+          {/* 70선 */}
+          <line
+            x1={0}
+            y1={(1 - 0.7) * RSI_HEIGHT}
+            x2={chartWidth}
+            y2={(1 - 0.7) * RSI_HEIGHT}
+            stroke="#E8395F"
+            strokeDasharray="3,2"
+            strokeWidth="1"
+            opacity={0.55}
+          />
+          {/* 30선 */}
+          <line
+            x1={0}
+            y1={(1 - 0.3) * RSI_HEIGHT}
+            x2={chartWidth}
+            y2={(1 - 0.3) * RSI_HEIGHT}
+            stroke="#00B0F0"
+            strokeDasharray="3,2"
+            strokeWidth="1"
+            opacity={0.55}
+          />
+          {/* 50선 */}
+          <line
+            x1={0}
+            y1={(1 - 0.5) * RSI_HEIGHT}
+            x2={chartWidth}
+            y2={(1 - 0.5) * RSI_HEIGHT}
+            stroke="#aaa"
+            strokeDasharray="2,3"
+            strokeWidth="1"
+            opacity={0.3}
+          />
+          {/* RSI 라인 */}
+          <polyline
+            fill="none"
+            stroke="#FFD600"
+            strokeWidth="2"
+            points={rsi_visible
+              .map((val, i) =>
+                val !== null && !isNaN(val)
+                  ? `${i * candleSpacing},${(1 - val / 100) * RSI_HEIGHT}`
+                  : null
+              )
+              .filter(Boolean)
+              .join(" ")}
+            opacity={0.96}
+          />
+        </svg>
+        {/* === RSI 영역 Overlay === */}
+        {numVisibleOverlay > 0 && (
+          <div
+            style={{
+              position: "absolute",
+              left: overlayLeft,
+              top: 0,
+              width: overlayWidth,
+              height: RSI_HEIGHT,
+              background: "rgba(0,0,0,1)",
+              pointerEvents: "none",
+              zIndex: 5,
+              display: "block",
+            }}
+          />
+        )}
+      </div>
+
+      {/* 4. 날짜 라벨 (아래) */}
+      <div className="flex" style={{ position: "relative", width: "100%" }}>
         <svg width={LEFT_AXIS_WIDTH} height={DATE_AXIS_HEIGHT} />
         <svg
           width={chartWidth}
           height={DATE_AXIS_HEIGHT}
-          style={{ background: "#1b1b1b" }}
+          viewBox={`0 0 ${chartWidth} ${DATE_AXIS_HEIGHT}`}
+          style={{
+            width: "100%",
+            background: "#1b1b1b",
+            display: "block",
+            flex: 1,
+          }}
         >
           {slicedData.map((candle, i) => {
             const x = i * candleSpacing;
@@ -629,7 +732,7 @@ export default function CandleChart({ w, data, indi_data }: CandleChartProps) {
               top: 0,
               width: overlayWidth,
               height: DATE_AXIS_HEIGHT,
-              background: "rgba(0, 0, 0)",
+              background: "rgba(0, 0, 0, 1)",
               pointerEvents: "none",
               zIndex: 5,
               display: "block",
