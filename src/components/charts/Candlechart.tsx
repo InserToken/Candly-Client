@@ -1,6 +1,7 @@
 "use client";
 import React, { useRef, useState } from "react";
 import { getMovingAverage, getRSI, getBollingerBands } from "@/utils/indicator";
+import dayjs from "dayjs";
 
 export type Candle = {
   date: string;
@@ -11,11 +12,21 @@ export type Candle = {
   volume: number;
 };
 
+type NewsItem = {
+  _id: string;
+  title: string;
+  date: string;
+  context: string;
+  news_url: string;
+  img_url?: string;
+};
+
 type CandleChartProps = {
   w: number;
   h?: number;
   data: Candle[];
   indi_data: Candle[];
+  news: NewsItem[];
 };
 
 const LEFT_AXIS_WIDTH = 60;
@@ -53,6 +64,7 @@ export default function CandleChart({
   h = TOTAL_HEIGHT,
   data,
   indi_data,
+  news,
 }: CandleChartProps) {
   // ==== 데이터 슬라이싱 ====
   const startIdx = Math.max(0, data.length - SHOW_LEN - SKIP_LAST);
@@ -76,6 +88,26 @@ export default function CandleChart({
   const dragging = useRef(false);
   const dragStartX = useRef(0);
   const dragStartIndex = useRef(0);
+
+  // 툴팁 state
+
+  const [tooltip, setTooltip] = useState<{
+    show: boolean;
+    x: number;
+    y: number;
+    idx?: number;
+    data?: Candle;
+    section?: "candle" | "volume";
+  } | null>(null);
+
+  const tooltipNews =
+    tooltip?.data && news
+      ? news.filter((item) => {
+          const newsDate = dayjs(item.date);
+          const candleDate = dayjs(tooltip.data!.date);
+          return newsDate.isSame(candleDate);
+        })
+      : [];
 
   // 팬/줌 구간
   const slicedData = chartData.slice(startIndex, startIndex + visibleCandles);
@@ -125,6 +157,58 @@ export default function CandleChart({
     dragging.current = false;
     document.body.style.cursor = "";
   };
+
+  const getNearestCandleIdx = (offsetX: number) => {
+    return Math.round(offsetX / candleSpacing);
+  };
+
+  const handleCandleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const idx = getNearestCandleIdx(offsetX);
+    if (idx < 0 || idx >= slicedData.length) {
+      setTooltip(null);
+      return;
+    }
+    setTooltip({
+      show: true,
+      x: offsetX + LEFT_AXIS_WIDTH,
+      y: e.clientY - rect.top,
+      idx,
+      data: slicedData[idx],
+      section: "candle",
+    });
+  };
+  const handleChartMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    handleCandleMouseMove(e);
+    onMouseMove(e);
+  };
+
+  const handleCandleMouseLeave = () => setTooltip(null);
+
+  const handleVolumeMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const idx = getNearestCandleIdx(offsetX);
+    if (idx < 0 || idx >= slicedData.length) {
+      setTooltip(null);
+      return;
+    }
+    setTooltip({
+      show: true,
+      x: offsetX + LEFT_AXIS_WIDTH,
+      y: e.clientY + CHART_HEIGHT + 8,
+      idx,
+      data: slicedData[idx],
+      section: "volume",
+    });
+  };
+  const handleVolumeChartMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    handleVolumeMouseMove(e);
+    onMouseMove(e);
+  };
+
+  const handleVolumeMouseLeave = () => setTooltip(null);
 
   // ==== 스케일 계산 ====
   const chartWidth = w - LEFT_AXIS_WIDTH;
@@ -212,7 +296,7 @@ export default function CandleChart({
   // ========== JSX ================
   // ===============================
   return (
-    <div className="flex flex-col" style={{ width: w }}>
+    <div className="flex flex-col" style={{ width: w, position: "relative" }}>
       {/* 1. 캔들차트 (상단) */}
       <div className="flex">
         <svg width={LEFT_AXIS_WIDTH} height={CHART_HEIGHT}>
@@ -236,9 +320,9 @@ export default function CandleChart({
           style={{ userSelect: "none", background: "#1b1b1b", outline: "none" }}
           onWheel={handleWheel}
           onMouseDown={onMouseDown}
-          onMouseMove={onMouseMove}
           onMouseUp={onMouseUp}
-          onMouseLeave={onMouseUp}
+          onMouseMove={handleChartMouseMove}
+          onMouseLeave={handleCandleMouseLeave}
           tabIndex={0}
         >
           {/* 그리드라인 */}
@@ -304,6 +388,18 @@ export default function CandleChart({
             points={bb_lower_points}
             opacity={0.7}
           />
+          {tooltip?.show && tooltip.idx !== undefined && (
+            <line
+              x1={tooltip.idx * candleSpacing}
+              y1={0}
+              x2={tooltip.idx * candleSpacing}
+              y2={CHART_HEIGHT}
+              stroke="#53A6FA"
+              strokeWidth={1.5}
+              opacity={0.7}
+              pointerEvents="none"
+            />
+          )}
           {/* 캔들 */}
           {slicedData.map((candle, i) => {
             const x = i * candleSpacing;
@@ -313,6 +409,7 @@ export default function CandleChart({
             const bodyHeight = Math.max(bodyBottom - bodyTop, 2);
             const wickTop = getY(candle.high);
             const wickBottom = getY(candle.low);
+            const highlight = tooltip?.show && tooltip.idx === i;
             return (
               <g key={i}>
                 <line
@@ -330,6 +427,15 @@ export default function CandleChart({
                   height={bodyHeight}
                   fill={isRising ? "#3B82F6" : "#EF4444"}
                   rx={4}
+                  style={
+                    highlight
+                      ? {
+                          filter: "drop-shadow(0 0 8px #53A6FA88)",
+                          stroke: "#53A6FA",
+                          strokeWidth: 2,
+                        }
+                      : {}
+                  }
                 />
               </g>
             );
@@ -357,9 +463,9 @@ export default function CandleChart({
           style={{ background: "#1b1b1b", outline: "none" }}
           onWheel={handleWheel}
           onMouseDown={onMouseDown}
-          onMouseMove={onMouseMove}
           onMouseUp={onMouseUp}
-          onMouseLeave={onMouseUp}
+          onMouseMove={handleVolumeChartMouseMove}
+          onMouseLeave={handleVolumeMouseLeave}
           tabIndex={0}
         >
           {/* 볼륨 그리드라인 */}
@@ -371,6 +477,18 @@ export default function CandleChart({
             stroke="#444"
             strokeDasharray="2,2"
           />
+          {tooltip?.show && tooltip.idx !== undefined && (
+            <line
+              x1={tooltip.idx * candleSpacing}
+              y1={0}
+              x2={tooltip.idx * candleSpacing}
+              y2={VOLUME_HEIGHT}
+              stroke="#53A6FA"
+              strokeWidth={1.5}
+              opacity={0.7}
+              pointerEvents="none"
+            />
+          )}
           {/* 볼륨 막대 */}
           {slicedData.map((candle, i) => {
             const x = i * candleSpacing;
@@ -378,6 +496,7 @@ export default function CandleChart({
             const isRising = candle.close > candle.open;
             const barY = getVolumeY(vol);
             const barHeight = VOLUME_HEIGHT - barY;
+            const highlight = tooltip?.show && tooltip.idx === i;
             return (
               <rect
                 key={i}
@@ -388,6 +507,15 @@ export default function CandleChart({
                 fill={isRising ? "#3B82F6" : "#EF4444"}
                 opacity="0.6"
                 rx={2}
+                style={
+                  highlight
+                    ? {
+                        filter: "drop-shadow(0 0 7px #53A6FA88)",
+                        stroke: "#53A6FA",
+                        strokeWidth: 2,
+                      }
+                    : {}
+                }
               />
             );
           })}
@@ -422,6 +550,74 @@ export default function CandleChart({
           })}
         </svg>
       </div>
+      {/* 툴팁 */}
+      {tooltip?.show && tooltip.data && tooltip.idx !== undefined && (
+        <div
+          style={{
+            position: "absolute",
+            left: tooltip.x + 18,
+            top:
+              tooltip.section === "volume"
+                ? CHART_HEIGHT + VOLUME_HEIGHT / 2 - 60
+                : 40,
+            background: "#232323",
+            color: "#fff",
+            padding: "12px 16px",
+            borderRadius: 8,
+            pointerEvents: "none",
+            fontSize: 13,
+            boxShadow: "0 2px 10px #0003",
+            zIndex: 100,
+            minWidth: 130,
+            whiteSpace: "nowrap",
+            border: "1px solid #396FFB88",
+          }}
+        >
+          <div>
+            <b>{tooltip.data.date}</b>
+          </div>
+          <div>시: {tooltip.data.open.toLocaleString()}</div>
+          <div>고: {tooltip.data.high.toLocaleString()}</div>
+          <div>저: {tooltip.data.low.toLocaleString()}</div>
+          <div>종: {tooltip.data.close.toLocaleString()}</div>
+          <div>거래량: {tooltip.data.volume.toLocaleString()}</div>
+          {/* ====== 뉴스 영역 추가!! ====== */}
+          {tooltipNews.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ fontWeight: 600, marginBottom: 2 }}>📰 뉴스</div>
+              {tooltipNews.map((item) => (
+                <div key={item._id} style={{ marginBottom: 7 }}>
+                  <a
+                    href={item.news_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: "#5dbbff",
+                      textDecoration: "underline",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {item.title}
+                  </a>
+                  <div
+                    style={{
+                      color: "#d6d6d6",
+                      fontSize: 12,
+                      marginTop: 2,
+                      maxHeight: 40,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      lineHeight: "1.35",
+                    }}
+                  >
+                    {item.context}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
