@@ -33,8 +33,10 @@ const CHART_HEIGHT = 220;
 const VOLUME_HEIGHT = 100;
 const RSI_HEIGHT = 80;
 const DATE_AXIS_HEIGHT = 24;
+
 const TOTAL_HEIGHT =
   CHART_HEIGHT + VOLUME_HEIGHT + RSI_HEIGHT + DATE_AXIS_HEIGHT;
+
 const MIN_CANDLES = 10;
 const SHOW_LEN = 200;
 const SKIP_LAST = 20;
@@ -60,10 +62,8 @@ function getDateTickFormat(
     return candle.date.slice(2, 7).replace("-0", "-");
   return candle.date.slice(8);
 }
-
 export default function CandleChart({
   w,
-  h = TOTAL_HEIGHT,
   data,
   indi_data,
   news,
@@ -123,23 +123,30 @@ export default function CandleChart({
   const rsi_visible = rsi_full.slice(startIndex, startIndex + visibleCandles);
 
   // 팬/줌 핸들러
-  const handleWheel = (e: React.WheelEvent) => {
-    const oldVisible = visibleCandles;
-    let nextVisible = oldVisible;
-    if (e.deltaY < 0) nextVisible = Math.max(MIN_CANDLES, oldVisible - 2);
-    else nextVisible = Math.min(MAX_CANDLES, oldVisible + 2);
+  const handleWheelLikeReact = React.useCallback(
+    (e: any) => {
+      // deltaY, offsetX 등은 native, react event 모두 존재
+      let deltaY = e.deltaY;
+      let offsetX = e.offsetX || e.nativeEvent?.offsetX || 0;
 
-    const mouseX = e.nativeEvent.offsetX;
-    const chartW = w - LEFT_AXIS_WIDTH;
-    const centerRatio = mouseX / chartW;
-    const centerIdx = startIndex + Math.floor(centerRatio * oldVisible);
+      const oldVisible = visibleCandles;
+      let nextVisible = oldVisible;
+      if (deltaY < 0) nextVisible = Math.max(MIN_CANDLES, oldVisible - 2);
+      else nextVisible = Math.min(MAX_CANDLES, oldVisible + 2);
 
-    let nextStart = Math.round(centerIdx - centerRatio * nextVisible);
-    nextStart = Math.max(0, Math.min(MAX_CANDLES - nextVisible, nextStart));
+      const chartW = w - LEFT_AXIS_WIDTH;
+      const centerRatio = offsetX / chartW;
+      const centerIdx = startIndex + Math.floor(centerRatio * oldVisible);
 
-    setVisibleCandles(nextVisible);
-    setStartIndex(nextStart);
-  };
+      let nextStart = Math.round(centerIdx - centerRatio * nextVisible);
+      nextStart = Math.max(0, Math.min(MAX_CANDLES - nextVisible, nextStart));
+
+      setVisibleCandles(nextVisible);
+      setStartIndex(nextStart);
+    },
+    [visibleCandles, startIndex, MAX_CANDLES, w]
+  );
+
   const onMouseDown = (e: React.MouseEvent) => {
     dragging.current = true;
     dragStartX.current = e.clientX;
@@ -168,7 +175,9 @@ export default function CandleChart({
     const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const idx = getNearestCandleIdx(offsetX);
-    if (idx < 0 || idx >= slicedData.length) {
+
+    // === overlay 영역이면 tooltip 안뜸! ===
+    if (idx < 0 || idx >= slicedData.length || isOverlayIdx(idx)) {
       setTooltip(null);
       return;
     }
@@ -181,6 +190,7 @@ export default function CandleChart({
       section: "candle",
     });
   };
+
   const handleChartMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     handleCandleMouseMove(e);
     onMouseMove(e);
@@ -192,17 +202,19 @@ export default function CandleChart({
     const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const idx = getNearestCandleIdx(offsetX);
-    if (idx < 0 || idx >= slicedData.length) {
+
+    // === overlay 영역이면 tooltip 안뜸! ===
+    if (idx < 0 || idx >= slicedData.length || isOverlayIdx(idx)) {
       setTooltip(null);
       return;
     }
     setTooltip({
       show: true,
       x: offsetX + LEFT_AXIS_WIDTH,
-      y: e.clientY + CHART_HEIGHT + 8,
+      y: e.clientY - rect.top,
       idx,
       data: slicedData[idx],
-      section: "volume",
+      section: "candle",
     });
   };
   const handleVolumeChartMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -296,6 +308,29 @@ export default function CandleChart({
     numVisibleOverlay > 0 ? visibleOverlayStart - slicedStartGlobalIdx : 0;
   const overlayLeft = LEFT_AXIS_WIDTH + overlayLocalStart * candleSpacing;
   const overlayWidth = numVisibleOverlay * candleSpacing;
+  const overlayLocalEnd = overlayLocalStart + numVisibleOverlay - 1;
+
+  function isOverlayIdx(idx: number) {
+    return (
+      numVisibleOverlay > 0 && idx > overlayLocalStart && idx <= overlayLocalEnd
+    );
+  }
+
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  // addEventListener로 등록
+  React.useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      handleWheelLikeReact(e);
+    };
+    chart.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      chart.removeEventListener("wheel", onWheel);
+    };
+  }, [handleWheelLikeReact]);
 
   // --- 렌더 ---
   return (
@@ -308,6 +343,7 @@ export default function CandleChart({
         overflow: "hidden",
         background: "inherit",
       }}
+      ref={chartRef}
     >
       {/* 1. 캔들차트 (상단) */}
       <div className="flex" style={{ width: "100%" }}>
@@ -332,11 +368,11 @@ export default function CandleChart({
           style={{
             width: "100%",
             background: "#1b1b1b",
+            userSelect: "none",
             outline: "none",
             display: "block",
             flex: 1,
           }}
-          onWheel={handleWheel}
           onMouseDown={onMouseDown}
           onMouseUp={onMouseUp}
           onMouseMove={handleChartMouseMove}
@@ -522,7 +558,6 @@ export default function CandleChart({
             display: "block",
             flex: 1,
           }}
-          onWheel={handleWheel}
           onMouseDown={onMouseDown}
           onMouseUp={onMouseUp}
           onMouseMove={handleVolumeChartMouseMove}
@@ -758,8 +793,9 @@ export default function CandleChart({
             fontSize: 13,
             boxShadow: "0 2px 10px #0003",
             zIndex: 100,
-            minWidth: 130,
-            whiteSpace: "nowrap",
+            width: 220, // <<--- 추가!
+            //minWidth: 130,     // 필요에 따라 minWidth는 지워도 됨
+            whiteSpace: "normal",
             border: "1px solid #396FFB88",
           }}
         >
@@ -789,19 +825,6 @@ export default function CandleChart({
                   >
                     {item.title}
                   </a>
-                  <div
-                    style={{
-                      color: "#d6d6d6",
-                      fontSize: 12,
-                      marginTop: 2,
-                      maxHeight: 40,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      lineHeight: "1.35",
-                    }}
-                  >
-                    {item.context}
-                  </div>
                 </div>
               ))}
             </div>
