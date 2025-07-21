@@ -19,17 +19,20 @@ export default function SignupClient() {
       return;
     }
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/signup`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: signUpEmail,
-        password: signUpPassword,
-        nickname: signUpNickname,
-      }),
-    });
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/signup`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: signUpEmail,
+          password: signUpPassword,
+          nickname: signUpNickname,
+        }),
+      }
+    );
 
     const data = await res.json();
 
