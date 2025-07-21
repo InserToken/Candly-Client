@@ -6,12 +6,14 @@ import ClickCard from "@/components/buttons/ClickCard";
 import CandleChart from "@/components/charts/Candlechart";
 import { fetchPracticeProblem } from "@/services/fetchPracticeProblem";
 import { fetchPracticeNews } from "@/services/fetchPracticeNews";
+
 type PriceItem = {
   date: string;
   open: number;
   high: number;
   low: number;
   close: number;
+  volume: number;
 };
 
 type PracticeProblemData = {
@@ -43,7 +45,7 @@ export default function PracticeClient() {
 
   // === 차트 부모 width 동적 측정 ===
   const chartBoxRef = useRef<HTMLDivElement>(null);
-  const [parentWidth, setParentWidth] = useState(780); // 초기값: 적당히 780
+  const [parentWidth, setParentWidth] = useState(780); // 초기값
 
   useEffect(() => {
     function updateWidth() {
@@ -56,7 +58,7 @@ export default function PracticeClient() {
     return () => window.removeEventListener("resize", updateWidth);
   }, []);
 
-  // ===== 데이터 패칭 =====
+  // 데이터 패칭
   useEffect(() => {
     fetchPracticeProblem(params.problemId).then((data) => {
       setProblemData(data);
@@ -68,35 +70,6 @@ export default function PracticeClient() {
       setNews(data);
     });
   }, [params.problemId]);
-
-  // 찍어보기
-  useEffect(() => {
-    fetchPracticeProblem(params.problemId).then((data) => {
-      setProblemData(data);
-      console.log("🔥 fetchPracticeProblem 결과:", data);
-
-      // === 볼린저밴드 계산용 윈도우 확인 ===
-      const bbData = data.prices; // 또는 원하는 배열명 사용
-      const targetDate = "2019-08-02";
-      const windowSize = 20;
-      const idx = bbData.findIndex((d) => d.date === targetDate);
-      if (idx >= windowSize - 1) {
-        const window = bbData
-          .slice(idx - windowSize + 1, idx + 1)
-          .map((d) => d.close);
-        console.log("🔥 JS 2019-08-02 윈도우(20개)", window);
-
-        // JS에서 볼린저밴드 직접 계산해보기 (함수 예시)
-        const mean = window.reduce((a, b) => a + b, 0) / windowSize;
-        const std = Math.sqrt(
-          window.reduce((a, v) => a + (v - mean) ** 2, 0) / windowSize
-        );
-        const upper = mean + 2 * std;
-        const lower = mean - 2 * std;
-        console.log("🔥 JS BB 값:", { upper, mean, lower });
-      }
-    });
-  }, []);
 
   return (
     <div className="min-h-screen px-[80px] pt-1">
@@ -152,6 +125,7 @@ export default function PracticeClient() {
                     h={320}
                     data={stockData}
                     indi_data={stockData}
+                    quizEndIndex={80} // ← 퀴즈 구간(오버레이 위치)
                   />
                 ) : (
                   <div>문제가 없습니다.</div>
