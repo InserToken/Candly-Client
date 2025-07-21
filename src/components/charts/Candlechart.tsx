@@ -1,6 +1,6 @@
 "use client";
 import React, { useRef, useState } from "react";
-import { getMovingAverage, getRSI, getBollingerBands } from "@/utils/indicator";
+import { getMovingAverage, getBollingerBands } from "@/utils/indicator";
 import dayjs from "dayjs";
 
 export type Candle = {
@@ -58,7 +58,6 @@ function getDateTickFormat(
     return candle.date.slice(2, 7).replace("-0", "-");
   return candle.date.slice(8);
 }
-
 export default function CandleChart({
   w,
   h = TOTAL_HEIGHT,
@@ -89,7 +88,6 @@ export default function CandleChart({
   const dragStartIndex = useRef(0);
 
   // 툴팁 state
-
   const [tooltip, setTooltip] = useState<{
     show: boolean;
     x: number;
