@@ -1,7 +1,7 @@
 "use client";
 import React, { useRef, useState } from "react";
 import dayjs from "dayjs";
-import { getMovingAverage, getBollingerBands } from "@/utils/indicator";
+import { getMovingAverage, getBollingerBands, getRSI } from "@/utils/indicator";
 
 export type Candle = {
   date: string;
@@ -60,7 +60,6 @@ function getDateTickFormat(
 }
 export default function CandleChart({
   w,
-  h = TOTAL_HEIGHT,
   data,
   indi_data,
   news,
@@ -164,7 +163,9 @@ export default function CandleChart({
     const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const idx = getNearestCandleIdx(offsetX);
-    if (idx < 0 || idx >= slicedData.length) {
+
+    // === overlay 영역이면 tooltip 안뜸! ===
+    if (idx < 0 || idx >= slicedData.length || isOverlayIdx(idx)) {
       setTooltip(null);
       return;
     }
@@ -177,6 +178,7 @@ export default function CandleChart({
       section: "candle",
     });
   };
+
   const handleChartMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     handleCandleMouseMove(e);
     onMouseMove(e);
@@ -188,17 +190,19 @@ export default function CandleChart({
     const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const idx = getNearestCandleIdx(offsetX);
-    if (idx < 0 || idx >= slicedData.length) {
+
+    // === overlay 영역이면 tooltip 안뜸! ===
+    if (idx < 0 || idx >= slicedData.length || isOverlayIdx(idx)) {
       setTooltip(null);
       return;
     }
     setTooltip({
       show: true,
       x: offsetX + LEFT_AXIS_WIDTH,
-      y: e.clientY + CHART_HEIGHT + 8,
+      y: e.clientY - rect.top,
       idx,
       data: slicedData[idx],
-      section: "volume",
+      section: "candle",
     });
   };
   const handleVolumeChartMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -309,6 +313,13 @@ export default function CandleChart({
     numVisibleOverlay > 0 ? visibleOverlayStart - slicedStartGlobalIdx : 0;
   const overlayLeft = LEFT_AXIS_WIDTH + overlayLocalStart * candleSpacing;
   const overlayWidth = numVisibleOverlay * candleSpacing;
+  const overlayLocalEnd = overlayLocalStart + numVisibleOverlay - 1;
+
+  function isOverlayIdx(idx: number) {
+    return (
+      numVisibleOverlay > 0 && idx > overlayLocalStart && idx <= overlayLocalEnd
+    );
+  }
 
   // --- 렌더 ---
   return (

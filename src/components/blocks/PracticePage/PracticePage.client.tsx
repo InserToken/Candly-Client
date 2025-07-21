@@ -199,11 +199,9 @@ export default function PracticeClient() {
                 {Array.isArray(stockData) ? (
                   <CandleChart
                     w={parentWidth}
-                    h={320}
                     data={stockData}
                     indi_data={stockData}
                     news={news}
-                    quizEndIndex={80} // ← 퀴즈 구간(오버레이 위치)
                   />
                 ) : (
                   <div>문제가 없습니다.</div>
