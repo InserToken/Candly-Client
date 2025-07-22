@@ -7,8 +7,10 @@ import CandleChart from "@/components/charts/Candlechart";
 import { fetchPracticeProblem } from "@/services/fetchPracticeProblem";
 import { fetchProblemTypeMeta } from "@/services/fetchProblemTypeMeta";
 import { fetchPracticeNews } from "@/services/fetchPracticeNews";
+import { fetchFinancial } from "@/services/fetchFinancial";
 import { useRouter } from "next/navigation";
 import { gradeWithGemini } from "@/services/gradeWithGemini";
+import FinancialComboChart from "@/components/charts/FinancialComboChart";
 
 type PriceItem = {
   date: string;
@@ -36,66 +38,6 @@ type NewsItem = {
   img_url?: string;
 };
 
-const financeData = {
-  indicators: {
-    PER: "12.5배",
-    PSR: "1.4배",
-    PBR: "1.1배",
-    EPS: "5,161원",
-    BPS: "50,051원",
-    ROE: "9.2%",
-    당기순이익: "12.5배",
-    매출액: "12.5배",
-    순자산: "12.5배",
-    증감액: "12.5배",
-    증감률: "12.5배",
-  },
-  profitChart: {
-    labels: [
-      "19년1분기",
-      "19년1분기",
-      "19년1분기",
-      "19년1분기",
-      "19년1분기",
-      "19년4분기",
-      "19년1분기",
-    ],
-    priceLine: [59500, 59700, 60000, 62000, 61500, 62000, 61500],
-    bar: [60000, 60100, 60200, 61000, 60000, 60100, 59900],
-    scores: {
-      매출: 70,
-      순이익: 65,
-      순이익률: 60,
-      순이익성장률: 55,
-    },
-  },
-  growthChart: {
-    labels: [
-      "19년1분기",
-      "19년1분기",
-      "19년1분기",
-      "19년1분기",
-      "19년1분기",
-      "19년4분기",
-      "19년1분기",
-    ],
-    candle: [
-      { date: "1", open: 59500, high: 60300, low: 59000, close: 59800 },
-      { date: "2", open: 59800, high: 60500, low: 59200, close: 60000 },
-      { date: "3", open: 60000, high: 62000, low: 59800, close: 61500 },
-      { date: "4", open: 61500, high: 62500, low: 60500, close: 62000 },
-      { date: "5", open: 62000, high: 63000, low: 61000, close: 61500 },
-      { date: "6", open: 61500, high: 62200, low: 61000, close: 61800 },
-      { date: "7", open: 61800, high: 62300, low: 61200, close: 62000 },
-    ],
-    scores: {
-      영업: 70,
-      영업이익률: 65,
-      영업이익성장률: 60,
-    },
-  },
-};
-
 export default function PracticeClient() {
   const router = useRouter();
   const [input, setInput] = useState("");
@@ -114,6 +56,8 @@ export default function PracticeClient() {
   const [prompt, setPrompt] = useState<string>("");
   const [gradeResult, setGradeResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [financialData, setFinancialData] = useState<any>(null);
+
   const handleGrade = async () => {
     setLoading(true);
     setGradeResult(null);
@@ -134,20 +78,40 @@ export default function PracticeClient() {
     }
   };
 
-  const dateLabels = [
-    "22년 9월",
-    "22년 12월",
-    "23년 3월",
-    "23년 6월",
-    "23년 9월",
-    "23년 12월",
-    "24년 3월",
-    "24년 6월",
-    "24년 9월",
-    "24년 12월",
-    "25년 3월",
-    "25년 6월",
-  ];
+  const formatNumber = (num: number | null, unit = "") =>
+    typeof num === "number"
+      ? num.toLocaleString(undefined, { maximumFractionDigits: 2 }) + unit
+      : "-";
+
+  function formatLargeNumber(value: number | null | undefined): string {
+    if (value == null || isNaN(value)) return "-";
+
+    const abs = Math.abs(value);
+
+    if (abs >= 1e12) {
+      return (value / 1e12).toFixed(1) + "조원"; // 1조 = 1e12
+    } else if (abs >= 1e8) {
+      return (value / 1e8).toFixed(1) + "억원"; // 1억 = 1e8
+    } else if (abs >= 1e4) {
+      return (value / 1e4).toFixed(1) + "만원";
+    } else {
+      return value.toLocaleString("ko-KR") + "원";
+    }
+  }
+
+  const reprtMap: { [key: string]: string } = {
+    "11013": "3월",
+    "11012": "6월",
+    "11014": "9월",
+    "4Q": "12월 ",
+  };
+
+  const periodLabels = financialData?.series?.period.map((raw: string) => {
+    const [year, code] = raw.split(".");
+    const reprt_code = code === "4Q" ? "4Q" : code;
+    const label = reprtMap[reprt_code] || reprt_code;
+    return `${year} ${label}`;
+  });
 
   useEffect(() => {
     function updateWidth() {
@@ -173,6 +137,7 @@ export default function PracticeClient() {
       setNews(data);
     });
   }, [params.problemId]);
+
   useEffect(() => {
     if (problemType !== null) {
       fetchProblemTypeMeta(problemType)
@@ -185,8 +150,46 @@ export default function PracticeClient() {
         });
     }
   }, [problemType]);
+
+  // 찍어보기
+  useEffect(() => {
+    fetchPracticeProblem(params.problemId).then((data) => {
+      setProblemData(data);
+      console.log("🔥 fetchPracticeProblem 결과:", data);
+
+      // === 볼린저밴드 계산용 윈도우 확인 ===
+      const bbData = data.prices; // 또는 원하는 배열명 사용
+      const targetDate = "2019-08-02";
+      const windowSize = 20;
+      const idx = bbData.findIndex((d) => d.date === targetDate);
+      if (idx >= windowSize - 1) {
+        const window = bbData
+          .slice(idx - windowSize + 1, idx + 1)
+          .map((d) => d.close);
+        console.log("🔥 JS 2019-08-02 윈도우(20개)", window);
+
+        // JS에서 볼린저밴드 직접 계산해보기 (함수 예시)
+        const mean = window.reduce((a, b) => a + b, 0) / windowSize;
+        const std = Math.sqrt(
+          window.reduce((a, v) => a + (v - mean) ** 2, 0) / windowSize
+        );
+        const upper = mean + 2 * std;
+        const lower = mean - 2 * std;
+        console.log("🔥 JS BB 값:", { upper, mean, lower });
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!problemData?.stock_code || !problemData?.date) return;
+
+    fetchFinancial(problemData.stock_code, problemData.date).then((data) => {
+      setFinancialData(data);
+    });
+  }, [problemData]);
+
   return (
-    <div className="min-h-screen px-[80px] pt-1 pb-16">
+    <div className="min-h-screen px-[80px] pt-1">
       <h2 className="mb-3 text-2xl">{problemData?.title}</h2>
       <main className="flex flex-col lg:flex-row gap-6">
         {/* 왼쪽 영역 */}
@@ -223,7 +226,7 @@ export default function PracticeClient() {
                   </span>
                   <span className="text-[#EDCB37]">볼린저밴드</span> |
                   <span className="text-[#396FFB]">거래량</span>
-                  <span>RSI</span>
+                  <span className="text-[#e75480]">RSI</span>
                 </div>
               )}
             </div>
@@ -250,35 +253,39 @@ export default function PracticeClient() {
                 {/* 투자 지표 */}
                 <div className="bg-[#1b1b1b] rounded-xl p-4 text-white text-sm w-full">
                   <h3 className="text-base font-semibold mb-4">투자 지표</h3>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
+
+                  {/* 위 두 섹션 (가치평가, 수익) */}
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    {/* 가치평가 */}
                     <div className="space-y-2">
                       <p className="text-gray-400">가치평가</p>
                       <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
                         <span>PER</span>
-                        <span>12.5배</span>
+                        <span>{formatNumber(financialData?.per, "배")}</span>
                       </div>
                       <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
                         <span>PSR</span>
-                        <span>1.4배</span>
+                        <span>{formatNumber(financialData?.psr, "배")}</span>
                       </div>
                       <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
                         <span>PBR</span>
-                        <span>1.1배</span>
+                        <span>{formatNumber(financialData?.pbr, "배")}</span>
                       </div>
                     </div>
                     <div className="space-y-2">
                       <p className="text-gray-400">수익</p>
+
                       <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
                         <span>EPS</span>
-                        <span>5,161원</span>
+                        <span>{formatNumber(financialData?.eps, "원")}</span>
                       </div>
                       <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
                         <span>BPS</span>
-                        <span>50,051원</span>
+                        <span>{formatNumber(financialData?.bps, "원")}</span>
                       </div>
                       <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
                         <span>ROE</span>
-                        <span>9.2%</span>
+                        <span>{formatNumber(financialData?.roe, "%")}</span>
                       </div>
                     </div>
                   </div>
@@ -287,29 +294,57 @@ export default function PracticeClient() {
                     <div />
                     <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
                       <span>당기순이익</span>
-                      <span>12.5배</span>
+                      <span>
+                        {formatNumber(financialData?.ttmProfit, "원")}
+                      </span>
                     </div>
                     <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
                       <span>증감액</span>
-                      <span>12.5배</span>
+                      <span>
+                        {formatNumber(financialData?.profit_diff, "원")}
+                      </span>
                     </div>
                     <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
                       <span>매출액</span>
-                      <span>12.5배</span>
+                      <span>
+                        {formatNumber(financialData?.ttmRevenue, "원")}
+                      </span>
                     </div>
                     <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
                       <span>증감률</span>
-                      <span>12.5배</span>
+                      <span>
+                        {formatNumber(financialData?.profit_diff_rate, "%")}
+                      </span>
                     </div>
                     <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between ">
                       <span>순자산</span>
-                      <span>12.5배</span>
+                      <span>
+                        {formatNumber(financialData?.ttmequity, "원")}
+                      </span>
                     </div>
                   </div>
                 </div>
                 {/* 수익성 */}
                 <div className="bg-[#1b1b1b] rounded-lg p-4">
                   <h3 className="text-lg font-bold mb-4">수익성</h3>
+
+                  <FinancialComboChart
+                    data={financialData?.series?.period.map(
+                      (_, idx: number) => ({
+                        label: periodLabels[idx],
+                        bar1: financialData.series.revenue[idx],
+                        bar2: financialData.series.netProfit_govern[idx],
+                        line: financialData.series.profitMargin[idx],
+                      })
+                    )}
+                    bar1Key="bar1"
+                    bar2Key="bar2"
+                    lineKey="line"
+                    bar1Label="매출"
+                    bar2Label="순이익"
+                    lineLabel="순이익률"
+                  />
+
                   <div className="overflow-x-auto rounded-lg">
                     <table className="min-w-max text-sm text-white border-separate border-spacing-0">
                       <thead>
@@ -317,95 +352,70 @@ export default function PracticeClient() {
                           <th className="text-left px-3 py-4 sticky left-0 bg-[#313136] z-10 rounded-tl-lg min-w-[120px]">
                             항목
                           </th>
-                          {[
-                            "22년 9월",
-                            "22년 12월",
-                            "23년 3월",
-                            "23년 6월",
-                            "23년 9월",
-                            "23년 12월",
-                            "24년 3월",
-                            "24년 6월",
-                            "24년 9월",
-                            "24년 12월",
-                            "25년 3월",
-                            "25년 6월",
-                          ].map((date, idx, arr) => (
+                          {periodLabels.map((label, idx) => (
                             <th
                               key={idx}
                               className={`text-center px-4 py-4 whitespace-nowrap ${
-                                idx === arr.length - 1 ? "rounded-tr-lg" : ""
+                                idx === periodLabels.length - 1
+                                  ? "rounded-tr-lg"
+                                  : ""
                               }`}
                             >
-                              {date}
+                              {label}
                             </th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {[
-                          { label: "매출", key: "매출" },
-                          { label: "순이익", key: "순이익" },
-                          { label: "순이익률", key: "순이익률" },
-                          { label: "순이익 성장률", key: "순이익성장률" },
+                          { label: "매출", key: "revenue" },
+                          { label: "순이익", key: "netProfit_govern" },
+                          { label: "순이익률", key: "profitMargin" },
+                          { label: "순이익 성장률", key: "growthRate" },
                         ].map(({ label, key }, rowIndex, arr) => (
                           <tr
                             key={key}
-                            className={`${
+                            className={
                               rowIndex % 2 === 0
                                 ? "bg-[#1C1C20]"
                                 : "bg-[#313136]"
-                            }`}
+                            }
                           >
-                            <td
-                              className={`py-4 px-3 font-medium sticky left-0 z-10 bg-inherit min-w-[120px] ${
-                                rowIndex === arr.length - 1
-                                  ? "rounded-bl-lg"
-                                  : ""
-                              }`}
-                            >
+                            <td className="py-4 px-3 font-medium sticky left-0 z-10 bg-inherit min-w-[120px]">
                               {label}
                             </td>
-                            {[
-                              "22년 9월",
-                              "22년 12월",
-                              "23년 3월",
-                              "23년 6월",
-                              "23년 9월",
-                              "23년 12월",
-                              "24년 3월",
-                              "24년 6월",
-                              "24년 9월",
-                              "24년 12월",
-                              "25년 3월",
-                              "25년 6월",
-                            ].map((_, idx, colArr) => (
-                              <td
-                                key={idx}
-                                className={`text-center py-4 px-4 ${
-                                  rowIndex === arr.length - 1 &&
-                                  idx === colArr.length - 1
-                                    ? "rounded-br-lg"
-                                    : ""
-                                }`}
-                              >
-                                {
-                                  financeData.profitChart.scores[
-                                    key as keyof typeof financeData.profitChart.scores
-                                  ]
-                                }
-                                점
-                              </td>
-                            ))}
+                            {financialData?.series?.[key].map(
+                              (value: number | null, idx: number) => (
+                                <td key={idx} className="text-center py-4 px-4">
+                                  {key == "revenue" || key == "netProfit_govern"
+                                    ? formatLargeNumber(value)
+                                    : formatNumber(value) + "%"}
+                                </td>
+                              )
+                            )}
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
                 </div>
+
                 {/* 성장성 */}
                 <div className="bg-[#1b1b1b] rounded-lg p-4">
                   <h3 className="text-lg font-bold mb-4">성장성</h3>
+                  <FinancialComboChart
+                    data={financialData?.series?.period.map(
+                      (_, idx: number) => ({
+                        label: periodLabels[idx],
+                        bar1: financialData.series.operatingProfit[idx],
+                        line: financialData.series.operatingMargin[idx],
+                      })
+                    )}
+                    bar1Key="bar1"
+                    lineKey="line"
+                    bar1Label="영업이익"
+                    lineLabel="영업이익률"
+                  />
                   <div className="overflow-x-auto rounded-lg">
                     <table className="min-w-max text-sm text-white border-separate border-spacing-0">
                       <thead>
@@ -413,61 +423,49 @@ export default function PracticeClient() {
                           <th className="text-left px-3 py-4 sticky left-0 bg-[#313136] z-10 rounded-tl-lg min-w-[120px]">
                             항목
                           </th>
-                          {dateLabels.map((date, idx) => (
+                          {periodLabels.map((label, idx) => (
                             <th
                               key={idx}
-                              className={`text-center px-4 py-3 whitespace-nowrap ${
-                                idx === dateLabels.length - 1
+                              className={`text-center px-4 py-4 whitespace-nowrap ${
+                                idx === periodLabels.length - 1
                                   ? "rounded-tr-lg"
                                   : ""
                               }`}
                             >
-                              {date}
+                              {label}
                             </th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {[
-                          { label: "영업", key: "영업" },
-                          { label: "영업이익률", key: "영업이익률" },
-                          { label: "영업이익 성장률", key: "영업이익성장률" },
+                          { label: "영업이익", key: "operatingProfit" },
+                          { label: "영업이익률", key: "operatingMargin" },
+                          {
+                            label: "영업이익 성장률",
+                            key: "operatingGrowthRate",
+                          },
                         ].map(({ label, key }, rowIndex, arr) => (
                           <tr
                             key={key}
-                            className={`${
+                            className={
                               rowIndex % 2 === 0
                                 ? "bg-[#1C1C20]"
                                 : "bg-[#313136]"
-                            }`}
+                            }
                           >
-                            <td
-                              className={`py-4 px-3 font-medium sticky left-0 z-10 bg-inherit min-w-[120px] ${
-                                rowIndex === arr.length - 1
-                                  ? "rounded-bl-lg"
-                                  : ""
-                              }`}
-                            >
+                            <td className="py-4 px-3 font-medium sticky left-0 z-10 bg-inherit min-w-[120px]">
                               {label}
                             </td>
-                            {dateLabels.map((_, idx, colArr) => (
-                              <td
-                                key={idx}
-                                className={`text-center py-3 px-4 ${
-                                  rowIndex === arr.length - 1 &&
-                                  idx === colArr.length - 1
-                                    ? "rounded-br-lg"
-                                    : ""
-                                }`}
-                              >
-                                {
-                                  financeData.growthChart.scores[
-                                    key as keyof typeof financeData.growthChart.scores
-                                  ]
-                                }
-                                점
-                              </td>
-                            ))}
+                            {financialData?.series?.[key].map(
+                              (value: number | null, idx: number) => (
+                                <td key={idx} className="text-center py-3 px-4">
+                                  {key == "operatingProfit"
+                                    ? formatLargeNumber(value)
+                                    : formatNumber(value) + "%"}
+                                </td>
+                              )
+                            )}
                           </tr>
                         ))}
                       </tbody>
@@ -493,9 +491,6 @@ export default function PracticeClient() {
               <span className="text-sm text-gray-400">
                 {input.length} / 300 자
               </span>
-              {/* <button className="bg-[#396FFB] px-5 py-1.5 rounded text-sm">
-                제출
-              </button> */}
               <button
                 className="bg-[#396FFB] px-5 py-1.5 rounded text-sm"
                 onClick={handleGrade}
@@ -525,42 +520,46 @@ export default function PracticeClient() {
             <p className="text-2xl font-semibold mb-3.5">관련 뉴스</p>
             <div className="flex flex-col gap-3 max-h-[450px] overflow-y-auto">
               {Array.isArray(news) && news.length > 0 ? (
-                news.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-[#1b1b1b] rounded-xl p-4 text-sm flex gap-4"
-                  >
-                    {item.img_url && (
-                      <Image
-                        src={item.img_url}
-                        alt="뉴스 이미지"
-                        width={80}
-                        height={80}
-                        className="rounded object-cover flex-shrink-0"
-                      />
-                    )}
-                    <div className="flex flex-col justify-between w-full">
-                      <div>
-                        <div className="font-semibold mb-1">
-                          <a
-                            href={item.news_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:underline"
-                          >
-                            {item.title}
-                          </a>
+                news
+                  .slice()
+                  .reverse()
+                  .map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-[#1b1b1b] rounded-xl p-4 text-sm flex gap-4"
+                    >
+                      {item.img_url && (
+                        <Image
+                          src={item.img_url}
+                          alt="뉴스 이미지"
+                          width={80}
+                          height={80}
+                          className="rounded object-cover flex-shrink-0"
+                          style={{ width: "80px", height: "80px" }}
+                        />
+                      )}
+                      <div className="flex flex-col justify-between w-full">
+                        <div>
+                          <div className="font-semibold mb-1">
+                            <a
+                              href={item.news_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:underline"
+                            >
+                              {item.title}
+                            </a>
+                          </div>
+                          <div className="text-[#C7C7C7] text-xs font-thin line-clamp-2">
+                            {item.context}
+                          </div>
                         </div>
-                        <div className="text-[#C7C7C7] text-xs font-thin line-clamp-2">
-                          {item.context}
+                        <div className="text-gray-400 text-xs mt-2 self-end">
+                          {item.date}
                         </div>
-                      </div>
-                      <div className="text-gray-400 text-xs mt-2 self-end">
-                        {item.date}
                       </div>
                     </div>
-                  </div>
-                ))
+                  ))
               ) : (
                 <div className="text-gray-400 text-sm">뉴스가 없습니다.</div>
               )}
