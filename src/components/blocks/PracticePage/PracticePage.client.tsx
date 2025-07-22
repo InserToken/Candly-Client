@@ -125,6 +125,7 @@ export default function PracticeClient() {
 
       console.log("채점 API 결과:", result); // 전체 응답
       console.log("LLM 응답 데이터(result.result):", result.result); // LLM 텍스트/JSON
+      console.log("프롬프트 확인", prompt);
       setGradeResult(result.result);
     } catch (e: any) {
       alert(e.message || "채점 실패");
