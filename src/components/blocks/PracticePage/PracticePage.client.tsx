@@ -6,12 +6,9 @@ import ClickCard from "@/components/buttons/ClickCard";
 import CandleChart from "@/components/charts/Candlechart";
 import { fetchPracticeProblem } from "@/services/fetchPracticeProblem";
 import { fetchPracticeNews } from "@/services/fetchPracticeNews";
-<<<<<<< HEAD
 import { fetchFinancial } from "@/services/fetchFinancial";
-=======
 import { useRouter } from "next/navigation";
 
->>>>>>> db0bca9881db168d46db8704e49199a0d7d04878
 type PriceItem = {
   date: string;
   open: number;
@@ -114,7 +111,6 @@ export default function PracticeClient() {
     });
   }, [params.problemId]);
 
-<<<<<<< HEAD
   // 찍어보기
   useEffect(() => {
     fetchPracticeProblem(params.problemId).then((data) => {
@@ -152,10 +148,8 @@ export default function PracticeClient() {
     });
   }, [problemData]);
 
-=======
->>>>>>> db0bca9881db168d46db8704e49199a0d7d04878
   return (
-    <div className="min-h-screen px-[80px] pt-1 pb-16">
+    <div className="min-h-screen px-[80px] pt-1">
       <h2 className="mb-3 text-2xl">{problemData?.title}</h2>
       <main className="flex flex-col lg:flex-row gap-6">
         {/* 왼쪽 영역 */}
