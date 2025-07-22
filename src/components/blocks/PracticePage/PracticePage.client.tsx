@@ -377,7 +377,6 @@ export default function PracticeClient() {
                 </div>
 
                 {/* 성장성 */}
-                {/* 성장성 */}
                 <div className="bg-[#1b1b1b] rounded-lg p-4">
                   <h3 className="text-lg font-bold mb-4">성장성</h3>
 
@@ -489,42 +488,46 @@ export default function PracticeClient() {
             <p className="text-2xl font-semibold mb-3.5">관련 뉴스</p>
             <div className="flex flex-col gap-3 max-h-[450px] overflow-y-auto">
               {Array.isArray(news) && news.length > 0 ? (
-                news.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-[#1b1b1b] rounded-xl p-4 text-sm flex gap-4"
-                  >
-                    {item.img_url && (
-                      <Image
-                        src={item.img_url}
-                        alt="뉴스 이미지"
-                        width={80}
-                        height={80}
-                        className="rounded object-cover flex-shrink-0"
-                      />
-                    )}
-                    <div className="flex flex-col justify-between w-full">
-                      <div>
-                        <div className="font-semibold mb-1">
-                          <a
-                            href={item.news_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:underline"
-                          >
-                            {item.title}
-                          </a>
+                news
+                  .slice()
+                  .reverse()
+                  .map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-[#1b1b1b] rounded-xl p-4 text-sm flex gap-4"
+                    >
+                      {item.img_url && (
+                        <Image
+                          src={item.img_url}
+                          alt="뉴스 이미지"
+                          width={80}
+                          height={80}
+                          className="rounded object-cover flex-shrink-0"
+                          style={{ width: "80px", height: "80px" }}
+                        />
+                      )}
+                      <div className="flex flex-col justify-between w-full">
+                        <div>
+                          <div className="font-semibold mb-1">
+                            <a
+                              href={item.news_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:underline"
+                            >
+                              {item.title}
+                            </a>
+                          </div>
+                          <div className="text-[#C7C7C7] text-xs font-thin line-clamp-2">
+                            {item.context}
+                          </div>
                         </div>
-                        <div className="text-[#C7C7C7] text-xs font-thin line-clamp-2">
-                          {item.context}
+                        <div className="text-gray-400 text-xs mt-2 self-end">
+                          {item.date}
                         </div>
-                      </div>
-                      <div className="text-gray-400 text-xs mt-2 self-end">
-                        {item.date}
                       </div>
                     </div>
-                  </div>
-                ))
+                  ))
               ) : (
                 <div className="text-gray-400 text-sm">뉴스가 없습니다.</div>
               )}
