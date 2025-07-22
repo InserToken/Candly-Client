@@ -4,7 +4,7 @@ name: 🚀 Auto Deploy to EC2
 on:
   push:
     branches:
-      - develop # ← 자동 배포를 트리거할 브랜치 이름
+      - develop
 
 jobs:
   deploy:
@@ -21,13 +21,13 @@ jobs:
 
       - name: Sync code to EC2
         run: |
-          rsync -avz --delete \
+          rsync -e "ssh -o StrictHostKeyChecking=no" -avz --delete \
             --exclude='.git*' --exclude='node_modules' \
             ./ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.CLIENT_PATH }}
 
       - name: Build & Restart on EC2
         run: |
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
             cd ${{ secrets.CLIENT_PATH }}
             npm install --production
             npm run build
