@@ -231,6 +231,32 @@ export default function CandleChart({
 
   const handleVolumeMouseLeave = () => setTooltip(null);
 
+  const handleRSIMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const idx = getNearestCandleIdx(offsetX);
+
+    // === overlay 영역이면 tooltip 안뜸! ===
+    if (idx < 0 || idx >= slicedData.length || isOverlayIdx(idx)) {
+      setTooltip(null);
+      return;
+    }
+    setTooltip({
+      show: true,
+      x: offsetX + LEFT_AXIS_WIDTH,
+      y: e.clientY - rect.top,
+      idx,
+      data: slicedData[idx],
+      section: "candle",
+    });
+  };
+  const handleRSIChartMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    handleRSIMouseMove(e);
+    onMouseMove(e);
+  };
+
+  const handleRSIMouseLeave = () => setTooltip(null);
+
   // ==== 스케일 계산 ====
   const chartWidth = w - LEFT_AXIS_WIDTH;
   const maxPrice = Math.max(...slicedData.map((d) => d.high));
@@ -699,6 +725,11 @@ export default function CandleChart({
             display: "block",
             flex: 1,
           }}
+          onMouseDown={onMouseDown}
+          onMouseUp={onMouseUp}
+          onMouseMove={handleRSIChartMouseMove}
+          onMouseLeave={handleRSIMouseLeave}
+          tabIndex={0}
         >
           {/* 70선 */}
           <line
@@ -733,10 +764,22 @@ export default function CandleChart({
             strokeWidth="1"
             opacity={0.3}
           />
+          {tooltip?.show && tooltip.idx !== undefined && (
+            <line
+              x1={tooltip.idx * candleSpacing}
+              y1={0}
+              x2={tooltip.idx * candleSpacing}
+              y2={VOLUME_HEIGHT}
+              stroke="#53A6FA"
+              strokeWidth={1.5}
+              opacity={0.7}
+              pointerEvents="none"
+            />
+          )}
           {/* RSI 라인 */}
           <polyline
             fill="none"
-            stroke="#FFD600"
+            stroke="#e75480"
             strokeWidth="2"
             points={rsi_visible
               .map((val, i) =>
