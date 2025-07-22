@@ -5,9 +5,11 @@ import Image from "next/image";
 import ClickCard from "@/components/buttons/ClickCard";
 import CandleChart from "@/components/charts/Candlechart";
 import { fetchPracticeProblem } from "@/services/fetchPracticeProblem";
+import { fetchProblemTypeMeta } from "@/services/fetchProblemTypeMeta";
 import { fetchPracticeNews } from "@/services/fetchPracticeNews";
 import { fetchFinancial } from "@/services/fetchFinancial";
 import { useRouter } from "next/navigation";
+import { gradeWithGemini } from "@/services/gradeWithGemini";
 import FinancialComboChart from "@/components/charts/FinancialComboChart";
 
 type PriceItem = {
@@ -46,14 +48,35 @@ export default function PracticeClient() {
   );
   const [news, setNews] = useState<NewsItem[]>([]);
   const stockData = problemData?.prices;
-
-  // === 차트 부모 width 동적 측정 ===
+  const [problemType, setProblemType] = useState<number | null>(null);
+  const [typeMeta, setTypeMeta] = useState<any>(null);
   const chartBoxRef = useRef<HTMLDivElement>(null);
   const [parentWidth, setParentWidth] = useState(780); // 초기값
-
-  // 재무제표 data
-
+  const [showHint, setShowHint] = useState(false);
+  const [prompt, setPrompt] = useState<string>("");
+  const [gradeResult, setGradeResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
   const [financialData, setFinancialData] = useState<any>(null);
+
+  const handleGrade = async () => {
+    setLoading(true);
+    setGradeResult(null);
+    try {
+      console.log("요청 프롬프트:", prompt); // 프롬프트 먼저 찍기
+      console.log("유저 답변:", input); // 유저 답변도 같이 찍기
+
+      const result = await gradeWithGemini(prompt, input);
+
+      console.log("채점 API 결과:", result); // 전체 응답
+      console.log("LLM 응답 데이터(result.result):", result.result); // LLM 텍스트/JSON
+      console.log("프롬프트 확인", prompt);
+      setGradeResult(result.result);
+    } catch (e: any) {
+      alert(e.message || "채점 실패");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatNumber = (num: number | null, unit = "") =>
     typeof num === "number"
@@ -75,12 +98,14 @@ export default function PracticeClient() {
       return value.toLocaleString("ko-KR") + "원";
     }
   }
+
   const reprtMap: { [key: string]: string } = {
     "11013": "3월",
     "11012": "6월",
     "11014": "9월",
     "4Q": "12월 ",
   };
+
   const periodLabels = financialData?.series?.period.map((raw: string) => {
     const [year, code] = raw.split(".");
     const reprt_code = code === "4Q" ? "4Q" : code;
@@ -103,6 +128,7 @@ export default function PracticeClient() {
   useEffect(() => {
     fetchPracticeProblem(params.problemId).then((data) => {
       setProblemData(data);
+      setProblemType(data.problemtype);
     });
   }, [params.problemId]);
 
@@ -111,6 +137,19 @@ export default function PracticeClient() {
       setNews(data);
     });
   }, [params.problemId]);
+
+  useEffect(() => {
+    if (problemType !== null) {
+      fetchProblemTypeMeta(problemType)
+        .then((data) => {
+          setTypeMeta(data);
+          setPrompt(data.typeData?.[0]?.Prompting || "");
+        })
+        .catch((err) => {
+          console.error("fetchProblemTypeMeta error:", err);
+        });
+    }
+  }, [problemType]);
 
   // 찍어보기
   useEffect(() => {
@@ -233,8 +272,6 @@ export default function PracticeClient() {
                         <span>{formatNumber(financialData?.pbr, "배")}</span>
                       </div>
                     </div>
-
-                    {/* 수익 */}
                     <div className="space-y-2">
                       <p className="text-gray-400">수익</p>
 
@@ -252,8 +289,6 @@ export default function PracticeClient() {
                       </div>
                     </div>
                   </div>
-
-                  {/* 아래 세로 2열 구조 */}
                   <div className="grid grid-cols-2 gap-2">
                     <p className="text-gray-400">기타 재무 정보</p>
                     <div />
@@ -289,7 +324,6 @@ export default function PracticeClient() {
                     </div>
                   </div>
                 </div>
-
                 {/* 수익성 */}
                 <div className="bg-[#1b1b1b] rounded-lg p-4">
                   <h3 className="text-lg font-bold mb-4">수익성</h3>
@@ -457,8 +491,12 @@ export default function PracticeClient() {
               <span className="text-sm text-gray-400">
                 {input.length} / 300 자
               </span>
-              <button className="bg-[#396FFB] px-5 py-1.5 rounded text-sm">
-                제출
+              <button
+                className="bg-[#396FFB] px-5 py-1.5 rounded text-sm"
+                onClick={handleGrade}
+                disabled={loading}
+              >
+                {loading ? "채점 중..." : "제출"}
               </button>
             </div>
           </div>
@@ -466,7 +504,11 @@ export default function PracticeClient() {
         {/* 오른쪽 영역 */}
         <aside className="w-full lg:w-[400px] shrink-0 flex flex-col gap-4">
           <div className="flex justify-between">
-            <ClickCard name="힌트" icon="hint.svg" />
+            <ClickCard
+              name="힌트"
+              icon="hint.svg"
+              onClick={() => setShowHint(true)}
+            />
             <ClickCard
               name="답변 랭킹"
               icon="ranking.svg"
@@ -478,42 +520,46 @@ export default function PracticeClient() {
             <p className="text-2xl font-semibold mb-3.5">관련 뉴스</p>
             <div className="flex flex-col gap-3 max-h-[450px] overflow-y-auto">
               {Array.isArray(news) && news.length > 0 ? (
-                news.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-[#1b1b1b] rounded-xl p-4 text-sm flex gap-4"
-                  >
-                    {item.img_url && (
-                      <Image
-                        src={item.img_url}
-                        alt="뉴스 이미지"
-                        width={80}
-                        height={80}
-                        className="rounded object-cover flex-shrink-0"
-                      />
-                    )}
-                    <div className="flex flex-col justify-between w-full">
-                      <div>
-                        <div className="font-semibold mb-1">
-                          <a
-                            href={item.news_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:underline"
-                          >
-                            {item.title}
-                          </a>
+                news
+                  .slice()
+                  .reverse()
+                  .map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-[#1b1b1b] rounded-xl p-4 text-sm flex gap-4"
+                    >
+                      {item.img_url && (
+                        <Image
+                          src={item.img_url}
+                          alt="뉴스 이미지"
+                          width={80}
+                          height={80}
+                          className="rounded object-cover flex-shrink-0"
+                          style={{ width: "80px", height: "80px" }}
+                        />
+                      )}
+                      <div className="flex flex-col justify-between w-full">
+                        <div>
+                          <div className="font-semibold mb-1">
+                            <a
+                              href={item.news_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:underline"
+                            >
+                              {item.title}
+                            </a>
+                          </div>
+                          <div className="text-[#C7C7C7] text-xs font-thin line-clamp-2">
+                            {item.context}
+                          </div>
                         </div>
-                        <div className="text-[#C7C7C7] text-xs font-thin line-clamp-2">
-                          {item.context}
+                        <div className="text-gray-400 text-xs mt-2 self-end">
+                          {item.date}
                         </div>
-                      </div>
-                      <div className="text-gray-400 text-xs mt-2 self-end">
-                        {item.date}
                       </div>
                     </div>
-                  </div>
-                ))
+                  ))
               ) : (
                 <div className="text-gray-400 text-sm">뉴스가 없습니다.</div>
               )}
@@ -521,6 +567,24 @@ export default function PracticeClient() {
           </div>
         </aside>
       </main>
+      {/* 힌트 모달 */}
+      {showHint && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="bg-white rounded-xl p-6 w-[530px] text-black shadow-2xl relative">
+            <div className="text-lg font-bold mb-3">힌트</div>
+            <div className="mb-4">
+              {typeMeta?.typeData?.[0]?.hint || "힌트가 없습니다."}
+            </div>
+            <button
+              className="absolute top-3 right-4 text-gray-400 text-xl"
+              onClick={() => setShowHint(false)}
+              aria-label="닫기"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
