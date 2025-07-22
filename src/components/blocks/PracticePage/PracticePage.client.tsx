@@ -5,8 +5,10 @@ import Image from "next/image";
 import ClickCard from "@/components/buttons/ClickCard";
 import CandleChart from "@/components/charts/Candlechart";
 import { fetchPracticeProblem } from "@/services/fetchPracticeProblem";
+import { fetchProblemTypeMeta } from "@/services/fetchProblemTypeMeta";
 import { fetchPracticeNews } from "@/services/fetchPracticeNews";
 import { useRouter } from "next/navigation";
+import { gradeWithGemini } from "@/services/gradeWithGemini";
 
 type PriceItem = {
   date: string;
@@ -104,10 +106,32 @@ export default function PracticeClient() {
   );
   const [news, setNews] = useState<NewsItem[]>([]);
   const stockData = problemData?.prices;
-
-  // === 차트 부모 width 동적 측정 ===
+  const [problemType, setProblemType] = useState<number | null>(null);
+  const [typeMeta, setTypeMeta] = useState<any>(null);
   const chartBoxRef = useRef<HTMLDivElement>(null);
   const [parentWidth, setParentWidth] = useState(780); // 초기값
+  const [showHint, setShowHint] = useState(false);
+  const [prompt, setPrompt] = useState<string>("");
+  const [gradeResult, setGradeResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const handleGrade = async () => {
+    setLoading(true);
+    setGradeResult(null);
+    try {
+      console.log("요청 프롬프트:", prompt); // 프롬프트 먼저 찍기
+      console.log("유저 답변:", input); // 유저 답변도 같이 찍기
+
+      const result = await gradeWithGemini(prompt, input);
+
+      console.log("채점 API 결과:", result); // 전체 응답
+      console.log("LLM 응답 데이터(result.result):", result.result); // LLM 텍스트/JSON
+      setGradeResult(result.result);
+    } catch (e: any) {
+      alert(e.message || "채점 실패");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const dateLabels = [
     "22년 9월",
@@ -139,6 +163,7 @@ export default function PracticeClient() {
   useEffect(() => {
     fetchPracticeProblem(params.problemId).then((data) => {
       setProblemData(data);
+      setProblemType(data.problemtype);
     });
   }, [params.problemId]);
 
@@ -147,7 +172,18 @@ export default function PracticeClient() {
       setNews(data);
     });
   }, [params.problemId]);
-
+  useEffect(() => {
+    if (problemType !== null) {
+      fetchProblemTypeMeta(problemType)
+        .then((data) => {
+          setTypeMeta(data);
+          setPrompt(data.typeData?.[0]?.Prompting || "");
+        })
+        .catch((err) => {
+          console.error("fetchProblemTypeMeta error:", err);
+        });
+    }
+  }, [problemType]);
   return (
     <div className="min-h-screen px-[80px] pt-1 pb-16">
       <h2 className="mb-3 text-2xl">{problemData?.title}</h2>
@@ -213,10 +249,7 @@ export default function PracticeClient() {
                 {/* 투자 지표 */}
                 <div className="bg-[#1b1b1b] rounded-xl p-4 text-white text-sm w-full">
                   <h3 className="text-base font-semibold mb-4">투자 지표</h3>
-
-                  {/* 위 두 섹션 (가치평가, 수익) */}
                   <div className="grid grid-cols-2 gap-4 mb-4">
-                    {/* 가치평가 */}
                     <div className="space-y-2">
                       <p className="text-gray-400">가치평가</p>
                       <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
@@ -232,8 +265,6 @@ export default function PracticeClient() {
                         <span>1.1배</span>
                       </div>
                     </div>
-
-                    {/* 수익 */}
                     <div className="space-y-2">
                       <p className="text-gray-400">수익</p>
                       <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
@@ -250,8 +281,6 @@ export default function PracticeClient() {
                       </div>
                     </div>
                   </div>
-
-                  {/* 아래 세로 2열 구조 */}
                   <div className="grid grid-cols-2 gap-2">
                     <p className="text-gray-400">기타 재무 정보</p>
                     <div />
@@ -277,11 +306,9 @@ export default function PracticeClient() {
                     </div>
                   </div>
                 </div>
-
                 {/* 수익성 */}
                 <div className="bg-[#1b1b1b] rounded-lg p-4">
                   <h3 className="text-lg font-bold mb-4">수익성</h3>
-
                   <div className="overflow-x-auto rounded-lg">
                     <table className="min-w-max text-sm text-white border-separate border-spacing-0">
                       <thead>
@@ -375,12 +402,9 @@ export default function PracticeClient() {
                     </table>
                   </div>
                 </div>
-
-                {/* 성장성 */}
                 {/* 성장성 */}
                 <div className="bg-[#1b1b1b] rounded-lg p-4">
                   <h3 className="text-lg font-bold mb-4">성장성</h3>
-
                   <div className="overflow-x-auto rounded-lg">
                     <table className="min-w-max text-sm text-white border-separate border-spacing-0">
                       <thead>
@@ -468,8 +492,15 @@ export default function PracticeClient() {
               <span className="text-sm text-gray-400">
                 {input.length} / 300 자
               </span>
-              <button className="bg-[#396FFB] px-5 py-1.5 rounded text-sm">
+              {/* <button className="bg-[#396FFB] px-5 py-1.5 rounded text-sm">
                 제출
+              </button> */}
+              <button
+                className="bg-[#396FFB] px-5 py-1.5 rounded text-sm"
+                onClick={handleGrade}
+                disabled={loading}
+              >
+                {loading ? "채점 중..." : "제출"}
               </button>
             </div>
           </div>
@@ -477,7 +508,11 @@ export default function PracticeClient() {
         {/* 오른쪽 영역 */}
         <aside className="w-full lg:w-[400px] shrink-0 flex flex-col gap-4">
           <div className="flex justify-between">
-            <ClickCard name="힌트" icon="hint.svg" />
+            <ClickCard
+              name="힌트"
+              icon="hint.svg"
+              onClick={() => setShowHint(true)}
+            />
             <ClickCard
               name="답변 랭킹"
               icon="ranking.svg"
@@ -532,6 +567,24 @@ export default function PracticeClient() {
           </div>
         </aside>
       </main>
+      {/* 힌트 모달 */}
+      {showHint && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="bg-white rounded-xl p-6 w-[530px] text-black shadow-2xl relative">
+            <div className="text-lg font-bold mb-3">힌트</div>
+            <div className="mb-4">
+              {typeMeta?.typeData?.[0]?.hint || "힌트가 없습니다."}
+            </div>
+            <button
+              className="absolute top-3 right-4 text-gray-400 text-xl"
+              onClick={() => setShowHint(false)}
+              aria-label="닫기"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
