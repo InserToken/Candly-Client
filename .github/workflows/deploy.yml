@@ -1,10 +1,10 @@
 name: 🚀 Auto Deploy to EC2
 
-# main 브랜치에 push 될 때마다 실행
+# develop 브랜치에 push 될 때마다 실행
 on:
   push:
     branches:
-      - develop # ← 자동 배포를 트리거할 브랜치 이름
+      - develop
 
 jobs:
   deploy:
@@ -21,15 +21,17 @@ jobs:
 
       - name: Sync code to EC2
         run: |
-          rsync -avz --delete \
-            --exclude='.git*' --exclude='node_modules' \
+          rsync -e "ssh -o StrictHostKeyChecking=no" -avz --delete \
+            --exclude='.git*' \
+            --exclude='node_modules' \
+            --exclude='.env' \
             ./ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.CLIENT_PATH }}
 
       - name: Build & Restart on EC2
         run: |
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
             cd ${{ secrets.CLIENT_PATH }}
-            npm install --production
+            npm install
             npm run build
             pm2 restart UpAndDown-Client || pm2 start npm --name UpAndDown-Client -- run start
           EOF

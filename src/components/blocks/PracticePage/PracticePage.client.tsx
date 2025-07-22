@@ -187,7 +187,7 @@ export default function PracticeClient() {
                   </span>
                   <span className="text-[#EDCB37]">볼린저밴드</span> |
                   <span className="text-[#396FFB]">거래량</span>
-                  <span>RSI</span>
+                  <span className="text-[#e75480]">RSI</span>
                 </div>
               )}
             </div>
