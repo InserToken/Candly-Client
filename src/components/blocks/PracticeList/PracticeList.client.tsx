@@ -75,8 +75,6 @@ export default function PracticeListClient() {
               <Link href={`/practice/${problem._id}`}>
                 <div className="group p-4 bg-[#313136] pl-4 rounded-lg hover:bg-[#396FFB] cursor-pointer flex items-center gap-3">
                   <span>{(page - 1) * 20 + idx + 1}. </span>
-
-                  {/* ✅ 로고 있으면 원형으로 보여주기 */}
                   {problem.stock_code.logo && (
                     <Image
                       src={problem.stock_code.logo}
@@ -86,7 +84,29 @@ export default function PracticeListClient() {
                       className="rounded-full"
                     />
                   )}
-                  {problem.title}
+                  <span className="font-semibold">
+                    {problem.title.split("_")[0]}
+                  </span>
+
+                  {/* 오른쪽 뱃지들 */}
+                  <div className="flex items-center gap-2 ml-auto">
+                    {/* 문제타입 뱃지 */}
+                    <span
+                      className={`
+                px-2 py-0.5 rounded text-sm font-bold bg-[#]
+              `}
+                    >
+                      유형 {problem.problemtype}
+                    </span>
+                    {/* 날짜 뱃지 */}
+                    <span className="px-2 py-0.5 rounded text-sm">
+                      {new Date(problem.date).toLocaleDateString("ko-KR", {
+                        year: "2-digit",
+                        month: "2-digit",
+                        day: "2-digit",
+                      })}
+                    </span>
+                  </div>
                 </div>
               </Link>
             </li>
