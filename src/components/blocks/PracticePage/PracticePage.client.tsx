@@ -8,6 +8,7 @@ import { fetchPracticeProblem } from "@/services/fetchPracticeProblem";
 import { fetchPracticeNews } from "@/services/fetchPracticeNews";
 import { fetchFinancial } from "@/services/fetchFinancial";
 import { useRouter } from "next/navigation";
+import FinancialComboChart from "@/components/charts/FinancialComboChart";
 
 type PriceItem = {
   date: string;
@@ -236,6 +237,7 @@ export default function PracticeClient() {
                     {/* 수익 */}
                     <div className="space-y-2">
                       <p className="text-gray-400">수익</p>
+
                       <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
                         <span>EPS</span>
                         <span>{formatNumber(financialData?.eps, "원")}</span>
@@ -291,6 +293,23 @@ export default function PracticeClient() {
                 {/* 수익성 */}
                 <div className="bg-[#1b1b1b] rounded-lg p-4">
                   <h3 className="text-lg font-bold mb-4">수익성</h3>
+
+                  <FinancialComboChart
+                    data={financialData?.series?.period.map(
+                      (_, idx: number) => ({
+                        label: periodLabels[idx],
+                        bar1: financialData.series.revenue[idx],
+                        bar2: financialData.series.netProfit_govern[idx],
+                        line: financialData.series.profitMargin[idx],
+                      })
+                    )}
+                    bar1Key="bar1"
+                    bar2Key="bar2"
+                    lineKey="line"
+                    bar1Label="매출"
+                    bar2Label="순이익"
+                    lineLabel="순이익률"
+                  />
 
                   <div className="overflow-x-auto rounded-lg">
                     <table className="min-w-max text-sm text-white border-separate border-spacing-0">
@@ -350,7 +369,19 @@ export default function PracticeClient() {
                 {/* 성장성 */}
                 <div className="bg-[#1b1b1b] rounded-lg p-4">
                   <h3 className="text-lg font-bold mb-4">성장성</h3>
-
+                  <FinancialComboChart
+                    data={financialData?.series?.period.map(
+                      (_, idx: number) => ({
+                        label: periodLabels[idx],
+                        bar1: financialData.series.operatingProfit[idx],
+                        line: financialData.series.operatingMargin[idx],
+                      })
+                    )}
+                    bar1Key="bar1"
+                    lineKey="line"
+                    bar1Label="영업이익"
+                    lineLabel="영업이익률"
+                  />
                   <div className="overflow-x-auto rounded-lg">
                     <table className="min-w-max text-sm text-white border-separate border-spacing-0">
                       <thead>
@@ -374,7 +405,7 @@ export default function PracticeClient() {
                       </thead>
                       <tbody>
                         {[
-                          { label: "영업", key: "operatingProfit" },
+                          { label: "영업이익", key: "operatingProfit" },
                           { label: "영업이익률", key: "operatingMargin" },
                           {
                             label: "영업이익 성장률",
