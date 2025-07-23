@@ -1,8 +1,17 @@
 export async function fetchFinancial(stockCode: string, date: string) {
   const replaceDate = date.replace(/-/g, ".");
+
   const res = await fetch(
-    `http://localhost:3001/api/financial/metrics?stockCode=${stockCode}&date=${replaceDate}`
+    `http://localhost:3001/api/financial/metrics?stockCode=${stockCode}&date=${replaceDate}`,
+    {
+      // ✅ 1시간 동안 캐시된 데이터를 사용
+      next: { revalidate: 600 }, // 초 단위 (3600초 = 1시간)
+    }
   );
-  const data = await res.json();
-  return data;
+
+  if (!res.ok) {
+    throw new Error("재무 정보를 불러오는 데 실패했습니다.");
+  }
+
+  return res.json();
 }

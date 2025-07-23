@@ -1,13 +1,11 @@
-"use client";
-
 import React, { useEffect, useState } from "react";
 import { fetchFinancial } from "@/services/fetchFinancial";
 import FinancialComboChart from "@/components/charts/FinancialComboChart";
 
 type Props = {
-  stock_code: string;
-  date: string;
-  currentPrice?: number;
+  stock_code?: string;
+  date?: string;
+  currentPrice?: number | null;
 };
 
 export default function FinanceTable({
@@ -54,11 +52,19 @@ export default function FinanceTable({
 
   useEffect(() => {
     if (!stock_code || !date) return;
-
+    console.log(currentPrice);
     fetchFinancial(stock_code, date).then((data) => {
       setFinancialData(data);
     });
-  }, [stock_code, date, currentPrice]);
+  }, [stock_code, date]);
+
+  if (!financialData) {
+    return (
+      <div className="text-gray-400 text-sm px-4 py-2">
+        재무 정보를 불러오는 중입니다...
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6 w-full text-sm text-white max-h-[410px] overflow-y-auto pr-2">
@@ -115,11 +121,11 @@ export default function FinanceTable({
 
             <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
               <span>EPS</span>
-              <span>{formatNumber(financialData?.eps, "원")}</span>
+              <span>{formatNumber(Math.round(financialData?.eps), "원")}</span>
             </div>
             <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
               <span>BPS</span>
-              <span>{formatNumber(financialData?.bps, "원")}</span>
+              <span>{formatNumber(Math.round(financialData?.bps), "원")}</span>
             </div>
             <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
               <span>ROE</span>
@@ -155,7 +161,54 @@ export default function FinanceTable({
       {/* 수익성 */}
       <div className="bg-[#1b1b1b] rounded-lg p-4">
         <h3 className="text-lg font-bold mb-4">수익성</h3>
-
+        <div>
+          {/* Legend 박스 (차트 위에 표시) */}
+          <div className="flex items-center gap-4 mb-2 text-sm">
+            <div className="flex items-center gap-1">
+              <svg
+                aria-label="매출 legend icon"
+                className="recharts-surface"
+                width="14"
+                height="14"
+                viewBox="0 0 32 32"
+              >
+                <rect width="32" height="32" fill="#396FFB" />
+              </svg>
+              <span className="text-white">매출</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <svg
+                aria-label="순이익 legend icon"
+                className="recharts-surface"
+                width="14"
+                height="14"
+                viewBox="0 0 32 32"
+              >
+                <rect width="32" height="32" fill="#F87800" />
+              </svg>
+              <span className="text-white">순이익</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <svg
+                aria-label="순이익률 legend icon"
+                className="recharts-surface"
+                width="14"
+                height="14"
+                viewBox="0 0 32 32"
+              >
+                <line
+                  x1="0"
+                  y1="16"
+                  x2="32"
+                  y2="16"
+                  stroke="#EDCB37"
+                  strokeWidth="4"
+                />
+              </svg>
+              <span className="text-white">순이익률</span>
+            </div>
+          </div>
+        </div>
         <FinancialComboChart
           data={financialData?.series?.period.map((_, idx: number) => ({
             label: periodLabels[idx],
@@ -225,6 +278,40 @@ export default function FinanceTable({
       {/* 성장성 */}
       <div className="bg-[#1b1b1b] rounded-lg p-4">
         <h3 className="text-lg font-bold mb-4">성장성</h3>
+        <div className="flex items-center gap-4 mb-2 text-sm">
+          <div className="flex items-center gap-1">
+            <svg
+              aria-label="영업이익 legend icon"
+              className="recharts-surface"
+              width="14"
+              height="14"
+              viewBox="0 0 32 32"
+            >
+              <rect width="32" height="32" fill="#396FFB" />
+            </svg>
+            <span className="text-white">영업이익</span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <svg
+              aria-label="영업이익률 legend icon"
+              className="recharts-surface"
+              width="14"
+              height="14"
+              viewBox="0 0 32 32"
+            >
+              <line
+                x1="0"
+                y1="16"
+                x2="32"
+                y2="16"
+                stroke="#EDCB37"
+                strokeWidth="4"
+              />
+            </svg>
+            <span className="text-white">영업이익률</span>
+          </div>
+        </div>
         <FinancialComboChart
           data={financialData?.series?.period.map((_, idx: number) => ({
             label: periodLabels[idx],
