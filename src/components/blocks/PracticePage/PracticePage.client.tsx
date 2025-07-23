@@ -364,11 +364,8 @@ export default function PracticeClient() {
                 <div className="whitespace-pre-line">{feedback}</div>
               </div>
             )}
-            {/* 답변 입력 */}
-
-            <label className="text-sm font-semibold mb-2 inline-block">
-              답변 작성 <span className="text-gray-400">ⓘ</span>
-            </label> */}
+          </div>
+          {/* 답변 입력 */}
 
           <div className="mt-6 relative">
             <div className="font-semibold mb-2 flex items-center gap-2">
