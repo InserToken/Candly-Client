@@ -20,6 +20,7 @@ export default function Navbar() {
   const router = useRouter();
   const auth = useAuthStore((s) => s.auth);
   const clearAuth = useAuthStore((s) => s.clearAuth);
+  const loginRequiredPaths = ["/", "/practice", "/ranking", "/mypage"];
 
   // hydration mismatch 방지용
   const [mounted, setMounted] = useState(false);
@@ -73,7 +74,16 @@ export default function Navbar() {
 
   return (
     <nav className="h-[98px] flex items-center px-8 pl-10 whitespace-nowrap fixed bg-inherit w-screen z-20">
-      <Link href="/" className="flex items-center pr-2.5">
+      <button
+        onClick={() => {
+          if (!auth?.token) {
+            router.push("/auth/login");
+          } else {
+            router.push("/");
+          }
+        }}
+        className="flex items-center pr-2.5 bg-transparent border-none cursor-pointer"
+      >
         <Image
           src="/logo.svg"
           alt="로고"
@@ -82,11 +92,12 @@ export default function Navbar() {
           className="pr-2.5"
         />
         <div className="text-2xl pr-20">오르락내리락</div>
-      </Link>
+      </button>
       <ul className="flex gap-15">
         {menuItems.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const isLoginRequired = loginRequiredPaths.includes(item.href);
 
           if (item.dynamic) {
             return (
@@ -105,7 +116,33 @@ export default function Navbar() {
               </li>
             );
           }
+          // 로그인 필요한 메뉴 (홈, 연습문제, 랭킹, 마이페이지)
+          if (isLoginRequired) {
+            return (
+              <li key={item.href}>
+                <button
+                  onClick={() => {
+                    if (!auth?.token) {
+                      router.push("/auth/login");
+                    } else {
+                      router.push(item.href);
+                    }
+                  }}
+                  className={
+                    "text-base transition-colors cursor-pointer " +
+                    (isActive
+                      ? "text-[#396FFB] font-semibold"
+                      : "text-[#E2E2E2] hover:text-white")
+                  }
+                  type="button"
+                >
+                  {item.label}
+                </button>
+              </li>
+            );
+          }
 
+          // 나머지(로그인 필요없는 메뉴) (실제로 위에서 다 처리됨)
           return (
             <li key={item.href}>
               <Link href={item.href}>
