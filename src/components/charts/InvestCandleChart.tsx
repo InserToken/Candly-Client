@@ -471,6 +471,7 @@ export default function InvestCandleChart({
               opacity={0.7}
             />
           ))}
+
           {/* 이동평균선/BB */}
           <polyline
             fill="none"
