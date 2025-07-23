@@ -74,7 +74,7 @@ export default function Navbar() {
                 <button
                   onClick={handleInvestClick}
                   className={
-                    "text-base transition-colors " +
+                    "text-base transition-colors cursor-pointer " +
                     (isActive
                       ? "text-[#396FFB] font-semibold"
                       : "text-[#E2E2E2] hover:text-white")

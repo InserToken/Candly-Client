@@ -188,9 +188,36 @@ export default function PracticeClient() {
     });
   }, [problemData]);
 
+  function getBadges(problemtype: number) {
+    if ([1, 2].includes(problemtype)) return ["SMA"];
+    if ([3, 4].includes(problemtype)) return ["RSI"];
+    if ([5, 6].includes(problemtype)) return ["거래량"];
+    if ([7, 8].includes(problemtype)) return ["볼린저 밴드"];
+    if ([9, 10].includes(problemtype)) return ["볼린저 밴드", "RSI"];
+    return ["기타"];
+  }
+
   return (
     <div className="min-h-screen px-[80px] pt-1">
-      <h2 className="mb-3 text-2xl">{problemData?.title}</h2>
+      {/* 뱃지들 */}
+      <div className="mb-1">
+        {/* 문제타입 뱃지 */}
+        {getBadges(Number(problemData?.problemtype)).map((badge) => (
+          <span
+            key={badge}
+            className="px-2 py-0.5 mr-2 rounded-full text-xs border border-[#fffff]"
+          >
+            {badge}
+          </span>
+        ))}
+      </div>
+      <div className="flex">
+        <h2 className="mb-3 text-2xl">{problemData?.title.split("_")[0]}</h2>
+        {/* 날짜 뱃지 */}
+        <span className="ml-2 px-2 py-0.5 rounded text-sm mt-auto mb-4">
+          {problemData?.date}
+        </span>
+      </div>
       <main className="flex flex-col lg:flex-row gap-6">
         {/* 왼쪽 영역 */}
         <section className="flex-1 max-w-[894px]">

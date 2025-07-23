@@ -14,17 +14,19 @@ export default function PracticeListClient() {
 
   const categories = [
     { label: "전체", value: "all" },
-    { label: "유형 1", value: "1" },
-    { label: "유형 2", value: "2" },
-    { label: "유형 3", value: "3" },
-    { label: "유형 4", value: "4" },
-    { label: "유형 5", value: "5" },
-    { label: "유형 6", value: "6" },
-    { label: "유형 7", value: "7" },
-    { label: "유형 8", value: "8" },
-    { label: "유형 9", value: "9" },
-    { label: "유형 10", value: "10" },
+    { label: "SMA", value: "1,2" },
+    { label: "RSI", value: "3,4,9,10" },
+    { label: "거래량", value: "5,6" },
+    { label: "볼린저 밴드", value: "7,8,9,10" },
   ];
+  function getBadges(problemtype: number) {
+    if ([1, 2].includes(problemtype)) return ["SMA"];
+    if ([3, 4].includes(problemtype)) return ["RSI"];
+    if ([5, 6].includes(problemtype)) return ["거래량"];
+    if ([7, 8].includes(problemtype)) return ["볼린저 밴드"];
+    if ([9, 10].includes(problemtype)) return ["볼린저 밴드", "RSI"];
+    return ["기타"];
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -87,17 +89,17 @@ export default function PracticeListClient() {
                   <span className="font-semibold">
                     {problem.title.split("_")[0]}
                   </span>
-
+                  {/* 문제타입 뱃지 */}
+                  {getBadges(Number(problem?.problemtype)).map((badge) => (
+                    <span
+                      key={badge}
+                      className="px-2 py-0.5 rounded-full text-xs border border-[#fffff]"
+                    >
+                      {badge}
+                    </span>
+                  ))}
                   {/* 오른쪽 뱃지들 */}
                   <div className="flex items-center gap-2 ml-auto">
-                    {/* 문제타입 뱃지 */}
-                    <span
-                      className={`
-                px-2 py-0.5 rounded text-sm font-bold bg-[#]
-              `}
-                    >
-                      유형 {problem.problemtype}
-                    </span>
                     {/* 날짜 뱃지 */}
                     <span className="px-2 py-0.5 rounded text-sm">
                       {new Date(problem.date).toLocaleDateString("ko-KR", {
