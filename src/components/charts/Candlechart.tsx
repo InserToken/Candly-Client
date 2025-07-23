@@ -3,6 +3,14 @@ import React, { useRef, useState } from "react";
 import dayjs from "dayjs";
 import { getMovingAverage, getBollingerBands, getRSI } from "@/utils/indicator";
 
+interface ShowLine {
+  ma5: boolean;
+  ma20: boolean;
+  ma60: boolean;
+  ma120: boolean;
+  bb: boolean;
+}
+
 export type Candle = {
   date: string;
   open: number;
@@ -26,6 +34,7 @@ type CandleChartProps = {
   data: Candle[];
   indi_data: Candle[];
   news: NewsItem[];
+  showLine: ShowLine;
 };
 
 const LEFT_AXIS_WIDTH = 60;
@@ -68,6 +77,7 @@ export default function CandleChart({
   data,
   indi_data,
   news,
+  showLine,
 }: CandleChartProps) {
   // 예외값 보정
   data = data.map((d) =>
@@ -458,42 +468,51 @@ export default function CandleChart({
           ))}
 
           {/* 볼린저 밴드 영역 채우기 */}
-          <path
-            d={createBollingerBandPath()}
-            fill="#EDCB37"
-            fillOpacity={0.1}
-            stroke="none"
-          />
-
+          {showLine?.bb && (
+            <path
+              d={createBollingerBandPath()}
+              fill="#EDCB37"
+              fillOpacity={0.1}
+              stroke="none"
+            />
+          )}
           {/* 이동평균선/BB */}
-          <polyline
-            fill="none"
-            stroke="#00D5C0"
-            strokeWidth="2"
-            points={ma5Points}
-            opacity={0.8}
-          />
-          <polyline
-            fill="none"
-            stroke="#E8395F"
-            strokeWidth="2"
-            points={ma20Points}
-            opacity={0.85}
-          />
-          <polyline
-            fill="none"
-            stroke="#F87800"
-            strokeWidth="2"
-            points={ma60Points}
-            opacity={0.85}
-          />
-          <polyline
-            fill="none"
-            stroke="#7339FB"
-            strokeWidth="2"
-            points={ma120Points}
-            opacity={0.7}
-          />
+          {showLine?.ma5 && (
+            <polyline
+              fill="none"
+              stroke="#00D5C0"
+              strokeWidth="2"
+              points={ma5Points}
+              opacity={0.8}
+            />
+          )}
+          {showLine?.ma20 && (
+            <polyline
+              fill="none"
+              stroke="#E8395F"
+              strokeWidth="2"
+              points={ma20Points}
+              opacity={0.85}
+            />
+          )}
+          {showLine?.ma60 && (
+            <polyline
+              fill="none"
+              stroke="#F87800"
+              strokeWidth="2"
+              points={ma60Points}
+              opacity={0.85}
+            />
+          )}
+          {showLine?.ma120 && (
+            <polyline
+              fill="none"
+              stroke="#7339FB"
+              strokeWidth="2"
+              points={ma120Points}
+              opacity={0.7}
+            />
+          )}
           {/* <polyline
             fill="none"
             stroke="#EDCB37"
@@ -501,20 +520,24 @@ export default function CandleChart({
             points={bb_middle_points}
             opacity={0.8}
           /> */}
-          <polyline
-            fill="none"
-            stroke="#EDCB37"
-            strokeWidth="1.5"
-            points={bb_upper_points}
-            opacity={0.7}
-          />
-          <polyline
-            fill="none"
-            stroke="#EDCB37"
-            strokeWidth="1.5"
-            points={bb_lower_points}
-            opacity={0.7}
-          />
+          {showLine?.bb && (
+            <polyline
+              fill="none"
+              stroke="#EDCB37"
+              strokeWidth="1.5"
+              points={bb_upper_points}
+              opacity={0.7}
+            />
+          )}
+          {showLine?.bb && (
+            <polyline
+              fill="none"
+              stroke="#EDCB37"
+              strokeWidth="1.5"
+              points={bb_lower_points}
+              opacity={0.7}
+            />
+          )}
           {tooltip?.show && tooltip.idx !== undefined && (
             <line
               x1={tooltip.idx * candleSpacing}

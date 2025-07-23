@@ -57,6 +57,13 @@ export default function PracticeClient() {
   const [prompt, setPrompt] = useState<string>("");
   const [gradeResult, setGradeResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [showLine, setShowLine] = useState({
+    ma5: true,
+    ma20: true,
+    ma60: true,
+    ma120: true,
+    bb: true,
+  });
 
   const handleGrade = async () => {
     console.log("handleGrade 진입");
@@ -131,6 +138,13 @@ export default function PracticeClient() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleLine = (key: keyof typeof showLine) => {
+    setShowLine((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
   };
 
   // const formatNumber = (num: number | null, unit = "") =>
@@ -325,13 +339,51 @@ export default function PracticeClient() {
                 <div className="flex flex-wrap gap-4 items-center justify-end text-sm text-gray-300 ml-auto pr-3">
                   <span className="flex items-center gap-1">
                     <span className="text-white pr-1">이동평균선</span>
-                    <span className="text-[#00D5C0]">5</span> ·
-                    <span className="text-[#E8395F]">20</span> ·
-                    <span className="text-[#F87800]">60</span> ·
-                    <span className="text-[#7339FB]">120</span>
+                    <span
+                      className={`cursor-pointer ${
+                        showLine.ma5 ? "text-[#00D5C0]" : "text-gray-500"
+                      }`}
+                      onClick={() => toggleLine("ma5")}
+                    >
+                      5
+                    </span>{" "}
+                    ·
+                    <span
+                      className={`cursor-pointer ${
+                        showLine.ma20 ? "text-[#E8395F]" : "text-gray-500"
+                      }`}
+                      onClick={() => toggleLine("ma20")}
+                    >
+                      20
+                    </span>{" "}
+                    ·
+                    <span
+                      className={`cursor-pointer ${
+                        showLine.ma60 ? "text-[#F87800]" : "text-gray-500"
+                      }`}
+                      onClick={() => toggleLine("ma60")}
+                    >
+                      60
+                    </span>{" "}
+                    ·
+                    <span
+                      className={`cursor-pointer ${
+                        showLine.ma120 ? "text-[#7339FB]" : "text-gray-500"
+                      }`}
+                      onClick={() => toggleLine("ma120")}
+                    >
+                      120
+                    </span>
                   </span>
-                  <span className="text-[#EDCB37]">볼린저밴드</span> |
-                  <span className="text-[#396FFB]">거래량</span>
+                  <span
+                    className={`cursor-pointer ${
+                      showLine.bb ? "text-[#EDCB37]" : "text-gray-500"
+                    }`}
+                    onClick={() => toggleLine("bb")}
+                  >
+                    볼린저밴드
+                  </span>
+                  |<span className="text-[#396FFB]">거래량</span>
                   <span className="text-[#e75480]">RSI</span>
                 </div>
               )}
@@ -348,6 +400,7 @@ export default function PracticeClient() {
                     data={stockData}
                     indi_data={stockData}
                     news={news}
+                    showLine={showLine}
                   />
                 ) : (
                   <div>문제가 없습니다.</div>
