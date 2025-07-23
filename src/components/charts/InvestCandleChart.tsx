@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useMemo, useEffect } from "react";
 import dayjs from "dayjs";
 import { getMovingAverage, getBollingerBands, getRSI } from "@/utils/indicator";
 
@@ -34,8 +34,28 @@ type CandleChartProps = {
   data: Candle[];
   indi_data: Candle[];
   news: NewsItem[];
+  dotData?: ChartData[];
+  todayPrice?: number | null;
   showLine: ShowLine;
 };
+
+type CandleData = {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  type: "candle";
+};
+
+type DotData = {
+  date: string;
+  close: number;
+  type: "dot";
+  source?: "realtime" | "prediction";
+};
+
+export type ChartData = CandleData | DotData;
 
 const LEFT_AXIS_WIDTH = 60;
 const CHART_HEIGHT = 220;
@@ -43,13 +63,8 @@ const VOLUME_HEIGHT = 100;
 const RSI_HEIGHT = 80;
 const DATE_AXIS_HEIGHT = 24;
 
-const TOTAL_HEIGHT =
-  CHART_HEIGHT + VOLUME_HEIGHT + RSI_HEIGHT + DATE_AXIS_HEIGHT;
-
 const MIN_CANDLES = 10;
 const SHOW_LEN = 200;
-const SKIP_LAST = 20;
-const HIDE_COUNT = 21; // 마지막 21개 가림
 
 function getDateTickFormat(
   index: number,
@@ -71,24 +86,41 @@ function getDateTickFormat(
     return candle.date.slice(2, 7).replace("-0", "-");
   return candle.date.slice(8);
 }
-
-export default function CandleChart({
+export default function InvestCandleChart({
   w,
   data,
   indi_data,
   news,
+  dotData,
+  todayPrice,
   showLine,
 }: CandleChartProps) {
-  // 예외값 보정
-  data = data.map((d) =>
-    d.open === 0 && d.high === 0 && d.low === 0 && d.close > 0
-      ? { ...d, open: d.close, high: d.close, low: d.close }
-      : d
-  );
   // ==== 데이터 슬라이싱 ====
-  const startIdx = Math.max(0, data.length - SHOW_LEN - SKIP_LAST);
-  const endIdx = data.length;
-  const chartData = data.slice(startIdx, endIdx);
+  const combinedChartData = useMemo(() => {
+    const dotCandles = (dotData ?? []).map((dot) => ({
+      ...dot,
+      open: dot.close,
+      high: dot.close,
+      low: dot.close,
+      volume: 0,
+    })) as Candle[];
+
+    const merged = [...data, ...dotCandles];
+
+    const sorted = merged.sort(
+      (a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf()
+    );
+
+    return sorted;
+  }, [data, dotData]);
+  const lastDate = dotData?.length ? dotData[dotData.length - 1].date : null;
+  const lastIndex = lastDate
+    ? combinedChartData.findIndex((d) => d.date === lastDate)
+    : combinedChartData.length - 1;
+
+  const endIdx = combinedChartData.length; // 항상 마지막까지 포함
+  const startIdx = Math.max(0, endIdx - SHOW_LEN);
+  const chartData = combinedChartData.slice(startIdx, endIdx);
 
   const ma5_full = getMovingAverage(indi_data, 5).slice(startIdx, endIdx);
   const ma20_full = getMovingAverage(indi_data, 20).slice(startIdx, endIdx);
@@ -98,12 +130,16 @@ export default function CandleChart({
   const rsi_full = getRSI(data, 20).slice(startIdx, endIdx);
 
   const MAX_CANDLES = chartData.length;
-  const [visibleCandles, setVisibleCandles] = useState(
-    Math.min(40, MAX_CANDLES)
-  );
-  const [startIndex, setStartIndex] = useState(
-    Math.max(0, MAX_CANDLES - visibleCandles)
-  );
+
+  const [visibleCandles, setVisibleCandles] = useState(40);
+  const [startIndex, setStartIndex] = useState(0);
+  useEffect(() => {
+    const initialVisible = Math.min(40, MAX_CANDLES);
+    const initialStart = Math.max(0, MAX_CANDLES - initialVisible);
+    setVisibleCandles(initialVisible);
+    setStartIndex(initialStart);
+  }, [MAX_CANDLES]);
+
   const dragging = useRef(false);
   const dragStartX = useRef(0);
   const dragStartIndex = useRef(0);
@@ -190,14 +226,12 @@ export default function CandleChart({
 
   const handleCandleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
-
-    // const offsetX = e.clientX - rect.left;
     const offsetX = e.clientX - rect.left;
-
     const idx = getNearestCandleIdx(offsetX);
+    const candle = slicedData[idx];
 
-    // === overlay 영역이면 tooltip 안뜸! ===
-    if (idx < 0 || idx >= slicedData.length || isOverlayIdx(idx)) {
+    // dotData이면 툴팁 안 뜨게 처리
+    if (!candle || (dotData && dotData.some((d) => d.date === candle.date))) {
       setTooltip(null);
       return;
     }
@@ -207,7 +241,7 @@ export default function CandleChart({
       x: offsetX + LEFT_AXIS_WIDTH,
       y: e.clientY - rect.top,
       idx,
-      data: slicedData[idx],
+      data: candle,
       section: "candle",
     });
   };
@@ -223,21 +257,28 @@ export default function CandleChart({
     const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const idx = getNearestCandleIdx(offsetX);
+    const candle = slicedData[idx];
 
-    // === overlay 영역이면 tooltip 안뜸! ===
-    if (idx < 0 || idx >= slicedData.length || isOverlayIdx(idx)) {
+    // dotData이면 툴팁 안 뜨게 처리
+    if (
+      idx < 0 ||
+      idx >= slicedData.length ||
+      (dotData && dotData.some((d) => d.date === candle.date))
+    ) {
       setTooltip(null);
       return;
     }
+
     setTooltip({
       show: true,
       x: offsetX + LEFT_AXIS_WIDTH,
       y: e.clientY - rect.top,
       idx,
-      data: slicedData[idx],
+      data: candle,
       section: "candle",
     });
   };
+
   const handleVolumeChartMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     handleVolumeMouseMove(e);
     onMouseMove(e);
@@ -245,44 +286,32 @@ export default function CandleChart({
 
   const handleVolumeMouseLeave = () => setTooltip(null);
 
-  const handleRSIMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    const idx = getNearestCandleIdx(offsetX);
-
-    // === overlay 영역이면 tooltip 안뜸! ===
-    if (idx < 0 || idx >= slicedData.length || isOverlayIdx(idx)) {
-      setTooltip(null);
-      return;
-    }
-    setTooltip({
-      show: true,
-      x: offsetX + LEFT_AXIS_WIDTH,
-      y: e.clientY - rect.top,
-      idx,
-      data: slicedData[idx],
-      section: "candle",
-    });
-  };
-  const handleRSIChartMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    handleRSIMouseMove(e);
-    onMouseMove(e);
-  };
-
-  const handleRSIMouseLeave = () => setTooltip(null);
-
   // ==== 스케일 계산 ====
   const chartWidth = w - LEFT_AXIS_WIDTH;
-  const maxPrice = Math.max(...slicedData.map((d) => d.high));
-  const minPrice = Math.min(...slicedData.map((d) => d.low));
+  const highs = slicedData
+    .filter((d) => d.close !== -1)
+    .map((d) => d.high)
+    .filter((v) => typeof v === "number");
+
+  const lows = slicedData
+    .filter((d) => d.close !== -1)
+    .map((d) => d.low)
+    .filter((v) => typeof v === "number");
+
+  const maxPrice = highs.length ? Math.max(...highs) : 0;
+  const minPrice = lows.length ? Math.min(...lows) : 0;
   const midPrice = Math.round((maxPrice + minPrice) / 2);
   const priceRange = maxPrice - minPrice;
   const padding = priceRange * 0.1;
   const chartMax = maxPrice + padding;
   const chartMin = minPrice - padding;
   const chartRange = chartMax - chartMin;
-  const getY = (price: number) =>
-    ((chartMax - price) / chartRange) * CHART_HEIGHT;
+  const getY = (price: number) => {
+    if (typeof price !== "number" || isNaN(price)) return CHART_HEIGHT;
+    if (!isFinite(chartMax) || !isFinite(chartMin) || chartRange === 0)
+      return CHART_HEIGHT / 2;
+    return ((chartMax - price) / chartRange) * CHART_HEIGHT;
+  };
 
   // 가격 축 3개만
   const getPriceTicks = () => [
@@ -308,7 +337,9 @@ export default function CandleChart({
   ) {
     return arr
       .map((val, i) =>
-        val !== null ? `${i * candleSpacing},${getY(val)}` : null
+        typeof val === "number" && !isNaN(val)
+          ? `${i * candleSpacing},${getY(val)}`
+          : null
       )
       .filter(Boolean)
       .join(" ");
@@ -333,6 +364,61 @@ export default function CandleChart({
     candleSpacing,
     getY
   );
+
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  // addEventListener로 등록
+  React.useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      handleWheelLikeReact(e);
+    };
+    chart.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      chart.removeEventListener("wheel", onWheel);
+    };
+  }, [handleWheelLikeReact]);
+
+  // 날짜를 기준으로 dotData를 필터링하여 렌더링 대상만 추출
+  const slicedDateMap = new Map(
+    slicedData.map((candle, index) => [
+      dayjs(candle.date).format("YYYY-MM-DD"),
+      index,
+    ])
+  );
+
+  const dotPoints = (dotData ?? [])
+    .filter((dot) => dot.close !== -1)
+    .map((dot) => {
+      const key = dayjs(dot.date).format("YYYY-MM-DD");
+      const i = slicedDateMap.get(key);
+      if (i === undefined) return null;
+      const x = i * candleSpacing;
+      const y = getY(dot.close);
+      if (typeof y !== "number" || isNaN(y)) return null;
+      return { x, y };
+    })
+    .filter(Boolean) as { x: number; y: number }[];
+
+  //오늘시세
+  const todayDot = useMemo(() => {
+    if (!todayPrice) return null;
+
+    const today = dayjs().format("YYYY-MM-DD");
+    const index = slicedData.findIndex((d) =>
+      dayjs(d.date).isSame(today, "day")
+    );
+    if (index === -1) return null;
+
+    const x = index * candleSpacing;
+    const y = getY(todayPrice);
+
+    return { x, y };
+  }, [todayPrice, slicedData, candleSpacing]);
+
+  const PADDING_RIGHT = 8;
 
   // 볼린저 밴드 영역 채우기를 위한 path 데이터 생성
   const createBollingerBandPath = () => {
@@ -360,60 +446,15 @@ export default function CandleChart({
     return pathData;
   };
 
-  // --- [QUIZ Overlay: 보이는 영역만큼만 가림] ---
-  const overlayStartGlobalIdx = startIdx + chartData.length - HIDE_COUNT;
-  const chartLastGlobalIdx = startIdx + chartData.length - 1;
-
-  const slicedStartGlobalIdx = startIdx + startIndex;
-  const slicedEndGlobalIdx = slicedStartGlobalIdx + slicedData.length - 1;
-
-  const visibleOverlayStart = Math.max(
-    overlayStartGlobalIdx,
-    slicedStartGlobalIdx
-  );
-  const visibleOverlayEnd = Math.min(slicedEndGlobalIdx, chartLastGlobalIdx);
-
-  const numVisibleOverlay = Math.max(
-    0,
-    visibleOverlayEnd - visibleOverlayStart + 1
-  );
-  const overlayLocalStart =
-    numVisibleOverlay > 0 ? visibleOverlayStart - slicedStartGlobalIdx : 0;
-  const overlayLeft = LEFT_AXIS_WIDTH + overlayLocalStart * candleSpacing;
-  const overlayWidth = numVisibleOverlay * candleSpacing;
-  const overlayLocalEnd = overlayLocalStart + numVisibleOverlay - 1;
-
-  function isOverlayIdx(idx: number) {
-    return (
-      numVisibleOverlay > 0 && idx > overlayLocalStart && idx <= overlayLocalEnd
-    );
-  }
-
-  const chartRef = useRef<HTMLDivElement>(null);
-
-  // addEventListener로 등록
-  React.useEffect(() => {
-    const chart = chartRef.current;
-    if (!chart) return;
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      handleWheelLikeReact(e);
-    };
-    chart.addEventListener("wheel", onWheel, { passive: false });
-    return () => {
-      chart.removeEventListener("wheel", onWheel);
-    };
-  }, [handleWheelLikeReact]);
-
   // --- 렌더 ---
   return (
     <div
-      className="flex flex-col"
+      className="flex flex-col "
       style={{
         width: "100%",
         maxWidth: w,
         position: "relative",
-        overflow: "hidden",
+        // overflow: "hidden",
         background: "inherit",
       }}
       ref={chartRef}
@@ -435,9 +476,9 @@ export default function CandleChart({
           ))}
         </svg>
         <svg
-          width={chartWidth}
+          width={chartWidth + PADDING_RIGHT}
           height={CHART_HEIGHT}
-          viewBox={`0 0 ${chartWidth} ${CHART_HEIGHT}`}
+          viewBox={`0 0 ${chartWidth + PADDING_RIGHT} ${CHART_HEIGHT}`}
           style={{
             width: "100%",
             background: "#1b1b1b",
@@ -466,7 +507,6 @@ export default function CandleChart({
               opacity={0.7}
             />
           ))}
-
           {/* 볼린저 밴드 영역 채우기 */}
           {showLine?.bb && (
             <path
@@ -550,8 +590,19 @@ export default function CandleChart({
               pointerEvents="none"
             />
           )}
-          {/* 캔들 */}
+
+          {/** 캔들 */}
           {slicedData.map((candle, i) => {
+            // 종가만 존재하거나 dotData와 날짜가 겹치면 캔들 생략
+            const isDotOnly =
+              candle.open === candle.close &&
+              candle.high === candle.close &&
+              candle.low === candle.close &&
+              candle.volume === 0 &&
+              dotData?.some((d) => d.date === candle.date);
+
+            if (candle.close === -1 || isDotOnly) return null;
+
             const x = i * candleSpacing;
             const isRising = candle.close > candle.open;
             const bodyTop = getY(Math.max(candle.open, candle.close));
@@ -560,6 +611,7 @@ export default function CandleChart({
             const wickTop = getY(candle.high);
             const wickBottom = getY(candle.low);
             const highlight = tooltip?.show && tooltip.idx === i;
+
             return (
               <g key={i}>
                 <line
@@ -590,43 +642,49 @@ export default function CandleChart({
               </g>
             );
           })}
+
+          {/* dot 포인트 연결선 (todayDot 제외) */}
+          {dotPoints.length > 1 && (
+            <polyline
+              fill="none"
+              stroke="#10B981"
+              strokeWidth="2"
+              points={dotPoints
+                .filter(
+                  (p) => !todayDot || p.x !== todayDot.x || p.y !== todayDot.y // todayDot과 좌표 일치하면 제외
+                )
+                .map((p) => `${p.x},${p.y}`)
+                .join(" ")}
+              opacity={0.9}
+            />
+          )}
+
+          {/* dot 포인트 원형 표시 */}
+          {dotPoints.map((p, i) => (
+            <circle
+              key={`dot-${i}`}
+              cx={p.x}
+              cy={p.y}
+              r={5}
+              fill="#10B981"
+              stroke="#10B981"
+              strokeWidth={2}
+              style={{ pointerEvents: "none" }}
+            />
+          ))}
+          {todayDot && (
+            <circle
+              cx={todayDot.x}
+              cy={todayDot.y}
+              r={5}
+              fill="#e75480"
+              stroke="#f4f4f4"
+              strokeWidth={2}
+              opacity={0.9}
+              style={{ pointerEvents: "none" }}
+            />
+          )}
         </svg>
-        {/* === 캔들 영역 Overlay === */}
-        {numVisibleOverlay > 0 && (
-          <div
-            style={{
-              position: "absolute",
-              left: overlayLeft,
-              top: 0,
-              width: overlayWidth,
-              height: CHART_HEIGHT,
-              background: "rgba(0,0,0,1)",
-              pointerEvents: "none",
-              zIndex: 5,
-              borderLeft: "2px dashed #edcb37",
-              display: "block",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            {numVisibleOverlay > 2 && (
-              <div
-                style={{
-                  color: "#edcb37",
-                  fontWeight: 600,
-                  fontSize: 18,
-                  textAlign: "center",
-                  marginTop: CHART_HEIGHT / 2 - 20,
-                  opacity: 0.9,
-                  textShadow: "0 1px 2px #000",
-                  userSelect: "none",
-                }}
-              >
-                ?
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* 2. 거래량(볼륨) 차트 (중간) */}
@@ -643,9 +701,9 @@ export default function CandleChart({
           </text>
         </svg>
         <svg
-          width={chartWidth}
+          width={chartWidth + PADDING_RIGHT}
           height={VOLUME_HEIGHT}
-          viewBox={`0 0 ${chartWidth} ${VOLUME_HEIGHT}`}
+          viewBox={`0 0 ${chartWidth + PADDING_RIGHT} ${VOLUME_HEIGHT}`}
           style={{
             width: "100%",
             background: "#1b1b1b",
@@ -681,6 +739,7 @@ export default function CandleChart({
           )}
           {/* 볼륨 막대 */}
           {slicedData.map((candle, i) => {
+            if (candle.close === -1) return null;
             const x = i * candleSpacing;
             const vol = candle.volume ?? 0;
             const isRising = candle.close > candle.open;
@@ -710,22 +769,6 @@ export default function CandleChart({
             );
           })}
         </svg>
-        {/* === 볼륨 영역 Overlay === */}
-        {numVisibleOverlay > 0 && (
-          <div
-            style={{
-              position: "absolute",
-              left: overlayLeft,
-              top: 0,
-              width: overlayWidth,
-              height: VOLUME_HEIGHT,
-              background: "rgba(0, 0, 0, 1)",
-              pointerEvents: "none",
-              zIndex: 5,
-              display: "block",
-            }}
-          />
-        )}
       </div>
 
       {/* 3. RSI 차트 (중간) */}
@@ -742,9 +785,9 @@ export default function CandleChart({
           </text>
         </svg>
         <svg
-          width={chartWidth}
+          width={chartWidth + PADDING_RIGHT}
           height={RSI_HEIGHT}
-          viewBox={`0 0 ${chartWidth} ${RSI_HEIGHT}`}
+          viewBox={`0 0 ${chartWidth + PADDING_RIGHT} ${RSI_HEIGHT}`}
           style={{
             width: "100%",
             background: "#181818",
@@ -752,11 +795,6 @@ export default function CandleChart({
             display: "block",
             flex: 1,
           }}
-          onMouseDown={onMouseDown}
-          onMouseUp={onMouseUp}
-          onMouseMove={handleRSIChartMouseMove}
-          onMouseLeave={handleRSIMouseLeave}
-          tabIndex={0}
         >
           {/* 70선 */}
           <line
@@ -791,18 +829,6 @@ export default function CandleChart({
             strokeWidth="1"
             opacity={0.3}
           />
-          {tooltip?.show && tooltip.idx !== undefined && (
-            <line
-              x1={tooltip.idx * candleSpacing}
-              y1={0}
-              x2={tooltip.idx * candleSpacing}
-              y2={VOLUME_HEIGHT}
-              stroke="#53A6FA"
-              strokeWidth={1.5}
-              opacity={0.7}
-              pointerEvents="none"
-            />
-          )}
           {/* RSI 라인 */}
           <polyline
             fill="none"
@@ -810,40 +836,25 @@ export default function CandleChart({
             strokeWidth="2"
             points={rsi_visible
               .map((val, i) =>
-                val !== null && !isNaN(val)
+                typeof val === "number" && isFinite(val)
                   ? `${i * candleSpacing},${(1 - val / 100) * RSI_HEIGHT}`
                   : null
               )
-              .filter(Boolean)
+              .filter((v): v is string => v !== null)
+
               .join(" ")}
             opacity={0.96}
           />
         </svg>
-        {/* === RSI 영역 Overlay === */}
-        {numVisibleOverlay > 0 && (
-          <div
-            style={{
-              position: "absolute",
-              left: overlayLeft,
-              top: 0,
-              width: overlayWidth,
-              height: RSI_HEIGHT,
-              background: "rgba(0,0,0,1)",
-              pointerEvents: "none",
-              zIndex: 5,
-              display: "block",
-            }}
-          />
-        )}
       </div>
 
       {/* 4. 날짜 라벨 (아래) */}
       <div className="flex" style={{ position: "relative", width: "100%" }}>
         <svg width={LEFT_AXIS_WIDTH} height={DATE_AXIS_HEIGHT} />
         <svg
-          width={chartWidth}
+          width={chartWidth + PADDING_RIGHT}
           height={DATE_AXIS_HEIGHT}
-          viewBox={`0 0 ${chartWidth} ${DATE_AXIS_HEIGHT}`}
+          viewBox={`0 0 ${chartWidth + PADDING_RIGHT} ${DATE_AXIS_HEIGHT}`}
           style={{
             width: "100%",
             background: "#1b1b1b",
@@ -870,42 +881,17 @@ export default function CandleChart({
             );
           })}
         </svg>
-        {/* === 날짜 Overlay === */}
-        {numVisibleOverlay > 0 && (
-          <div
-            style={{
-              position: "absolute",
-              left: overlayLeft,
-              top: 0,
-              width: overlayWidth,
-              height: DATE_AXIS_HEIGHT,
-              background: "rgba(0, 0, 0, 1)",
-              pointerEvents: "none",
-              zIndex: 5,
-              display: "block",
-            }}
-          />
-        )}
       </div>
       {/* 툴팁 */}
-
-      {tooltip?.show && tooltip?.data && tooltip?.idx !== undefined && (
+      {tooltip?.show && tooltip.data && tooltip.idx !== undefined && (
         <div
           style={{
-            position: "fixed",
-            // position: "absolute",
-
-            // left: tooltip.x + 18,
-            left: tooltip.x + 88,
-
-            // top:
-            //   tooltip.section === "volume"
-            //     ? CHART_HEIGHT + VOLUME_HEIGHT / 2 - 60
-            //     : 40,
+            position: "absolute",
+            left: tooltip.x + 18,
             top:
               tooltip.section === "volume"
                 ? CHART_HEIGHT + VOLUME_HEIGHT / 2 - 60
-                : 120,
+                : 40,
             background: "#232323",
             color: "#fff",
             padding: "12px 16px",
@@ -932,8 +918,8 @@ export default function CandleChart({
           {tooltipNews.length > 0 && (
             <div style={{ marginTop: 8 }}>
               <div style={{ fontWeight: 600, marginBottom: 2 }}>📰 뉴스</div>
-              {tooltipNews.map((item) => (
-                <div key={item._id} style={{ marginBottom: 7 }}>
+              {tooltipNews.map((item, i) => (
+                <div key={i} style={{ marginBottom: 7 }}>
                   <a
                     href={item.news_url}
                     target="_blank"

@@ -1,6 +1,6 @@
 name: 🚀 Auto Deploy to EC2
 
-# main 브랜치에 push 될 때마다 실행
+# develop 브랜치에 push 될 때마다 실행
 on:
   push:
     branches:
@@ -22,7 +22,9 @@ jobs:
       - name: Sync code to EC2
         run: |
           rsync -e "ssh -o StrictHostKeyChecking=no" -avz --delete \
-            --exclude='.git*' --exclude='node_modules' \
+            --exclude='.git*' \
+            --exclude='node_modules' \
+            --exclude='.env' \
             ./ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.CLIENT_PATH }}
 
       - name: Build & Restart on EC2
