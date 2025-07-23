@@ -240,7 +240,7 @@ export default function InvestmentStockClient() {
 
       <main className="flex flex-col lg:flex-row gap-6">
         {/* 왼쪽 영역 */}
-        <section className="flex-1 max-w-[894px] w-full lg:max-w-[calc(100%-420px)] overflow-hidden">
+        <section className="flex-1 max-w-[894px] w-full lg:max-w-[calc(100%-420px)]">
           {/* 탭 */}
           <div className="text-sm text-gray-300 mb-4">
             <div className="flex flex-wrap items-center gap-1 mb-4">
@@ -265,14 +265,17 @@ export default function InvestmentStockClient() {
               {tab === "chart" && (
                 <div className="flex flex-wrap gap-4 items-center justify-end text-sm text-gray-300 ml-auto pr-3">
                   <span className="flex items-center gap-1">
-                    <span className="text-white pr-1">이동평균선</span>
+                    <span className="pr-1">
+                      현재가 <b className="">{currentPrice}</b>
+                    </span>
+                    |<span className="pl-1 pr-1">이동평균선</span>
                     <span className="text-[#00D5C0]">5</span> ·
                     <span className="text-[#E8395F]">20</span> ·
                     <span className="text-[#F87800]">60</span> ·
                     <span className="text-[#7339FB]">120</span>
                   </span>
                   <span className="text-[#EDCB37]">볼린저밴드</span> |
-                  <span className="text-[#396FFB]">거래량</span>
+                  <span className="text-[#396FFB]">거래량</span> |
                   <span className="text-[#e75480]">RSI</span>
                 </div>
               )}
@@ -302,10 +305,16 @@ export default function InvestmentStockClient() {
             )}
           </div>
 
-          <div className="mt-6">
-            <p className="font-semibold text-xl mb-4">
-              예측 입력 <span className="text-gray-400">ⓘ</span>
-            </p>
+          <div className="mt-6 relative">
+            <div className="font-semibold text-xl mb-4 flex items-center gap-2">
+              예측 입력
+              <span className="relative group cursor-pointer text-gray-400">
+                ⓘ
+                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-white text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                  날짜와 주가를 입력하면 예측값으로 저장됩니다.
+                </div>
+              </span>
+            </div>
 
             <div className="flex">
               {/* 왼쪽 스크롤 가능한 테이블 영역 */}

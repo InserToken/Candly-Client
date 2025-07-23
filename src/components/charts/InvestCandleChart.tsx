@@ -418,7 +418,7 @@ export default function InvestCandleChart({
         width: "100%",
         maxWidth: w,
         position: "relative",
-        overflow: "hidden",
+        // overflow: "hidden",
         background: "inherit",
       }}
       ref={chartRef}
