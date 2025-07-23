@@ -416,18 +416,14 @@ export default function PracticeClient() {
                 />
               )}
           </div>
-          {/* 답변 작성 */}
-          {/* <div>
-            <label className="text-sm font-semibold mb-2 inline-block">
-              답변 작성 <span className="text-gray-400">ⓘ</span>
-            </label> */}
+
           <div className="mt-6 relative">
             <div className="font-semibold mb-2 flex items-center gap-2">
               답변 작성
               <span className="relative group cursor-pointer text-gray-400">
                 ⓘ
-                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-white text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
-                  <b className="text-[#396FFB]">
+                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                  <b className="text-[#f4f4f4]">
                     차트 기술지표, 거시경제, 뉴스{" "}
                   </b>{" "}
                   등을 참고해 이후의 주가 흐름을 구체적으로 예측해주세요.
