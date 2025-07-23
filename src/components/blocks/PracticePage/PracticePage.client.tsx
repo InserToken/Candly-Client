@@ -11,6 +11,7 @@ import { fetchFinancial } from "@/services/fetchFinancial";
 import { useRouter } from "next/navigation";
 import { gradeWithGemini } from "@/services/gradeWithGemini";
 import FinancialComboChart from "@/components/charts/FinancialComboChart";
+import { postPracticeScore } from "@/services/practiceScoreService";
 
 type PriceItem = {
   date: string;
@@ -59,19 +60,74 @@ export default function PracticeClient() {
   const [financialData, setFinancialData] = useState<any>(null);
 
   const handleGrade = async () => {
+    console.log("handleGrade 진입");
     setLoading(true);
     setGradeResult(null);
     try {
-      console.log("요청 프롬프트:", prompt); // 프롬프트 먼저 찍기
-      console.log("유저 답변:", input); // 유저 답변도 같이 찍기
+      console.log("요청 프롬프트:", prompt);
+      console.log("유저 답변:", input);
 
+      // 1. Gemini 채점 API 호출
       const result = await gradeWithGemini(prompt, input);
-
-      console.log("채점 API 결과:", result); // 전체 응답
-      console.log("LLM 응답 데이터(result.result):", result.result); // LLM 텍스트/JSON
+      console.log("채점 API 결과:", result);
+      console.log("LLM 응답 데이터(result.result):", result.result);
       console.log("프롬프트 확인", prompt);
-      setGradeResult(result.result);
-    } catch (e: any) {
+
+      // 2. JSON 파싱 전처리 (마크다운 코드블록 제거)
+      let dataStr = result.result;
+      dataStr = dataStr.replace(/```json|```/gi, "");
+      dataStr = dataStr.replace(/'''json|'''/gi, "");
+      dataStr = dataStr.trim();
+
+      let data;
+      try {
+        data = typeof dataStr === "string" ? JSON.parse(dataStr) : dataStr;
+      } catch (err) {
+        console.error("JSON 파싱 에러:", err, dataStr);
+        alert("AI 응답을 JSON으로 변환할 수 없습니다.");
+        setLoading(false);
+        return;
+      }
+
+      // 3. 채점 결과 상태에 저장 (화면 렌더용)
+      setGradeResult(data);
+
+      // 4. PracticeScore 저장 (자동 등록)
+      try {
+        const token = sessionStorage.getItem("token");
+        const practiceScoreData = {
+          // user_id는 service에서 자동 추출 (token payload)
+          problem_id: params.problemId, // 문제 id (예: useParams나 props에서)
+          answer: input, // 유저 답변
+          score: data.score,
+          feedback: data.feedback,
+          logic: data.breakdown?.logic,
+          technical: data.breakdown?.technical,
+          macroEconomy: data.breakdown?.macroEconomy,
+          marketIssues: data.breakdown?.marketIssues,
+          quantEvidence: data.breakdown?.quantEvidence,
+          date: new Date().toISOString(),
+        };
+        console.log("data 들어옴!", practiceScoreData);
+        await postPracticeScore(token, practiceScoreData);
+        alert("채점 및 저장 완료!");
+      } catch (saveErr) {
+        console.error("저장 실패:", saveErr);
+        alert("채점은 완료되었으나 저장에 실패했습니다.");
+      }
+
+      // 5. 결과 콘솔 출력(선택)
+      console.log("== 채점 결과 ==");
+      console.log("총점(score):", data.score);
+      console.log("세부 점수(breakdown):", data.breakdown);
+      if (data.breakdown) {
+        Object.entries(data.breakdown).forEach(([key, value]) => {
+          console.log(` - ${key}: ${value}`);
+        });
+      }
+      console.log("피드백(feedback):", data.feedback);
+      console.log("추천 학습(study):", data.study);
+    } catch (e) {
       alert(e.message || "채점 실패");
     } finally {
       setLoading(false);
@@ -179,6 +235,30 @@ export default function PracticeClient() {
       }
     });
   }, []);
+  const handleSubmitScore = async () => {
+    try {
+      const token = localStorage.getItem("accessToken"); // 실제 저장된 key 사용
+      const practiceScoreData = {
+        // user_id는 빼도 됨! service에서 token으로 자동 채움
+        problem_id: params.problemId, // 예시: props나 상태에서
+        answer: input, // 유저 입력값
+        score: gradeResult.score,
+        feedback: gradeResult.feedback,
+        logic: gradeResult.breakdown.logic,
+        technical: gradeResult.breakdown.technical,
+        macroEconomy: gradeResult.breakdown.macroEconomy,
+        marketIssues: gradeResult.breakdown.marketIssues,
+        quantEvidence: gradeResult.breakdown.quantEvidence,
+        date: new Date().toISOString(),
+      };
+
+      await postPracticeScore(token, practiceScoreData);
+      alert("결과가 저장되었습니다!");
+      // 필요시 상태 갱신, 페이지 이동 등
+    } catch (e: any) {
+      alert(e.message || "저장 실패");
+    }
+  };
 
   useEffect(() => {
     if (!problemData?.stock_code || !problemData?.date) return;

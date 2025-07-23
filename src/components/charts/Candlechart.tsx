@@ -180,7 +180,10 @@ export default function CandleChart({
 
   const handleCandleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
+
+    // const offsetX = e.clientX - rect.left;
     const offsetX = e.clientX - rect.left;
+
     const idx = getNearestCandleIdx(offsetX);
 
     // === overlay 영역이면 tooltip 안뜸! ===
@@ -188,6 +191,7 @@ export default function CandleChart({
       setTooltip(null);
       return;
     }
+
     setTooltip({
       show: true,
       x: offsetX + LEFT_AXIS_WIDTH,
@@ -861,15 +865,24 @@ export default function CandleChart({
         )}
       </div>
       {/* 툴팁 */}
-      {tooltip?.show && tooltip.data && tooltip.idx !== undefined && (
+
+      {tooltip?.show && tooltip?.data && tooltip?.idx !== undefined && (
         <div
           style={{
-            position: "absolute",
-            left: tooltip.x + 18,
+            position: "fixed",
+            // position: "absolute",
+
+            // left: tooltip.x + 18,
+            left: tooltip.x + 88,
+
+            // top:
+            //   tooltip.section === "volume"
+            //     ? CHART_HEIGHT + VOLUME_HEIGHT / 2 - 60
+            //     : 40,
             top:
               tooltip.section === "volume"
                 ? CHART_HEIGHT + VOLUME_HEIGHT / 2 - 60
-                : 40,
+                : 120,
             background: "#232323",
             color: "#fff",
             padding: "12px 16px",
