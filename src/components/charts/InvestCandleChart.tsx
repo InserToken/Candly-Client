@@ -108,7 +108,7 @@ export default function InvestCandleChart({
     ? combinedChartData.findIndex((d) => d.date === lastDate)
     : combinedChartData.length - 1;
 
-  const endIdx = Math.min(combinedChartData.length, lastIndex + 1);
+  const endIdx = combinedChartData.length; // 항상 마지막까지 포함
   const startIdx = Math.max(0, endIdx - SHOW_LEN);
   const chartData = combinedChartData.slice(startIdx, endIdx);
 
@@ -418,7 +418,7 @@ export default function InvestCandleChart({
         width: "100%",
         maxWidth: w,
         position: "relative",
-        overflow: "hidden",
+        // overflow: "hidden",
         background: "inherit",
       }}
       ref={chartRef}
