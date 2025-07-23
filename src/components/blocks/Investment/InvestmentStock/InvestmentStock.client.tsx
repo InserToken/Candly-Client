@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import MixedChart from "@/components/charts/Mixedchart";
 import {
   parseDateString,
   dateToString,
@@ -20,9 +19,9 @@ import { fetchRealNews } from "@/services/fetchRealNews";
 import postRealInvest from "@/services/postRealInvest";
 import fetchRealInvest from "@/services/fetchRealInvest";
 import { fetchRealChart } from "@/services/fetchRealChart";
-import CandleChart from "@/components/charts/Candlechart";
 import InvestCandleChart from "@/components/charts/InvestCandleChart";
 import { ChartData } from "@/components/charts/Mixedchart";
+import { getCurrentPrice } from "@/services/getCurrentPrice";
 export default function InvestmentStockClient() {
   const router = useRouter();
   const auth = useAuthStore((s) => s.auth);
@@ -44,10 +43,6 @@ export default function InvestmentStockClient() {
     return () => window.removeEventListener("resize", updateWidth);
   }, []);
 
-  // const latestDate =
-  //   prediction.length > 0
-  //     ? prediction[prediction.length - 1].date
-  //     : mixedStockData[mixedStockData.length - 1].date;
   const holidaySet = useHolidayStore((state) => state.holidaySet);
 
   // 예측정보 받아오기
@@ -181,12 +176,36 @@ export default function InvestmentStockClient() {
   const lastStockDate = stockData?.[stockData.length - 1]?.date;
 
   const extendedDotData = [...dotData];
+  //현재시세
+  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  useEffect(() => {
+    const fetchPrice = async () => {
+      try {
+        const price = await getCurrentPrice(params.stock_code);
+        if (price !== null && !isNaN(price)) {
+          setCurrentPrice(price);
+        } else {
+          console.warn("유효하지 않은 현재가 데이터:", price);
+        }
+      } catch (error) {
+        console.error("현재가 가져오기 실패:", error);
+        setCurrentPrice(null); // fallback
+      }
+    };
+    fetchPrice();
+  }, [params.stock_code]);
 
   // 오늘 날짜가 주가 데이터에 없고, 오늘이 주말/공휴일이 아닌 경우만 추가
-  if (isValidTradingDate(todayStr) && todayStr > lastStockDate) {
+  const hasToday = extendedDotData.some((item) => item.date === todayStr);
+
+  if (
+    isValidTradingDate(todayStr) &&
+    !hasToday && // 오늘 날짜가 없을 때만 추가
+    currentPrice !== null
+  ) {
     extendedDotData.push({
       date: todayStr,
-      close: -1,
+      close: currentPrice,
       type: "dot",
     });
   }
@@ -205,6 +224,9 @@ export default function InvestmentStockClient() {
       setNews(data);
     });
   }, []);
+
+  // 오늘날짜 이후만 수정/삭제 가능
+  const futurePredictions = prediction.filter((item) => item.date > todayStr);
 
   return (
     <div className="min-h-screen px-[80px] pt-1">
@@ -251,17 +273,13 @@ export default function InvestmentStockClient() {
                   </span>
                   <span className="text-[#EDCB37]">볼린저밴드</span> |
                   <span className="text-[#396FFB]">거래량</span>
-                  <span>MACD</span>
-                  <span>RSI</span>
+                  <span className="text-[#e75480]">RSI</span>
                 </div>
               )}
             </div>
             {tab === "chart" ? (
-              // <div className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center text-gray-400">
-              //   <MixedChart w={750} h={300} data={chartData} />
-              // </div>
               <div
-                className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center w-full text-gray-400 pb-1"
+                className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center w-full text-gray-400 pb-1 "
                 ref={chartBoxRef}
               >
                 {Array.isArray(stockData) ? (
@@ -271,6 +289,7 @@ export default function InvestmentStockClient() {
                     indi_data={stockData}
                     news={news}
                     dotData={extendedDotData}
+                    todayPrice={currentPrice}
                   />
                 ) : (
                   <div>차트가 없습니다.</div>
@@ -298,7 +317,7 @@ export default function InvestmentStockClient() {
                       <th className="text-left px-2 text-gray-300 font-medium w-[80px] sticky left-0 bg-[#0f0f0f] z-10 whitespace-nowrap">
                         날짜
                       </th>
-                      {prediction.map((item, idx) => (
+                      {futurePredictions.map((item, idx) => (
                         <td
                           key={idx}
                           className="text-white px-4 min-w-[120px] whitespace-nowrap"
@@ -313,7 +332,7 @@ export default function InvestmentStockClient() {
                       <th className="text-left px-2 text-gray-300 font-medium sticky left-0 bg-[#0f0f0f] z-10 whitespace-nowrap">
                         종가
                       </th>
-                      {prediction.map((item, idx) => (
+                      {futurePredictions.map((item, idx) => (
                         <td
                           key={idx}
                           className="text-white px-4 min-w-[120px] whitespace-nowrap"
@@ -328,7 +347,7 @@ export default function InvestmentStockClient() {
                       <th className="text-left px-2 text-gray-300 font-medium sticky left-0 bg-[#0f0f0f] z-10">
                         {" "}
                       </th>
-                      {prediction.map((item, idx) => (
+                      {futurePredictions.map((item, idx) => (
                         <td
                           key={idx}
                           className="px-4 min-w-[120px] whitespace-nowrap"
@@ -338,8 +357,8 @@ export default function InvestmentStockClient() {
                               className="bg-[#396FFB] text-white px-3 py-1 rounded text-sm"
                               onClick={() => {
                                 setEditIndex(idx);
-                                setInputDate(item.date); // 날짜는 그대로 유지
-                                setInputclose(item.close); // 종가 입력창에 값 채움
+                                setInputDate(item.date);
+                                setInputclose(item.close);
                               }}
                             >
                               수정
@@ -347,13 +366,12 @@ export default function InvestmentStockClient() {
                             <button
                               className="bg-[#2a2a2a] text-white px-3 py-1 rounded text-sm"
                               onClick={() => {
-                                const newList = [...prediction];
-                                const removed = newList.splice(idx, 1)[0]; // 삭제된 항목
+                                const newList = [...futurePredictions];
+                                const removed = newList.splice(idx, 1)[0];
 
-                                const prev = prediction[idx - 1];
-                                const next = prediction[idx + 1];
+                                const prev = futurePredictions[idx - 1];
+                                const next = futurePredictions[idx + 1];
 
-                                // 양쪽 예측값이 존재할 경우 보간으로 다시 이어줌
                                 if (prev && next) {
                                   const interpolatedItems: ChartData[] = [];
 
@@ -388,17 +406,11 @@ export default function InvestmentStockClient() {
                                     i++;
                                   }
 
-                                  // prev 다음 위치에 삽입
-                                  newList.splice(
-                                    idx - 1 + 1,
-                                    0,
-                                    ...interpolatedItems
-                                  );
+                                  newList.splice(idx, 0, ...interpolatedItems);
                                 }
 
                                 setPrediction(newList);
 
-                                // 삭제된 항목이 수정 중이던 항목이라면 상태 초기화
                                 if (editIndex === idx) {
                                   setEditIndex(null);
                                   if (newList.length > 0) {
