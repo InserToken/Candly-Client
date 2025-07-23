@@ -300,7 +300,11 @@ export default function InvestmentStockClient() {
               </div>
             ) : (
               <div className="h-[calc(100vh-300px)] w-full">
-                <FinanceTable />
+                <FinanceTable
+                  stock_code={params.stock_code}
+                  date={lastStockDate}
+                  currentPrice={currentPrice}
+                />
               </div>
             )}
           </div>
