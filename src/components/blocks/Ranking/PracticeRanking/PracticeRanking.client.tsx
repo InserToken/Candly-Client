@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   getRankPracProblem,
   getRankPracScore,
 } from "@/services/ranking-service";
 import { GetPracticeScore, ProblemScore } from "@/types/ProblemScore";
 import { useAuthStore } from "@/stores/authStore";
+import Image from "next/image";
 
 export default function PracticeRankingClient() {
   const [problems, setProblem] = useState<ProblemScore[]>([]);
@@ -123,6 +124,15 @@ export default function PracticeRankingClient() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
+                    {q.problem_id?.stock_code?.logo && (
+                      <Image
+                        src={q.problem_id?.stock_code?.logo}
+                        alt={q.problem_id?.stock_code?.name}
+                        width={24}
+                        height={24}
+                        className="rounded-full"
+                      />
+                    )}
                     <span>{q.problem_id?.title?.split("_")[0]}</span>
                     {/* 문제타입 뱃지 */}
                     {getBadges(Number(q.problem_id?.problemtype)).map(
@@ -182,16 +192,16 @@ export default function PracticeRankingClient() {
       </div>
       {isModalOpen && selectedUser && (
         <div className="fixed inset-0 flex items-center justify-center backdrop-blur-[3px] z-50">
-          <div className="bg-[#16161A] rounded-xl p-6 w-150 h-100 shadow-lg">
+          <div className="bg-[#16161A] rounded-xl p-6 w-180 h-130 shadow-lg">
             <div className="h-75">
               <h4 className="text-xl font-bold mb-4">답변</h4>
-              <div className="mb-28">{selectedAnswer}</div>
-              <h4 className="text-xl">피드백</h4>
+              <div className="mb-36">{selectedAnswer}</div>
+              <h4 className="text-xl mb-4">피드백</h4>
               <div>{selectedFeedback}</div>
             </div>
             <button
               onClick={closeModal}
-              className="px-4 py-2 bg-[#396FFB] rounded hover:bg-blue-500 w-full"
+              className="px-4 py-2 mt-32 bg-[#396FFB] rounded hover:bg-blue-500 w-full"
             >
               닫기
             </button>
