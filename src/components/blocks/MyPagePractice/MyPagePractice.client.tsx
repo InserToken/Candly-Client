@@ -23,7 +23,7 @@ export default function MyPagePracticeClient() {
   useEffect(() => {
     const now = new Date();
     const past = new Date();
-    past.setDate(now.getDate() - 40);
+    past.setDate(now.getDate() - 60);
     setToday(now);
     setPastDate(past);
   }, []);
@@ -124,16 +124,16 @@ export default function MyPagePracticeClient() {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="w-80 h-70 bg-[#16161A] rounded-lg flex items-center justify-center p-8">
+          <div className="w-80 h-auto bg-[#16161A] rounded-lg flex flex-col items-center justify-center p-6">
             <CalendarHeatmap
               startDate={pastDate}
               endDate={today}
               values={calendarData}
-              showMonthLabels={false}
-              // weekdayLabels={["S", "M", "T", "W", "T", "F", "S"]}
+              showMonthLabels={true}
+              weekdayLabels={["S", "M", "T", "W", "T", "F", "S"]}
               showOutOfRangeDays={true}
-              horizontal={false}
-              gutterSize={0}
+              horizontal={true}
+              gutterSize={0.5}
               classForValue={(value) => {
                 if (!value || !value.count || value.count === 0) {
                   return "fill-[#313136]";
@@ -150,6 +150,16 @@ export default function MyPagePracticeClient() {
                 }
               }}
             />
+            <div className="flex items-center justify-center mt-4 text-sm text-gray-400 gap-1">
+              <span>Less</span>
+              <div className="w-4 h-4 rounded-sm bg-[#313136]"></div>
+              <div className="w-4 h-4 rounded-sm bg-[#B6C8F8]"></div>
+              <div className="w-4 h-4 rounded-sm bg-[#7FA0F8]"></div>
+              <div className="w-4 h-4 rounded-sm bg-[#5683F8]"></div>
+              <div className="w-4 h-4 rounded-sm bg-[#396FFB]"></div>
+              <div className="w-4 h-4 rounded-sm bg-[#1856F8]"></div>
+              <span>More</span>
+            </div>
           </div>
 
           <div className="w-200 h-70 bg-[#16161A] rounded-lg flex items-center justify-center gap-6 px-6 py-8 font-semibold">
@@ -215,11 +225,15 @@ export default function MyPagePracticeClient() {
       </main>
       <style jsx global>{`
         .react-calendar-heatmap {
-          background-color: #313136;
+          // background-color: #313136;
+          width: ;
         }
         .react-calendar-heatmap rect {
           rx: 1;
           ry: 1;
+        }
+        .react-calendar-heatmap text {
+          font-size: 5px;
         }
       `}</style>
     </div>
