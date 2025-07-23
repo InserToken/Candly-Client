@@ -26,6 +26,7 @@ type CandleChartProps = {
   data: Candle[];
   indi_data: Candle[];
   news: NewsItem[];
+  isAnswered?: boolean;
 };
 
 const LEFT_AXIS_WIDTH = 60;
@@ -68,6 +69,7 @@ export default function CandleChart({
   data,
   indi_data,
   news,
+  isAnswered = false,
 }: CandleChartProps) {
   // 예외값 보정
   data = data.map((d) =>
@@ -569,7 +571,7 @@ export default function CandleChart({
           })}
         </svg>
         {/* === 캔들 영역 Overlay === */}
-        {numVisibleOverlay > 0 && (
+        {numVisibleOverlay > 0 && !isAnswered && (
           <div
             style={{
               position: "absolute",
@@ -688,7 +690,7 @@ export default function CandleChart({
           })}
         </svg>
         {/* === 볼륨 영역 Overlay === */}
-        {numVisibleOverlay > 0 && (
+        {numVisibleOverlay > 0 && !isAnswered && (
           <div
             style={{
               position: "absolute",
@@ -797,7 +799,7 @@ export default function CandleChart({
           />
         </svg>
         {/* === RSI 영역 Overlay === */}
-        {numVisibleOverlay > 0 && (
+        {numVisibleOverlay > 0 && !isAnswered && (
           <div
             style={{
               position: "absolute",
@@ -848,7 +850,7 @@ export default function CandleChart({
           })}
         </svg>
         {/* === 날짜 Overlay === */}
-        {numVisibleOverlay > 0 && (
+        {numVisibleOverlay > 0 && !isAnswered && (
           <div
             style={{
               position: "absolute",
