@@ -151,22 +151,21 @@ export default function MyPagePracticeClient() {
               }}
             />
           </div>
-          
 
-        <div className="w-200 h-70 bg-[#16161A] rounded-lg flex items-center justify-center gap-6 px-6 py-8 font-semibold">
-          {[
-            { label: "예측 논리", value: problemScoreAvg?.logic },
-            { label: "기술적 분석", value: problemScoreAvg?.momentum },
-            { label: "거시경제", value: problemScoreAvg?.macroEconomy },
-            { label: "시황 이슈", value: problemScoreAvg?.marketIssues },
-            { label: "정량적 근거", value: problemScoreAvg?.quantEvidence },
-          ].map((item, idx) => (
-            <div key={idx} className="flex flex-col items-center">
-              <CircularProgressChart value={item.value ?? 0} />
-              <span className="text-sm text-white mt-3">{item.label}</span>
-            </div>
-          ))}
-
+          <div className="w-200 h-70 bg-[#16161A] rounded-lg flex items-center justify-center gap-6 px-6 py-8 font-semibold">
+            {[
+              { label: "예측 논리", value: problemScoreAvg?.logic },
+              { label: "기술적 분석", value: problemScoreAvg?.momentum },
+              { label: "거시경제", value: problemScoreAvg?.macroEconomy },
+              { label: "시황 이슈", value: problemScoreAvg?.marketIssues },
+              { label: "정량적 근거", value: problemScoreAvg?.quantEvidence },
+            ].map((item, idx) => (
+              <div key={idx} className="flex flex-col items-center">
+                <CircularProgressChart value={item.value ?? 0} />
+                <span className="text-sm text-white mt-3">{item.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* 모달창 */}
