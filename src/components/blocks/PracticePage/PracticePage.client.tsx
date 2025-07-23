@@ -7,10 +7,9 @@ import CandleChart from "@/components/charts/Candlechart";
 import { fetchPracticeProblem } from "@/services/fetchPracticeProblem";
 import { fetchProblemTypeMeta } from "@/services/fetchProblemTypeMeta";
 import { fetchPracticeNews } from "@/services/fetchPracticeNews";
-import { fetchFinancial } from "@/services/fetchFinancial";
 import { useRouter } from "next/navigation";
 import { gradeWithGemini } from "@/services/gradeWithGemini";
-import FinancialComboChart from "@/components/charts/FinancialComboChart";
+import FinanceTable from "@/components/charts/FinanceTable";
 
 type PriceItem = {
   date: string;
@@ -56,7 +55,6 @@ export default function PracticeClient() {
   const [prompt, setPrompt] = useState<string>("");
   const [gradeResult, setGradeResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [financialData, setFinancialData] = useState<any>(null);
 
   const handleGrade = async () => {
     setLoading(true);
@@ -78,40 +76,40 @@ export default function PracticeClient() {
     }
   };
 
-  const formatNumber = (num: number | null, unit = "") =>
-    typeof num === "number"
-      ? num.toLocaleString(undefined, { maximumFractionDigits: 2 }) + unit
-      : "-";
+  // const formatNumber = (num: number | null, unit = "") =>
+  //   typeof num === "number"
+  //     ? num.toLocaleString(undefined, { maximumFractionDigits: 2 }) + unit
+  //     : "-";
 
-  function formatLargeNumber(value: number | null | undefined): string {
-    if (value == null || isNaN(value)) return "-";
+  // function formatLargeNumber(value: number | null | undefined): string {
+  //   if (value == null || isNaN(value)) return "-";
 
-    const abs = Math.abs(value);
+  //   const abs = Math.abs(value);
 
-    if (abs >= 1e12) {
-      return (value / 1e12).toFixed(1) + "조원"; // 1조 = 1e12
-    } else if (abs >= 1e8) {
-      return (value / 1e8).toFixed(1) + "억원"; // 1억 = 1e8
-    } else if (abs >= 1e4) {
-      return (value / 1e4).toFixed(1) + "만원";
-    } else {
-      return value.toLocaleString("ko-KR") + "원";
-    }
-  }
+  //   if (abs >= 1e12) {
+  //     return (value / 1e12).toFixed(1) + "조원"; // 1조 = 1e12
+  //   } else if (abs >= 1e8) {
+  //     return (value / 1e8).toFixed(1) + "억원"; // 1억 = 1e8
+  //   } else if (abs >= 1e4) {
+  //     return (value / 1e4).toFixed(1) + "만원";
+  //   } else {
+  //     return value.toLocaleString("ko-KR") + "원";
+  //   }
+  // }
 
-  const reprtMap: { [key: string]: string } = {
-    "11013": "3월",
-    "11012": "6월",
-    "11014": "9월",
-    "4Q": "12월 ",
-  };
+  // const reprtMap: { [key: string]: string } = {
+  //   "11013": "3월",
+  //   "11012": "6월",
+  //   "11014": "9월",
+  //   "4Q": "12월 ",
+  // };
 
-  const periodLabels = financialData?.series?.period.map((raw: string) => {
-    const [year, code] = raw.split(".");
-    const reprt_code = code === "4Q" ? "4Q" : code;
-    const label = reprtMap[reprt_code] || reprt_code;
-    return `${year} ${label}`;
-  });
+  // const periodLabels = financialData?.series?.period.map((raw: string) => {
+  //   const [year, code] = raw.split(".");
+  //   const reprt_code = code === "4Q" ? "4Q" : code;
+  //   const label = reprtMap[reprt_code] || reprt_code;
+  //   return `${year} ${label}`;
+  // });
 
   useEffect(() => {
     function updateWidth() {
@@ -180,13 +178,13 @@ export default function PracticeClient() {
     });
   }, []);
 
-  useEffect(() => {
-    if (!problemData?.stock_code || !problemData?.date) return;
+  // useEffect(() => {
+  //   if (!problemData?.stock_code || !problemData?.date) return;
 
-    fetchFinancial(problemData.stock_code, problemData.date).then((data) => {
-      setFinancialData(data);
-    });
-  }, [problemData]);
+  //   fetchFinancial(problemData.stock_code, problemData.date).then((data) => {
+  //     setFinancialData(data);
+  //   });
+  // }, [problemData]);
 
   function getBadges(problemtype: number) {
     if ([1, 2].includes(problemtype)) return ["SMA"];
@@ -275,232 +273,14 @@ export default function PracticeClient() {
                 )}
               </div>
             )}
-            {tab === "finance" && (
-              <div className="flex flex-col gap-6 w-full text-sm text-white max-h-[410px] overflow-y-auto pr-2">
-                {/* 투자 지표 */}
-                <div className="bg-[#1b1b1b] rounded-xl p-4 text-white text-sm w-full">
-                  <h3 className="text-base font-semibold mb-4">투자 지표</h3>
-
-                  {/* 위 두 섹션 (가치평가, 수익) */}
-                  <div className="grid grid-cols-2 gap-2 mb-4">
-                    {/* 가치평가 */}
-                    <div className="space-y-2">
-                      <p className="text-gray-400">가치평가</p>
-                      <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                        <span>PER</span>
-                        <span>{formatNumber(financialData?.per, "배")}</span>
-                      </div>
-                      <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                        <span>PSR</span>
-                        <span>{formatNumber(financialData?.psr, "배")}</span>
-                      </div>
-                      <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                        <span>PBR</span>
-                        <span>{formatNumber(financialData?.pbr, "배")}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-gray-400">수익</p>
-
-                      <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                        <span>EPS</span>
-                        <span>{formatNumber(financialData?.eps, "원")}</span>
-                      </div>
-                      <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                        <span>BPS</span>
-                        <span>{formatNumber(financialData?.bps, "원")}</span>
-                      </div>
-                      <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                        <span>ROE</span>
-                        <span>{formatNumber(financialData?.roe, "%")}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <p className="text-gray-400">기타 재무 정보</p>
-                    <div />
-                    <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                      <span>당기순이익</span>
-                      <span>
-                        {formatNumber(financialData?.ttmProfit, "원")}
-                      </span>
-                    </div>
-                    <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                      <span>증감액</span>
-                      <span>
-                        {formatNumber(financialData?.profit_diff, "원")}
-                      </span>
-                    </div>
-                    <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                      <span>매출액</span>
-                      <span>
-                        {formatNumber(financialData?.ttmRevenue, "원")}
-                      </span>
-                    </div>
-                    <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                      <span>증감률</span>
-                      <span>
-                        {formatNumber(financialData?.profit_diff_rate, "%")}
-                      </span>
-                    </div>
-                    <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between ">
-                      <span>순자산</span>
-                      <span>
-                        {formatNumber(financialData?.ttmequity, "원")}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                {/* 수익성 */}
-                <div className="bg-[#1b1b1b] rounded-lg p-4">
-                  <h3 className="text-lg font-bold mb-4">수익성</h3>
-
-                  <FinancialComboChart
-                    data={financialData?.series?.period.map(
-                      (_, idx: number) => ({
-                        label: periodLabels[idx],
-                        bar1: financialData.series.revenue[idx],
-                        bar2: financialData.series.netProfit_govern[idx],
-                        line: financialData.series.profitMargin[idx],
-                      })
-                    )}
-                    bar1Key="bar1"
-                    bar2Key="bar2"
-                    lineKey="line"
-                    bar1Label="매출"
-                    bar2Label="순이익"
-                    lineLabel="순이익률"
-                  />
-
-                  <div className="overflow-x-auto rounded-lg">
-                    <table className="min-w-max text-sm text-white border-separate border-spacing-0">
-                      <thead>
-                        <tr className="bg-[#313136]">
-                          <th className="text-left px-3 py-4 sticky left-0 bg-[#313136] z-10 rounded-tl-lg min-w-[120px]">
-                            항목
-                          </th>
-                          {periodLabels.map((label, idx) => (
-                            <th
-                              key={idx}
-                              className={`text-center px-4 py-4 whitespace-nowrap ${
-                                idx === periodLabels.length - 1
-                                  ? "rounded-tr-lg"
-                                  : ""
-                              }`}
-                            >
-                              {label}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[
-                          { label: "매출", key: "revenue" },
-                          { label: "순이익", key: "netProfit_govern" },
-                          { label: "순이익률", key: "profitMargin" },
-                          { label: "순이익 성장률", key: "growthRate" },
-                        ].map(({ label, key }, rowIndex, arr) => (
-                          <tr
-                            key={key}
-                            className={
-                              rowIndex % 2 === 0
-                                ? "bg-[#1C1C20]"
-                                : "bg-[#313136]"
-                            }
-                          >
-                            <td className="py-4 px-3 font-medium sticky left-0 z-10 bg-inherit min-w-[120px]">
-                              {label}
-                            </td>
-                            {financialData?.series?.[key].map(
-                              (value: number | null, idx: number) => (
-                                <td key={idx} className="text-center py-4 px-4">
-                                  {key == "revenue" || key == "netProfit_govern"
-                                    ? formatLargeNumber(value)
-                                    : formatNumber(value) + "%"}
-                                </td>
-                              )
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* 성장성 */}
-                <div className="bg-[#1b1b1b] rounded-lg p-4">
-                  <h3 className="text-lg font-bold mb-4">성장성</h3>
-                  <FinancialComboChart
-                    data={financialData?.series?.period.map(
-                      (_, idx: number) => ({
-                        label: periodLabels[idx],
-                        bar1: financialData.series.operatingProfit[idx],
-                        line: financialData.series.operatingMargin[idx],
-                      })
-                    )}
-                    bar1Key="bar1"
-                    lineKey="line"
-                    bar1Label="영업이익"
-                    lineLabel="영업이익률"
-                  />
-                  <div className="overflow-x-auto rounded-lg">
-                    <table className="min-w-max text-sm text-white border-separate border-spacing-0">
-                      <thead>
-                        <tr className="bg-[#313136]">
-                          <th className="text-left px-3 py-4 sticky left-0 bg-[#313136] z-10 rounded-tl-lg min-w-[120px]">
-                            항목
-                          </th>
-                          {periodLabels.map((label, idx) => (
-                            <th
-                              key={idx}
-                              className={`text-center px-4 py-4 whitespace-nowrap ${
-                                idx === periodLabels.length - 1
-                                  ? "rounded-tr-lg"
-                                  : ""
-                              }`}
-                            >
-                              {label}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[
-                          { label: "영업이익", key: "operatingProfit" },
-                          { label: "영업이익률", key: "operatingMargin" },
-                          {
-                            label: "영업이익 성장률",
-                            key: "operatingGrowthRate",
-                          },
-                        ].map(({ label, key }, rowIndex, arr) => (
-                          <tr
-                            key={key}
-                            className={
-                              rowIndex % 2 === 0
-                                ? "bg-[#1C1C20]"
-                                : "bg-[#313136]"
-                            }
-                          >
-                            <td className="py-4 px-3 font-medium sticky left-0 z-10 bg-inherit min-w-[120px]">
-                              {label}
-                            </td>
-                            {financialData?.series?.[key].map(
-                              (value: number | null, idx: number) => (
-                                <td key={idx} className="text-center py-3 px-4">
-                                  {key == "operatingProfit"
-                                    ? formatLargeNumber(value)
-                                    : formatNumber(value) + "%"}
-                                </td>
-                              )
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            )}
+            {tab === "finance" &&
+              problemData?.stock_code &&
+              problemData.date && (
+                <FinanceTable
+                  stock_code={problemData.stock_code}
+                  date={problemData.date}
+                />
+              )}
           </div>
           {/* 답변 작성 */}
           <div>
