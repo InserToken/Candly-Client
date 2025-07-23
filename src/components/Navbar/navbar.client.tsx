@@ -26,6 +26,7 @@ export default function Navbar() {
   useEffect(() => {
     setMounted(true);
   }, []);
+  if (!mounted) return null;
 
   const handleInvestClick = async () => {
     try {
