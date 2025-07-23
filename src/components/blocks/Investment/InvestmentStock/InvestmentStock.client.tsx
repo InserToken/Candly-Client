@@ -366,11 +366,20 @@ export default function InvestmentStockClient() {
                             <button
                               className="bg-[#2a2a2a] text-white px-3 py-1 rounded text-sm"
                               onClick={() => {
-                                const newList = [...futurePredictions];
-                                const removed = newList.splice(idx, 1)[0];
+                                const newList = [...prediction]; // 🔁 전체 prediction에서 직접 제거
+                                const removed = futurePredictions[idx];
 
-                                const prev = futurePredictions[idx - 1];
-                                const next = futurePredictions[idx + 1];
+                                // 삭제할 index 찾기
+                                const removeIndex = prediction.findIndex(
+                                  (p) => p.date === removed.date
+                                );
+                                if (removeIndex === -1) return;
+
+                                newList.splice(removeIndex, 1);
+
+                                // 보간 처리
+                                const prev = prediction[removeIndex - 1];
+                                const next = prediction[removeIndex + 1];
 
                                 if (prev && next) {
                                   const interpolatedItems: ChartData[] = [];
@@ -406,7 +415,11 @@ export default function InvestmentStockClient() {
                                     i++;
                                   }
 
-                                  newList.splice(idx, 0, ...interpolatedItems);
+                                  newList.splice(
+                                    removeIndex,
+                                    0,
+                                    ...interpolatedItems
+                                  );
                                 }
 
                                 setPrediction(newList);
