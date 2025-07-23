@@ -126,8 +126,8 @@ export default function Navbar() {
 
       {/* 로그인/로그아웃 버튼 */}
       <div className="ml-auto pr-5">
-        {mounted &&
-          (auth?.token ? (
+        {mounted ? (
+          auth?.token ? (
             <button
               onClick={handleLogout}
               className="text-sm text-[#E2E2E2] hover:text-white transition"
@@ -141,7 +141,11 @@ export default function Navbar() {
             >
               로그인
             </button>
-          ))}
+          )
+        ) : (
+          // 서버에서 렌더링되는 placeholder (같은 구조 유지)
+          <div className="w-[64px] h-[20px]" />
+        )}
       </div>
     </nav>
   );
