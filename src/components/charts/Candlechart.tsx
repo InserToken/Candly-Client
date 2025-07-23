@@ -413,7 +413,7 @@ export default function CandleChart({
         width: "100%",
         maxWidth: w,
         position: "relative",
-        // overflow: "hidden",
+        overflow: "hidden",
         background: "inherit",
       }}
       ref={chartRef}

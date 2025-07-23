@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { checkUserStatus, getStock } from "@/services/userStock-service";
@@ -10,7 +10,7 @@ import Image from "next/image";
 const menuItems = [
   { label: "홈", href: "/" },
   { label: "연습문제", href: "/practice" },
-  { label: "실전투자", href: "/investment", dynamic: true }, // ✅ 동적 처리
+  { label: "실전투자", href: "/investment", dynamic: true },
   { label: "랭킹", href: "/ranking" },
   { label: "마이페이지", href: "/mypage" },
 ];
@@ -19,12 +19,19 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const auth = useAuthStore((s) => s.auth);
+  const clearAuth = useAuthStore((s) => s.clearAuth);
+
+  // hydration mismatch 방지용
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleInvestClick = async () => {
     try {
       if (!auth?.token) {
         console.warn("로그인 필요");
-        return router.push("/auth/login"); // 로그인 페이지로 이동 등 처리
+        return router.push("/auth/login");
       }
 
       const status = await checkUserStatus(auth.token);
@@ -32,23 +39,35 @@ export default function Navbar() {
 
       if (status.hasHoldings) {
         const stockData = await getStock(auth.token);
-        const firstCode = stockData.stocks[0]._id;
+        const firstCode = stockData.stocks[0]?._id;
         console.log("주식 조회", firstCode);
         if (firstCode) {
           router.push(`/investment/${firstCode}`);
-          console.log("보유한 주식 있음");
         } else {
           router.push("/investment");
-          console.log("조회됐는데 왜 ? ..");
         }
       } else {
-        console.log("보유주식 없음");
         router.push("/investment");
       }
     } catch (err) {
       console.error("실전투자 이동 중 오류:", err);
       router.push("/investment");
     }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (e) {
+      console.warn("서버 로그아웃 실패");
+    }
+    sessionStorage.removeItem("token");
+    clearAuth();
+    router.replace("/auth/login");
+  };
+
+  const handleLoginClick = () => {
+    router.push("/auth/login");
   };
 
   return (
@@ -104,6 +123,30 @@ export default function Navbar() {
           );
         })}
       </ul>
+
+      {/* 로그인/로그아웃 버튼 */}
+      <div className="ml-auto pr-5">
+        {mounted ? (
+          auth?.token ? (
+            <button
+              onClick={handleLogout}
+              className="text-sm text-[#E2E2E2] hover:text-white transition"
+            >
+              로그아웃
+            </button>
+          ) : (
+            <button
+              onClick={handleLoginClick}
+              className="text-sm text-[#E2E2E2] hover:text-white transition"
+            >
+              로그인
+            </button>
+          )
+        ) : (
+          // 서버에서 렌더링되는 placeholder (같은 구조 유지)
+          <div className="w-[64px] h-[20px]" />
+        )}
+      </div>
     </nav>
   );
 }
