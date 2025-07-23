@@ -278,7 +278,16 @@ export default function InvestmentStockClient() {
               </div>
             ) : (
               <div className="h-[calc(100vh-300px)] w-full">
-                <FinanceTable />
+                {lastStockDate ? (
+                  <FinanceTable
+                    stock_code={params.stock_code}
+                    date={lastStockDate}
+                  />
+                ) : (
+                  <div className="text-gray-400">
+                    재무 정보를 불러오는 중입니다...
+                  </div>
+                )}
               </div>
             )}
           </div>

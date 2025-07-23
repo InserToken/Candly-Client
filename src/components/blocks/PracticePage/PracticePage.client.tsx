@@ -261,15 +261,15 @@ export default function PracticeClient() {
                       <p className="text-gray-400">가치평가</p>
                       <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
                         <span>PER</span>
-                        <span>{formatNumber(financialData?.per, "배")}</span>
+                        <span>{formatNumber(financialData?.eps, "배")}</span>
                       </div>
                       <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
                         <span>PSR</span>
-                        <span>{formatNumber(financialData?.psr, "배")}</span>
+                        <span>{formatNumber(financialData?.eps, "배")}</span>
                       </div>
                       <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
                         <span>PBR</span>
-                        <span>{formatNumber(financialData?.pbr, "배")}</span>
+                        <span>{formatNumber(financialData?.eps, "배")}</span>
                       </div>
                     </div>
                     <div className="space-y-2">
