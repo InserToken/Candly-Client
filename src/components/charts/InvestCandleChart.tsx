@@ -27,6 +27,7 @@ type CandleChartProps = {
   indi_data: Candle[];
   news: NewsItem[];
   dotData?: ChartData[];
+  todayPrice?: number | null;
 };
 
 type CandleData = {
@@ -42,6 +43,7 @@ type DotData = {
   date: string;
   close: number;
   type: "dot";
+  source?: "realtime" | "prediction";
 };
 
 export type ChartData = CandleData | DotData;
@@ -52,13 +54,8 @@ const VOLUME_HEIGHT = 100;
 const RSI_HEIGHT = 80;
 const DATE_AXIS_HEIGHT = 24;
 
-const TOTAL_HEIGHT =
-  CHART_HEIGHT + VOLUME_HEIGHT + RSI_HEIGHT + DATE_AXIS_HEIGHT;
-
 const MIN_CANDLES = 10;
 const SHOW_LEN = 200;
-const SKIP_LAST = 20;
-const HIDE_COUNT = 21; // 마지막 21개 가림
 
 function getDateTickFormat(
   index: number,
@@ -86,6 +83,7 @@ export default function InvestCandleChart({
   indi_data,
   news,
   dotData,
+  todayPrice,
 }: CandleChartProps) {
   // ==== 데이터 슬라이싱 ====
   const combinedChartData = useMemo(() => {
@@ -99,14 +97,19 @@ export default function InvestCandleChart({
 
     const merged = [...data, ...dotCandles];
 
-    const sorted = merged.sort((a, b) =>
-      dayjs(a.date).isAfter(dayjs(b.date)) ? 1 : -1
+    const sorted = merged.sort(
+      (a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf()
     );
 
     return sorted;
   }, [data, dotData]);
-  const startIdx = Math.max(0, combinedChartData.length - SHOW_LEN - SKIP_LAST);
-  const endIdx = combinedChartData.length;
+  const lastDate = dotData?.length ? dotData[dotData.length - 1].date : null;
+  const lastIndex = lastDate
+    ? combinedChartData.findIndex((d) => d.date === lastDate)
+    : combinedChartData.length - 1;
+
+  const endIdx = combinedChartData.length; // 항상 마지막까지 포함
+  const startIdx = Math.max(0, endIdx - SHOW_LEN);
   const chartData = combinedChartData.slice(startIdx, endIdx);
 
   const ma5_full = getMovingAverage(indi_data, 5).slice(startIdx, endIdx);
@@ -116,7 +119,8 @@ export default function InvestCandleChart({
   const bbands_full = getBollingerBands(data, 20, 2).slice(startIdx, endIdx);
   const rsi_full = getRSI(data, 20).slice(startIdx, endIdx);
 
-  const MAX_CANDLES = useMemo(() => chartData.length, [chartData]);
+  const MAX_CANDLES = chartData.length;
+
   const [visibleCandles, setVisibleCandles] = useState(40);
   const [startIndex, setStartIndex] = useState(0);
   useEffect(() => {
@@ -249,7 +253,6 @@ export default function InvestCandleChart({
     if (
       idx < 0 ||
       idx >= slicedData.length ||
-      isOverlayIdx(idx) ||
       (dotData && dotData.some((d) => d.date === candle.date))
     ) {
       setTooltip(null);
@@ -352,35 +355,6 @@ export default function InvestCandleChart({
     getY
   );
 
-  // --- [QUIZ Overlay: 보이는 영역만큼만 가림] ---
-  const overlayStartGlobalIdx = startIdx + chartData.length - HIDE_COUNT;
-  const chartLastGlobalIdx = startIdx + chartData.length - 1;
-
-  const slicedStartGlobalIdx = startIdx + startIndex;
-  const slicedEndGlobalIdx = slicedStartGlobalIdx + slicedData.length - 1;
-
-  const visibleOverlayStart = Math.max(
-    overlayStartGlobalIdx,
-    slicedStartGlobalIdx
-  );
-  const visibleOverlayEnd = Math.min(slicedEndGlobalIdx, chartLastGlobalIdx);
-
-  const numVisibleOverlay = Math.max(
-    0,
-    visibleOverlayEnd - visibleOverlayStart + 1
-  );
-  const overlayLocalStart =
-    numVisibleOverlay > 0 ? visibleOverlayStart - slicedStartGlobalIdx : 0;
-  const overlayLeft = LEFT_AXIS_WIDTH + overlayLocalStart * candleSpacing;
-  const overlayWidth = numVisibleOverlay * candleSpacing;
-  const overlayLocalEnd = overlayLocalStart + numVisibleOverlay - 1;
-
-  function isOverlayIdx(idx: number) {
-    return (
-      numVisibleOverlay > 0 && idx > overlayLocalStart && idx <= overlayLocalEnd
-    );
-  }
-
   const chartRef = useRef<HTMLDivElement>(null);
 
   // addEventListener로 등록
@@ -398,18 +372,19 @@ export default function InvestCandleChart({
   }, [handleWheelLikeReact]);
 
   // 날짜를 기준으로 dotData를 필터링하여 렌더링 대상만 추출
+  const slicedDateMap = new Map(
+    slicedData.map((candle, index) => [
+      dayjs(candle.date).format("YYYY-MM-DD"),
+      index,
+    ])
+  );
+
   const dotPoints = (dotData ?? [])
     .filter((dot) => dot.close !== -1)
-    .filter((dot) =>
-      slicedData.some((candle) =>
-        dayjs(candle.date).isSame(dayjs(dot.date), "day")
-      )
-    )
     .map((dot) => {
-      const i = slicedData.findIndex((candle) =>
-        dayjs(candle.date).isSame(dayjs(dot.date), "day")
-      );
-      if (i === -1) return null;
+      const key = dayjs(dot.date).format("YYYY-MM-DD");
+      const i = slicedDateMap.get(key);
+      if (i === undefined) return null;
       const x = i * candleSpacing;
       const y = getY(dot.close);
       if (typeof y !== "number" || isNaN(y)) return null;
@@ -417,15 +392,33 @@ export default function InvestCandleChart({
     })
     .filter(Boolean) as { x: number; y: number }[];
 
+  //오늘시세
+  const todayDot = useMemo(() => {
+    if (!todayPrice) return null;
+
+    const today = dayjs().format("YYYY-MM-DD");
+    const index = slicedData.findIndex((d) =>
+      dayjs(d.date).isSame(today, "day")
+    );
+    if (index === -1) return null;
+
+    const x = index * candleSpacing;
+    const y = getY(todayPrice);
+
+    return { x, y };
+  }, [todayPrice, slicedData, candleSpacing]);
+
+  const PADDING_RIGHT = 8;
+
   // --- 렌더 ---
   return (
     <div
-      className="flex flex-col"
+      className="flex flex-col "
       style={{
         width: "100%",
         maxWidth: w,
         position: "relative",
-        overflow: "hidden",
+        // overflow: "hidden",
         background: "inherit",
       }}
       ref={chartRef}
@@ -447,9 +440,9 @@ export default function InvestCandleChart({
           ))}
         </svg>
         <svg
-          width={chartWidth}
+          width={chartWidth + PADDING_RIGHT}
           height={CHART_HEIGHT}
-          viewBox={`0 0 ${chartWidth} ${CHART_HEIGHT}`}
+          viewBox={`0 0 ${chartWidth + PADDING_RIGHT} ${CHART_HEIGHT}`}
           style={{
             width: "100%",
             background: "#1b1b1b",
@@ -593,13 +586,18 @@ export default function InvestCandleChart({
             );
           })}
 
-          {/* dot 포인트 연결선 */}
+          {/* dot 포인트 연결선 (todayDot 제외) */}
           {dotPoints.length > 1 && (
             <polyline
               fill="none"
               stroke="#10B981"
               strokeWidth="2"
-              points={dotPoints.map((p) => `${p.x},${p.y}`).join(" ")}
+              points={dotPoints
+                .filter(
+                  (p) => !todayDot || p.x !== todayDot.x || p.y !== todayDot.y // todayDot과 좌표 일치하면 제외
+                )
+                .map((p) => `${p.x},${p.y}`)
+                .join(" ")}
               opacity={0.9}
             />
           )}
@@ -614,9 +612,21 @@ export default function InvestCandleChart({
               fill="#10B981"
               stroke="#10B981"
               strokeWidth={2}
-              style={{ pointerEvents: "auto" }}
+              style={{ pointerEvents: "none" }}
             />
           ))}
+          {todayDot && (
+            <circle
+              cx={todayDot.x}
+              cy={todayDot.y}
+              r={5}
+              fill="#e75480"
+              stroke="#f4f4f4"
+              strokeWidth={2}
+              opacity={0.9}
+              style={{ pointerEvents: "none" }}
+            />
+          )}
         </svg>
       </div>
 
@@ -634,9 +644,9 @@ export default function InvestCandleChart({
           </text>
         </svg>
         <svg
-          width={chartWidth}
+          width={chartWidth + PADDING_RIGHT}
           height={VOLUME_HEIGHT}
-          viewBox={`0 0 ${chartWidth} ${VOLUME_HEIGHT}`}
+          viewBox={`0 0 ${chartWidth + PADDING_RIGHT} ${VOLUME_HEIGHT}`}
           style={{
             width: "100%",
             background: "#1b1b1b",
@@ -718,9 +728,9 @@ export default function InvestCandleChart({
           </text>
         </svg>
         <svg
-          width={chartWidth}
+          width={chartWidth + PADDING_RIGHT}
           height={RSI_HEIGHT}
-          viewBox={`0 0 ${chartWidth} ${RSI_HEIGHT}`}
+          viewBox={`0 0 ${chartWidth + PADDING_RIGHT} ${RSI_HEIGHT}`}
           style={{
             width: "100%",
             background: "#181818",
@@ -765,7 +775,7 @@ export default function InvestCandleChart({
           {/* RSI 라인 */}
           <polyline
             fill="none"
-            stroke="#FFD600"
+            stroke="#e75480"
             strokeWidth="2"
             points={rsi_visible
               .map((val, i) =>
@@ -785,9 +795,9 @@ export default function InvestCandleChart({
       <div className="flex" style={{ position: "relative", width: "100%" }}>
         <svg width={LEFT_AXIS_WIDTH} height={DATE_AXIS_HEIGHT} />
         <svg
-          width={chartWidth}
+          width={chartWidth + PADDING_RIGHT}
           height={DATE_AXIS_HEIGHT}
-          viewBox={`0 0 ${chartWidth} ${DATE_AXIS_HEIGHT}`}
+          viewBox={`0 0 ${chartWidth + PADDING_RIGHT} ${DATE_AXIS_HEIGHT}`}
           style={{
             width: "100%",
             background: "#1b1b1b",

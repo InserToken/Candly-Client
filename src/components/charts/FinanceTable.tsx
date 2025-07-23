@@ -1,155 +1,380 @@
-"use client";
-
 import React, { useEffect, useState } from "react";
+import { fetchFinancial } from "@/services/fetchFinancial";
+import FinancialComboChart from "@/components/charts/FinancialComboChart";
 
-interface RowProps {
-  name: string;
-  keyName: string;
-  value: string;
-}
+type Props = {
+  stock_code?: string;
+  date?: string;
+  currentPrice?: number | null;
+};
 
-interface Section {
-  title: string;
-  rows: RowProps[];
-}
+export default function FinanceTable({
+  stock_code,
+  date,
+  currentPrice,
+}: Props) {
+  const [financialData, setFinancialData] = useState<any>(null);
 
-export default function FinanceTable() {
-  const [updatedData, setUpdatedData] = useState<Section[]>([]);
-  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  const formatNumber = (num: number | null, unit = "") =>
+    typeof num === "number"
+      ? num.toLocaleString(undefined, { maximumFractionDigits: 2 }) + unit
+      : "-";
+
+  function formatLargeNumber(value: number | null | undefined): string {
+    if (value == null || isNaN(value)) return "-";
+
+    const abs = Math.abs(value);
+
+    if (abs >= 1e12) {
+      return (value / 1e12).toFixed(1) + "조원";
+    } else if (abs >= 1e8) {
+      return (value / 1e8).toFixed(1) + "억원";
+    } else if (abs >= 1e4) {
+      return (value / 1e4).toFixed(1) + "만원";
+    } else {
+      return value.toLocaleString("ko-KR") + "원";
+    }
+  }
+
+  const reprtMap: { [key: string]: string } = {
+    "11013": "3월",
+    "11012": "6월",
+    "11014": "9월",
+    "4Q": "12월 ",
+  };
+
+  const periodLabels = financialData?.series?.period.map((raw: string) => {
+    const [year, code] = raw.split(".");
+    const reprt_code = code === "4Q" ? "4Q" : code;
+    const label = reprtMap[reprt_code] || reprt_code;
+    return `${year} ${label}`;
+  });
 
   useEffect(() => {
-    const run = async () => {
-      const deepCopiedData: Section[] = JSON.parse(JSON.stringify(financeData));
+    if (!stock_code || !date) return;
+    console.log(currentPrice);
+    fetchFinancial(stock_code, date).then((data) => {
+      setFinancialData(data);
+    });
+  }, [stock_code, date]);
 
-      const stockCode = deepCopiedData[0].rows.find(
-        (row) => row.keyName === "stock_code"
-      )?.value;
-      const epsRaw = deepCopiedData[2].rows.find(
-        (row) => row.keyName === "eps"
-      )?.value;
-
-      if (!stockCode || !epsRaw) return;
-
-      const eps = parseFloat(epsRaw.replace(/,/g, ""));
-
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/currentStock/stock-price?code=${stockCode}`
-      );
-      const json = await res.json();
-      const price = json.price;
-
-      if (!price || !eps) return;
-
-      setCurrentPrice(price);
-      const calculatedPER = (price / eps).toFixed(2);
-
-      const investmentSection = deepCopiedData.find(
-        (section) => section.title === "주당 및 투자 지표"
-      );
-      const perRow = investmentSection?.rows.find(
-        (row) => row.keyName === "per"
-      );
-
-      if (perRow) {
-        perRow.value = calculatedPER.toString();
-      }
-
-      setUpdatedData(deepCopiedData);
-    };
-
-    run();
-  }, []);
-
-  const renderSection = (section: Section) => (
-    <div className="mb-6 min-w-[700px]" key={section.title}>
-      <h3 className="text-xl font-bold mb-3">{section.title}</h3>
-      <table className="w-full table-fixed border-collapse">
-        <thead className="text-left text-gray-400">
-          <tr>
-            <th className="w-1/3 px-2 py-1">항목명</th>
-            <th className="w-1/3 px-2 py-1">정보</th>
-          </tr>
-        </thead>
-        <tbody>
-          {section.rows.map((row, idx) => (
-            <tr key={idx} className="border-t border-gray-700">
-              <td className="px-2 py-2">{row.name}</td>
-              <td className="px-2 py-2">{row.value}</td>
-            </tr>
-          ))}
-          {/* 현재가 추가 표시 */}
-          {section.title === "주당 및 투자 지표" && currentPrice !== null && (
-            <tr className="border-t border-gray-700">
-              <td className="px-2 py-2 font-bold">현재 주가</td>
-              <td className="px-2 py-2 text-green-400">
-                {currentPrice.toLocaleString()} 원
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-  );
+  if (!financialData) {
+    return (
+      <div className="text-gray-400 text-sm px-4 py-2">
+        재무 정보를 불러오는 중입니다...
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full h-full overflow-x-auto bg-[#1b1b1b] rounded-lg text-sm text-white">
-      <div className="p-6 min-w-[700px] max-h-full overflow-y-auto">
-        {(updatedData.length > 0 ? updatedData : financeData).map(
-          renderSection
-        )}
+    <div className="flex flex-col gap-6 w-full text-sm text-white max-h-[410px] overflow-y-auto pr-2">
+      {/* 투자 지표 */}
+      <div className="bg-[#1b1b1b] rounded-xl p-4 text-white text-sm w-full">
+        <h3 className="text-base font-semibold mb-4">투자 지표</h3>
+
+        {/* 위 두 섹션 (가치평가, 수익) */}
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          {/* 가치평가 */}
+          <div className="space-y-2">
+            <p className="text-gray-400">가치평가</p>
+            <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
+              <span>PER</span>
+              <span>
+                {currentPrice == null
+                  ? formatNumber(
+                      financialData.stockPrice / financialData?.eps,
+                      "배"
+                    )
+                  : formatNumber(currentPrice / financialData?.eps, "배")}
+              </span>
+            </div>
+            <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
+              <span>PSR</span>
+              <span>
+                {currentPrice == null
+                  ? formatNumber(
+                      (financialData.stockPrice * financialData.shareCount) /
+                        financialData?.ttmRevenue,
+                      "배"
+                    )
+                  : formatNumber(
+                      (currentPrice * financialData.shareCount) /
+                        financialData?.ttmRevenue,
+                      "배"
+                    )}
+              </span>
+            </div>
+            <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
+              <span>PBR</span>
+              <span>
+                {currentPrice == null
+                  ? formatNumber(
+                      financialData.stockPrice / financialData?.bps,
+                      "배"
+                    )
+                  : formatNumber(currentPrice / financialData?.bps, "배")}
+              </span>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <p className="text-gray-400">수익</p>
+
+            <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
+              <span>EPS</span>
+              <span>{formatNumber(Math.round(financialData?.eps), "원")}</span>
+            </div>
+            <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
+              <span>BPS</span>
+              <span>{formatNumber(Math.round(financialData?.bps), "원")}</span>
+            </div>
+            <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
+              <span>ROE</span>
+              <span>{formatNumber(financialData?.roe, "%")}</span>
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <p className="text-gray-400">기타 재무 정보</p>
+          <div />
+          <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
+            <span>당기순이익</span>
+            <span>{formatNumber(financialData?.ttmProfit, "원")}</span>
+          </div>
+          <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
+            <span>증감액</span>
+            <span>{formatNumber(financialData?.profit_diff, "원")}</span>
+          </div>
+          <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
+            <span>매출액</span>
+            <span>{formatNumber(financialData?.ttmRevenue, "원")}</span>
+          </div>
+          <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
+            <span>증감률</span>
+            <span>{formatNumber(financialData?.profit_diff_rate, "%")}</span>
+          </div>
+          <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between ">
+            <span>순자산</span>
+            <span>{formatNumber(financialData?.ttmequity, "원")}</span>
+          </div>
+        </div>
+      </div>
+      {/* 수익성 */}
+      <div className="bg-[#1b1b1b] rounded-lg p-4">
+        <h3 className="text-lg font-bold mb-4">수익성</h3>
+        <div>
+          {/* Legend 박스 (차트 위에 표시) */}
+          <div className="flex items-center gap-4 mb-2 text-sm">
+            <div className="flex items-center gap-1">
+              <svg
+                aria-label="매출 legend icon"
+                className="recharts-surface"
+                width="14"
+                height="14"
+                viewBox="0 0 32 32"
+              >
+                <rect width="32" height="32" fill="#396FFB" />
+              </svg>
+              <span className="text-white">매출</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <svg
+                aria-label="순이익 legend icon"
+                className="recharts-surface"
+                width="14"
+                height="14"
+                viewBox="0 0 32 32"
+              >
+                <rect width="32" height="32" fill="#F87800" />
+              </svg>
+              <span className="text-white">순이익</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <svg
+                aria-label="순이익률 legend icon"
+                className="recharts-surface"
+                width="14"
+                height="14"
+                viewBox="0 0 32 32"
+              >
+                <line
+                  x1="0"
+                  y1="16"
+                  x2="32"
+                  y2="16"
+                  stroke="#EDCB37"
+                  strokeWidth="4"
+                />
+              </svg>
+              <span className="text-white">순이익률</span>
+            </div>
+          </div>
+        </div>
+        <FinancialComboChart
+          data={financialData?.series?.period.map((_, idx: number) => ({
+            label: periodLabels[idx],
+            bar1: financialData.series.revenue[idx],
+            bar2: financialData.series.netProfit_govern[idx],
+            line: financialData.series.profitMargin[idx],
+          }))}
+          bar1Key="bar1"
+          bar2Key="bar2"
+          lineKey="line"
+          bar1Label="매출"
+          bar2Label="순이익"
+          lineLabel="순이익률"
+        />
+
+        <div className="overflow-x-auto rounded-lg">
+          <table className="min-w-max text-sm text-white border-separate border-spacing-0">
+            <thead>
+              <tr className="bg-[#313136]">
+                <th className="text-left px-3 py-4 sticky left-0 bg-[#313136] z-10 rounded-tl-lg min-w-[120px]">
+                  항목
+                </th>
+                {periodLabels.map((label, idx) => (
+                  <th
+                    key={idx}
+                    className={`text-center px-4 py-4 whitespace-nowrap ${
+                      idx === periodLabels.length - 1 ? "rounded-tr-lg" : ""
+                    }`}
+                  >
+                    {label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { label: "매출", key: "revenue" },
+                { label: "순이익", key: "netProfit_govern" },
+                { label: "순이익률", key: "profitMargin" },
+                { label: "순이익 성장률", key: "growthRate" },
+              ].map(({ label, key }, rowIndex, arr) => (
+                <tr
+                  key={key}
+                  className={
+                    rowIndex % 2 === 0 ? "bg-[#1C1C20]" : "bg-[#313136]"
+                  }
+                >
+                  <td className="py-4 px-3 font-medium sticky left-0 z-10 bg-inherit min-w-[120px]">
+                    {label}
+                  </td>
+                  {financialData?.series?.[key].map(
+                    (value: number | null, idx: number) => (
+                      <td key={idx} className="text-center py-4 px-4">
+                        {key == "revenue" || key == "netProfit_govern"
+                          ? formatLargeNumber(value)
+                          : formatNumber(value) + "%"}
+                      </td>
+                    )
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 성장성 */}
+      <div className="bg-[#1b1b1b] rounded-lg p-4">
+        <h3 className="text-lg font-bold mb-4">성장성</h3>
+        <div className="flex items-center gap-4 mb-2 text-sm">
+          <div className="flex items-center gap-1">
+            <svg
+              aria-label="영업이익 legend icon"
+              className="recharts-surface"
+              width="14"
+              height="14"
+              viewBox="0 0 32 32"
+            >
+              <rect width="32" height="32" fill="#396FFB" />
+            </svg>
+            <span className="text-white">영업이익</span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <svg
+              aria-label="영업이익률 legend icon"
+              className="recharts-surface"
+              width="14"
+              height="14"
+              viewBox="0 0 32 32"
+            >
+              <line
+                x1="0"
+                y1="16"
+                x2="32"
+                y2="16"
+                stroke="#EDCB37"
+                strokeWidth="4"
+              />
+            </svg>
+            <span className="text-white">영업이익률</span>
+          </div>
+        </div>
+        <FinancialComboChart
+          data={financialData?.series?.period.map((_, idx: number) => ({
+            label: periodLabels[idx],
+            bar1: financialData.series.operatingProfit[idx],
+            line: financialData.series.operatingMargin[idx],
+          }))}
+          bar1Key="bar1"
+          lineKey="line"
+          bar1Label="영업이익"
+          lineLabel="영업이익률"
+        />
+        <div className="overflow-x-auto rounded-lg">
+          <table className="min-w-max text-sm text-white border-separate border-spacing-0">
+            <thead>
+              <tr className="bg-[#313136]">
+                <th className="text-left px-3 py-4 sticky left-0 bg-[#313136] z-10 rounded-tl-lg min-w-[120px]">
+                  항목
+                </th>
+                {periodLabels.map((label, idx) => (
+                  <th
+                    key={idx}
+                    className={`text-center px-4 py-4 whitespace-nowrap ${
+                      idx === periodLabels.length - 1 ? "rounded-tr-lg" : ""
+                    }`}
+                  >
+                    {label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { label: "영업이익", key: "operatingProfit" },
+                { label: "영업이익률", key: "operatingMargin" },
+                {
+                  label: "영업이익 성장률",
+                  key: "operatingGrowthRate",
+                },
+              ].map(({ label, key }, rowIndex, arr) => (
+                <tr
+                  key={key}
+                  className={
+                    rowIndex % 2 === 0 ? "bg-[#1C1C20]" : "bg-[#313136]"
+                  }
+                >
+                  <td className="py-4 px-3 font-medium sticky left-0 z-10 bg-inherit min-w-[120px]">
+                    {label}
+                  </td>
+                  {financialData?.series?.[key].map(
+                    (value: number | null, idx: number) => (
+                      <td key={idx} className="text-center py-3 px-4">
+                        {key == "operatingProfit"
+                          ? formatLargeNumber(value)
+                          : formatNumber(value) + "%"}
+                      </td>
+                    )
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
 }
-
-// 👉 기존 static financeData
-const financeData: Section[] = [
-  {
-    title: "기본 정보",
-    rows: [
-      { name: "종목코드", keyName: "stock_code", value: "005930" },
-      { name: "기업 고유 번호", keyName: "corp_code", value: "00123456" },
-      { name: "접수번호", keyName: "rcpt_no", value: "20240516001421" },
-      { name: "사업 연도", keyName: "bsns_year", value: "2024" },
-      { name: "보고서 코드", keyName: "report_code", value: "11011" },
-      { name: "보고서명", keyName: "report_name", value: "2024년 1분기" },
-    ],
-  },
-  {
-    title: "손익 지표",
-    rows: [
-      { name: "매출", keyName: "revenue", value: "75,000,000,000" },
-      {
-        name: "순이익(당기순이익)",
-        keyName: "netProfit",
-        value: "8,200,000,000",
-      },
-      {
-        name: "(지배주주) 당기순이익",
-        keyName: "netProfit_govern",
-        value: "7,500,000,000",
-      },
-      {
-        name: "(비지배주주) 당기순이익",
-        keyName: "netProfit_non_govern",
-        value: "700,000,000",
-      },
-      {
-        name: "당기순이익(최근 4분기)",
-        keyName: "profit",
-        value: "8,200,000,000",
-      },
-    ],
-  },
-  {
-    title: "주당 및 투자 지표",
-    rows: [
-      { name: "EPS (주당순이익)", keyName: "eps", value: "1,800" },
-      { name: "BPS (주당순자산)", keyName: "bps", value: "28,400" },
-      { name: "ROE (자기자본이익률)", keyName: "roe", value: "8.4%" },
-      { name: "PER (주가수익비율)", keyName: "per", value: "12.3" },
-      { name: "PBR (주가순자산비율)", keyName: "pbr", value: "1.15" },
-      { name: "PSR (주가매출비율)", keyName: "psr", value: "0.95" },
-    ],
-  },
-];

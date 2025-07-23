@@ -47,10 +47,11 @@ export default function FinancialComboChart({
         >
           <CartesianGrid stroke="#333" strokeDasharray="3 3" />
           <XAxis dataKey="label" stroke="#aaa" />
-          <YAxis yAxisId="left" stroke="#aaa" tick={{ fill: "#aaa" }} />
+          {/* <YAxis yAxisId="left" stroke="#aaa" tick={{ fill: "#aaa" }} /> */}
+
           <YAxis
             yAxisId="right"
-            orientation="right"
+            orientation="left"
             stroke="#aaa"
             tick={{ fill: "#aaa" }}
           />
@@ -61,8 +62,6 @@ export default function FinancialComboChart({
               color: "white",
             }}
           />
-          <Legend wrapperStyle={{ color: "white" }} />
-
           {/* 막대 차트 */}
           <Bar
             yAxisId="left"

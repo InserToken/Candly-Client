@@ -3,7 +3,7 @@
 import React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { postStock, checkUserStatus } from "@/services/userStock-service";
+import { checkUserStatus, getStock } from "@/services/userStock-service";
 import { useAuthStore } from "@/stores/authStore";
 import Image from "next/image";
 
@@ -31,13 +31,15 @@ export default function Navbar() {
       console.log("이미 연동 완료된 user: ", status.hasHoldings);
 
       if (status.hasHoldings) {
-        const stockData = await postStock(auth.token);
-        const firstCode = stockData[0]?.pdno;
-
+        const stockData = await getStock(auth.token);
+        const firstCode = stockData.stocks[0]._id;
+        console.log("주식 조회", firstCode);
         if (firstCode) {
           router.push(`/investment/${firstCode}`);
+          console.log("보유한 주식 있음");
         } else {
           router.push("/investment");
+          console.log("조회됐는데 왜 ? ..");
         }
       } else {
         console.log("보유주식 없음");
@@ -72,7 +74,7 @@ export default function Navbar() {
                 <button
                   onClick={handleInvestClick}
                   className={
-                    "text-base transition-colors " +
+                    "text-base transition-colors cursor-pointer " +
                     (isActive
                       ? "text-[#396FFB] font-semibold"
                       : "text-[#E2E2E2] hover:text-white")
