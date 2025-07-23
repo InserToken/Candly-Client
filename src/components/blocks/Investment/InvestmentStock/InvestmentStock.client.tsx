@@ -368,11 +368,11 @@ export default function InvestmentStockClient() {
               예측 입력
               <span className="relative group cursor-pointer text-gray-400">
                 ⓘ
-                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-white text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
-                  <b className="text-[#396FFB]">추가: </b> 날짜와 종가를
+                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black  text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                  <b className="text-[#f4f4f4]">추가: </b> 날짜와 종가를
                   입력하면 그래프에 예측값이 표시됩니다.
                   <br />
-                  <b className="text-[#396FFB]">제출: </b>예측값을 저장할 수
+                  <b className="text-[#f4f4f4]">제출: </b>예측값을 저장할 수
                   있습니다.
                   <br />빈 날짜의 예측값은 자동으로 보간됩니다.
                 </div>
