@@ -71,7 +71,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="h-[98px] flex items-center px-8 pl-10 whitespace-nowrap fixed bg-inherit w-screen z-20">
+    <nav className="h-[98px] flex items-center px-8 pl-10 whitespace-nowrap fixed bg-inherit w-screen z-100">
       <Link href="/" className="flex items-center pr-2.5">
         <Image
           src="/logo.svg"
