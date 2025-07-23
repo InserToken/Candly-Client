@@ -15,6 +15,7 @@ export type ProblemScore = {
     title?: string;
     stock_code?: string;
     date?: string;
+    problemtype: number;
   };
 };
 

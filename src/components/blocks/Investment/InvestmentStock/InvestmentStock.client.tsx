@@ -32,6 +32,14 @@ export default function InvestmentStockClient() {
   // === 차트 부모 width 동적 측정 ===
   const chartBoxRef = useRef<HTMLDivElement>(null);
   const [parentWidth, setParentWidth] = useState(780); // 초기값
+  const [showLine, setShowLine] = useState({
+    ma5: true,
+    ma20: true,
+    ma60: true,
+    ma120: true,
+    bb: true,
+  });
+
   useEffect(() => {
     function updateWidth() {
       if (chartBoxRef.current) {
@@ -44,6 +52,13 @@ export default function InvestmentStockClient() {
   }, []);
 
   const holidaySet = useHolidayStore((state) => state.holidaySet);
+
+  const toggleLine = (key: keyof typeof showLine) => {
+    setShowLine((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
 
   // 예측정보 받아오기
 
@@ -269,13 +284,51 @@ export default function InvestmentStockClient() {
                       현재가 <b className="">{currentPrice}</b>
                     </span>
                     |<span className="pl-1 pr-1">이동평균선</span>
-                    <span className="text-[#00D5C0]">5</span> ·
-                    <span className="text-[#E8395F]">20</span> ·
-                    <span className="text-[#F87800]">60</span> ·
-                    <span className="text-[#7339FB]">120</span>
+                    <span
+                      className={`cursor-pointer ${
+                        showLine.ma5 ? "text-[#00D5C0]" : "text-gray-500"
+                      }`}
+                      onClick={() => toggleLine("ma5")}
+                    >
+                      5
+                    </span>{" "}
+                    ·
+                    <span
+                      className={`cursor-pointer ${
+                        showLine.ma20 ? "text-[#E8395F]" : "text-gray-500"
+                      }`}
+                      onClick={() => toggleLine("ma20")}
+                    >
+                      20
+                    </span>{" "}
+                    ·
+                    <span
+                      className={`cursor-pointer ${
+                        showLine.ma60 ? "text-[#F87800]" : "text-gray-500"
+                      }`}
+                      onClick={() => toggleLine("ma60")}
+                    >
+                      60
+                    </span>{" "}
+                    ·
+                    <span
+                      className={`cursor-pointer ${
+                        showLine.ma120 ? "text-[#7339FB]" : "text-gray-500"
+                      }`}
+                      onClick={() => toggleLine("ma120")}
+                    >
+                      120
+                    </span>
                   </span>
-                  <span className="text-[#EDCB37]">볼린저밴드</span> |
-                  <span className="text-[#396FFB]">거래량</span> |
+                  <span
+                    className={`cursor-pointer ${
+                      showLine.bb ? "text-[#EDCB37]" : "text-gray-500"
+                    }`}
+                    onClick={() => toggleLine("bb")}
+                  >
+                    볼린저밴드
+                  </span>
+                  |<span className="text-[#396FFB]">거래량</span> |
                   <span className="text-[#e75480]">RSI</span>
                 </div>
               )}
@@ -293,6 +346,7 @@ export default function InvestmentStockClient() {
                     news={news}
                     dotData={extendedDotData}
                     todayPrice={currentPrice}
+                    showLine={showLine}
                   />
                 ) : (
                   <div>차트가 없습니다.</div>
@@ -310,12 +364,17 @@ export default function InvestmentStockClient() {
           </div>
 
           <div className="mt-6 relative">
-            <div className="font-semibold text-xl mb-4 flex items-center gap-2">
+            <div className="font-semibold mb-4 flex items-center gap-2">
               예측 입력
               <span className="relative group cursor-pointer text-gray-400">
                 ⓘ
                 <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-white text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
-                  날짜와 주가를 입력하면 예측값으로 저장됩니다.
+                  <b className="text-[#396FFB]">추가: </b> 날짜와 종가를
+                  입력하면 그래프에 예측값이 표시됩니다.
+                  <br />
+                  <b className="text-[#396FFB]">제출: </b>예측값을 저장할 수
+                  있습니다.
+                  <br />빈 날짜의 예측값은 자동으로 보간됩니다.
                 </div>
               </span>
             </div>
