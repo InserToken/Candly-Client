@@ -124,7 +124,7 @@ export default function MyPagePracticeClient() {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="w-80 h-auto bg-[#16161A] rounded-lg flex flex-col items-center justify-center p-6">
+          <div className="w-[360px] h-70 bg-[#16161A] rounded-lg flex flex-col items-center justify-center p-4">
             <CalendarHeatmap
               startDate={pastDate}
               endDate={today}
@@ -133,7 +133,7 @@ export default function MyPagePracticeClient() {
               weekdayLabels={["S", "M", "T", "W", "T", "F", "S"]}
               showOutOfRangeDays={true}
               horizontal={true}
-              gutterSize={0.5}
+              gutterSize={1.5}
               classForValue={(value) => {
                 if (!value || !value.count || value.count === 0) {
                   return "fill-[#313136]";
@@ -150,15 +150,23 @@ export default function MyPagePracticeClient() {
                 }
               }}
             />
-            <div className="flex items-center justify-center mt-4 text-sm text-gray-400 gap-1">
-              <span>Less</span>
-              <div className="w-4 h-4 rounded-sm bg-[#313136]"></div>
-              <div className="w-4 h-4 rounded-sm bg-[#B6C8F8]"></div>
-              <div className="w-4 h-4 rounded-sm bg-[#7FA0F8]"></div>
-              <div className="w-4 h-4 rounded-sm bg-[#5683F8]"></div>
-              <div className="w-4 h-4 rounded-sm bg-[#396FFB]"></div>
-              <div className="w-4 h-4 rounded-sm bg-[#1856F8]"></div>
-              <span>More</span>
+            <div className="flex items-center justify-center mt-3 text-xs text-gray-400 gap-1">
+              <span className="mr-1">Less</span>
+              {[
+                "#313136",
+                "#B6C8F8",
+                "#7FA0F8",
+                "#5683F8",
+                "#396FFB",
+                "#1856F8",
+              ].map((color, idx) => (
+                <div
+                  key={idx}
+                  className="w-3 h-3 rounded-sm"
+                  style={{ backgroundColor: color }}
+                ></div>
+              ))}
+              <span className="ml-1">More</span>
             </div>
           </div>
 
@@ -224,16 +232,14 @@ export default function MyPagePracticeClient() {
         )}
       </main>
       <style jsx global>{`
-        .react-calendar-heatmap {
-          // background-color: #313136;
-          width: ;
-        }
         .react-calendar-heatmap rect {
-          rx: 1;
-          ry: 1;
+          rx: 2;
+          ry: 2;
         }
+
         .react-calendar-heatmap text {
           font-size: 5px;
+          fill: #aaa;
         }
       `}</style>
     </div>
