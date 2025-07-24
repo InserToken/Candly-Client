@@ -112,7 +112,7 @@ export default function PracticeClient() {
         setFeedback(data.feedback || "피드백 없음.");
         setShowFeedback(true);
         setIsAnswered(true); // <- 차트 오버레이 해제
-      } catch (saveErr) {
+      } catch {
         toast.error("채점은 완료되었으나 저장에 실패했습니다.");
       }
     } catch (e: any) {
@@ -129,41 +129,6 @@ export default function PracticeClient() {
     }));
   };
 
-  // const formatNumber = (num: number | null, unit = "") =>
-  //   typeof num === "number"
-  //     ? num.toLocaleString(undefined, { maximumFractionDigits: 2 }) + unit
-  //     : "-";
-
-  // function formatLargeNumber(value: number | null | undefined): string {
-  //   if (value == null || isNaN(value)) return "-";
-
-  //   const abs = Math.abs(value);
-
-  //   if (abs >= 1e12) {
-  //     return (value / 1e12).toFixed(1) + "조원"; // 1조 = 1e12
-  //   } else if (abs >= 1e8) {
-  //     return (value / 1e8).toFixed(1) + "억원"; // 1억 = 1e8
-  //   } else if (abs >= 1e4) {
-  //     return (value / 1e4).toFixed(1) + "만원";
-  //   } else {
-  //     return value.toLocaleString("ko-KR") + "원";
-  //   }
-  // }
-
-  // const reprtMap: { [key: string]: string } = {
-  //   "11013": "3월",
-  //   "11012": "6월",
-  //   "11014": "9월",
-  //   "4Q": "12월 ",
-  // };
-
-  // const periodLabels = financialData?.series?.period.map((raw: string) => {
-  //   const [year, code] = raw.split(".");
-  //   const reprt_code = code === "4Q" ? "4Q" : code;
-  //   const label = reprtMap[reprt_code] || reprt_code;
-  //   return `${year} ${label}`;
-  // });
-
   useEffect(() => {
     function updateWidth() {
       if (chartBoxRef.current) {
@@ -175,7 +140,6 @@ export default function PracticeClient() {
     return () => window.removeEventListener("resize", updateWidth);
   }, []);
 
-  // 데이터 패칭
   useEffect(() => {
     fetchPracticeProblem(params.problemId).then((data) => {
       setProblemData(data);
@@ -196,9 +160,7 @@ export default function PracticeClient() {
           setTypeMeta(data);
           setPrompt(data.typeData?.[0]?.Prompting || "");
         })
-        .catch((err) => {
-          console.error("fetchProblemTypeMeta error:", err);
-        });
+        .catch((err) => console.error("fetchProblemTypeMeta error:", err));
     }
   }, [problemType]);
 
@@ -215,19 +177,17 @@ export default function PracticeClient() {
 
   return (
     <div className="min-h-screen px-[80px] pt-1 relative">
-      {/* 로딩 오버레이 */}
       {loading && (
         <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center">
           <span className="text-white text-xl">채점 중...</span>
         </div>
       )}
 
-      {/* 뱃지들 */}
       <div className="mb-1">
         {getBadges(Number(problemData?.problemtype)).map((badge) => (
           <span
             key={badge}
-            className="px-2 py-0.5 mr-2 rounded-full text-xs border border-[#fffff]"
+            className="px-2 py-0.5 mr-2 rounded-full text-xs border border-white"
           >
             {badge}
           </span>
@@ -239,8 +199,8 @@ export default function PracticeClient() {
           {problemData?.date}
         </span>
       </div>
+
       <main className="flex flex-col lg:flex-row gap-6">
-        {/* 왼쪽 */}
         <section className="flex-1 max-w-[894px]">
           <div className="text-sm text-gray-300 mb-4">
             <div className="flex flex-wrap items-center gap-1 mb-4">
@@ -273,7 +233,7 @@ export default function PracticeClient() {
                       onClick={() => toggleLine("ma5")}
                     >
                       5
-                    </span>{" "}
+                    </span>
                     ·
                     <span
                       className={`cursor-pointer ${
@@ -282,7 +242,7 @@ export default function PracticeClient() {
                       onClick={() => toggleLine("ma20")}
                     >
                       20
-                    </span>{" "}
+                    </span>
                     ·
                     <span
                       className={`cursor-pointer ${
@@ -291,7 +251,7 @@ export default function PracticeClient() {
                       onClick={() => toggleLine("ma60")}
                     >
                       60
-                    </span>{" "}
+                    </span>
                     ·
                     <span
                       className={`cursor-pointer ${
@@ -315,93 +275,94 @@ export default function PracticeClient() {
                 </div>
               )}
             </div>
-            {/* 차트 */}
-            {tab === "chart" && (
-              <div
-                className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center w-full text-gray-400 pb-1 relative"
-                ref={chartBoxRef}
-              >
-                {Array.isArray(stockData) ? (
+
+            {/** 차트 / 재무정보 컨테이너 **/}
+            <div
+              className={`w-full bg-[#1b1b1b] rounded-lg mb-6 flex overflow-auto ${
+                tab === "chart"
+                  ? "h-[400px] items-center justify-center"
+                  : "h-[calc(100vh-300px)] flex-col"
+              }`}
+              ref={chartBoxRef}
+            >
+              {tab === "chart" ? (
+                Array.isArray(stockData) ? (
                   <CandleChart
                     w={parentWidth}
                     data={stockData}
                     indi_data={stockData}
                     news={news}
-                    isAnswered={isAnswered} // 차트 오버레이 제어 prop
+                    isAnswered={isAnswered}
                     showLine={showLine}
                   />
                 ) : (
                   <div>문제가 없습니다.</div>
-                )}
-              </div>
-            )}
-            {tab === "finance" &&
-              problemData?.stock_code &&
-              problemData.date && (
+                )
+              ) : (
                 <FinanceTable
-                  stock_code={problemData.stock_code}
-                  date={problemData.date}
+                  stock_code={problemData!.stock_code}
+                  date={problemData!.date}
                 />
               )}
-          </div>
-
-          {/* === 답변/피드백 === */}
-          <div className="relative">
-            {/* 피드백 창 (답변 입력창 스타일과 동일) */}
-            {showFeedback && (
-              <div className="w-full mb-3 p-4 rounded border border-[#396FFB] bg-[#f7fafd] text-black shadow">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="font-semibold text-[#396FFB]">
-                    AI 피드백
-                  </span>
-                  <button
-                    className="text-gray-400 hover:text-black text-xl"
-                    onClick={() => setShowFeedback(false)}
-                  >
-                    ✕
-                  </button>
-                </div>
-                <div className="whitespace-pre-line">{feedback}</div>
-              </div>
-            )}
-          </div>
-          {/* 답변 입력 */}
-
-          <div className="mt-6 relative">
-            <div className="font-semibold mb-2 flex items-center gap-2">
-              답변 작성
-              <span className="relative group cursor-pointer text-gray-400">
-                ⓘ
-                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
-                  <b className="text-[#f4f4f4]">
-                    차트 기술지표, 거시경제, 뉴스{" "}
-                  </b>{" "}
-                  등을 참고해 이후의 주가 흐름을 구체적으로 예측해주세요.
-                </div>
-              </span>
             </div>
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="답변을 입력하세요"
-              maxLength={300}
-              className="w-full h-32 p-4 rounded border border-gray-600 bg-transparent resize-none focus:outline-none"
-            />
-            <div className="flex float-right items-center mt-2 gap-4">
-              <span className="text-sm text-gray-400">
-                {input.length} / 300 자
-              </span>
-              <button
-                className="bg-[#396FFB] px-5 py-1.5 rounded text-sm"
-                onClick={handleGrade}
-                disabled={loading}
-              >
-                {loading ? "채점 중..." : "제출"}
-              </button>
+
+            {/* === 답변/피드백 === */}
+            <div className="relative">
+              {showFeedback && (
+                <div className="w-full mb-3 p-4 rounded border border-[#396FFB] bg-[#f7fafd] text-black shadow">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-semibold text-[#396FFB]">
+                      AI 피드백
+                    </span>
+                    <button
+                      className="text-gray-400 hover:text-black text-xl"
+                      onClick={() => setShowFeedback(false)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="whitespace-pre-line">{feedback}</div>
+                </div>
+              )}
+            </div>
+
+            {/* 답변 입력 */}
+            <div className="mt-6 relative">
+              <div className="font-semibold mb-2 flex items-center gap-2">
+                답변 작성
+                <span className="relative group cursor-pointer text-gray-400">
+                  ⓘ
+                  <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                    <b className="text-[#f4f4f4]">
+                      차트, 거시경제, 뉴스 등을 참고해 예측을 구체적으로
+                      입력하세요.
+                    </b>
+                  </div>
+                </span>
+              </div>
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="답변을 입력하세요"
+                maxLength={300}
+                className="w-full h-32 p-4 rounded border border-gray-600 bg-transparent resize-none focus:outline-none"
+              />
+              <div className="flex float-right items-center mt-2 gap-4">
+                <span className="text-sm text-gray-400">
+                  {input.length} / 300 자
+                </span>
+                <button
+                  className="bg-[#396FFB] px-5 py-1.5 rounded text-sm"
+                  onClick={handleGrade}
+                  disabled={loading}
+                >
+                  {loading ? "채점 중..." : "제출"}
+                </button>
+              </div>
             </div>
           </div>
         </section>
-        {/* 오른쪽 */}
+
         <aside className="w-full lg:w-[400px] shrink-0 flex flex-col gap-4">
           <div className="flex justify-between">
             <ClickCard
@@ -415,6 +376,7 @@ export default function PracticeClient() {
               onClick={() => router.push(`/ranking/practice`)}
             />
           </div>
+
           {/* 뉴스 */}
           <div className="mt-4">
             <p className="text-2xl font-semibold mb-3.5">관련 뉴스</p>
@@ -467,7 +429,7 @@ export default function PracticeClient() {
           </div>
         </aside>
       </main>
-      {/* 힌트 모달 */}
+
       {showHint && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
           <div className="bg-white rounded-xl p-6 w-[530px] text-black shadow-2xl relative">
@@ -485,7 +447,7 @@ export default function PracticeClient() {
           </div>
         </div>
       )}
-      {/* Toast 알림 */}
+
       <ToastContainer
         position="bottom-right"
         hideProgressBar
