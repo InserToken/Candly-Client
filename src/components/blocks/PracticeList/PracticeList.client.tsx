@@ -75,7 +75,7 @@ export default function PracticeListClient() {
       <div className="flex justify-center items-start  ml-64 gap-10">
         {/* 왼쪽: 검색+문제리스트 */}
         <div className="min-w-[550px] max-w-[650px] w-full">
-          <h3 className="text-lg mb-4 ml-64">연습문제 목록</h3>
+          <h3 className="text-lg mb-4 ml-58">연습문제 목록</h3>
           {/* 검색창 */}
           <div className="mb-6">
             <input
