@@ -12,6 +12,7 @@ import { postPracticeScore } from "@/services/practiceScoreService";
 import FinanceTable from "@/components/charts/FinanceTable";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { fetchMyPracticeAnswer } from "@/services/fetchMyPracticeAnswer";
 
 type PriceItem = {
   date: string;
@@ -42,6 +43,25 @@ type NewsItem = {
 export default function PracticeClient() {
   const router = useRouter();
   const params = useParams<{ problemId: string }>();
+  const [myAnswer, setMyAnswer] = useState<any>(null);
+  useEffect(() => {
+    if (!params.problemId) return;
+    fetchMyPracticeAnswer(params.problemId).then((result) => {
+      setMyAnswer(result); // 이미 푼 경우 state에 저장!
+      setIsAnswered(!!result);
+    });
+  }, [params.problemId]);
+
+  // useEffect(() => {
+  //   if (!params.problemId) return;
+  //   fetchMyPracticeAnswer(params.problemId).then((result) => {
+  //     if (result) {
+  //       console.log("이미 푼 문제!", result); // 🔥 여기에 찍힘!
+  //     } else {
+  //       console.log("아직 푼 적 없는 문제입니다.");
+  //     }
+  //   });
+  // }, [params.problemId]);
   const [input, setInput] = useState("");
   const [tab, setTab] = useState<"chart" | "finance">("chart");
   const [problemData, setProblemData] = useState<PracticeProblemData | null>(
@@ -56,6 +76,7 @@ export default function PracticeClient() {
   const [prompt, setPrompt] = useState<string>("");
   const [gradeResult, setGradeResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+
   const [showLine, setShowLine] = useState({
     ma5: true,
     ma20: true,
@@ -129,41 +150,6 @@ export default function PracticeClient() {
     }));
   };
 
-  // const formatNumber = (num: number | null, unit = "") =>
-  //   typeof num === "number"
-  //     ? num.toLocaleString(undefined, { maximumFractionDigits: 2 }) + unit
-  //     : "-";
-
-  // function formatLargeNumber(value: number | null | undefined): string {
-  //   if (value == null || isNaN(value)) return "-";
-
-  //   const abs = Math.abs(value);
-
-  //   if (abs >= 1e12) {
-  //     return (value / 1e12).toFixed(1) + "조원"; // 1조 = 1e12
-  //   } else if (abs >= 1e8) {
-  //     return (value / 1e8).toFixed(1) + "억원"; // 1억 = 1e8
-  //   } else if (abs >= 1e4) {
-  //     return (value / 1e4).toFixed(1) + "만원";
-  //   } else {
-  //     return value.toLocaleString("ko-KR") + "원";
-  //   }
-  // }
-
-  // const reprtMap: { [key: string]: string } = {
-  //   "11013": "3월",
-  //   "11012": "6월",
-  //   "11014": "9월",
-  //   "4Q": "12월 ",
-  // };
-
-  // const periodLabels = financialData?.series?.period.map((raw: string) => {
-  //   const [year, code] = raw.split(".");
-  //   const reprt_code = code === "4Q" ? "4Q" : code;
-  //   const label = reprtMap[reprt_code] || reprt_code;
-  //   return `${year} ${label}`;
-  // });
-
   useEffect(() => {
     function updateWidth() {
       if (chartBoxRef.current) {
@@ -234,7 +220,7 @@ export default function PracticeClient() {
         ))}
       </div>
       <div className="flex">
-        <h2 className="mb-3 text-2xl">{problemData?.title.split("_")[0]}</h2>
+        <h2 className="mb-3 text-2xl">{problemData?.title?.split("_")[0]}</h2>
         <span className="ml-2 px-2 py-0.5 rounded text-sm mt-auto mb-4">
           {problemData?.date}
         </span>
@@ -327,7 +313,7 @@ export default function PracticeClient() {
                     data={stockData}
                     indi_data={stockData}
                     news={news}
-                    isAnswered={isAnswered} // 차트 오버레이 제어 prop
+                    isAnswered={isAnswered}
                     showLine={showLine}
                   />
                 ) : (
@@ -347,60 +333,78 @@ export default function PracticeClient() {
 
           {/* === 답변/피드백 === */}
           <div className="relative">
-            {/* 피드백 창 (답변 입력창 스타일과 동일) */}
-            {showFeedback && (
+            {myAnswer ? (
+              // ===== 이미 푼 문제인 경우 =====
               <div className="w-full mb-3 p-4 rounded border border-[#396FFB] bg-[#f7fafd] text-black shadow">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="font-semibold text-[#396FFB]">
-                    AI 피드백
-                  </span>
-                  <button
-                    className="text-gray-400 hover:text-black text-xl"
-                    onClick={() => setShowFeedback(false)}
-                  >
-                    ✕
-                  </button>
+                <div className="mb-1 font-semibold text-[#396FFB]">
+                  이미 푼 문제입니다!
                 </div>
-                <div className="whitespace-pre-line">{feedback}</div>
+                <div className="mb-2">
+                  <b>내 답변:</b> {myAnswer.answer}
+                </div>
+                <div className="mb-1 font-semibold text-[#396FFB]">피드백</div>
+                <div className="whitespace-pre-line">{myAnswer.feedback}</div>
+                <div className="mt-2 text-sm text-gray-500">
+                  점수: <b>{myAnswer.score}</b>
+                </div>
               </div>
+            ) : (
+              // ===== 아직 안 푼 문제인 경우 =====
+              <>
+                {showFeedback && (
+                  <div className="w-full mb-3 p-4 rounded border border-[#396FFB] bg-[#f7fafd] text-black shadow">
+                    {/* 답변 입력 직후라 answer를 변수로 직접 표시 */}
+                    <div className="mb-1 font-semibold text-[#396FFB]">
+                      내 답변
+                    </div>
+                    <div className="mb-2 whitespace-pre-line">{input}</div>
+                    <div className="mb-1 font-semibold text-[#396FFB]">
+                      피드백
+                    </div>
+                    <div className="whitespace-pre-line">{feedback}</div>
+                    <div className="mt-2 text-sm text-gray-500">
+                      점수: <b>{gradeResult?.score}</b>
+                    </div>
+                  </div>
+                )}
+                <div className="mt-6 relative">
+                  <div className="font-semibold mb-2 flex items-center gap-2">
+                    답변 작성
+                    <span className="relative group cursor-pointer text-gray-400">
+                      ⓘ
+                      <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                        <b className="text-[#f4f4f4]">
+                          차트 기술지표, 거시경제, 뉴스{" "}
+                        </b>{" "}
+                        등을 참고해 이후의 주가 흐름을 구체적으로 예측해주세요.
+                      </div>
+                    </span>
+                  </div>
+                  <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="답변을 입력하세요"
+                    maxLength={300}
+                    className="w-full h-32 p-4 rounded border border-gray-600 bg-transparent resize-none focus:outline-none"
+                  />
+                  <div className="flex float-right items-center mt-2 gap-4">
+                    <span className="text-sm text-gray-400">
+                      {input.length} / 300 자
+                    </span>
+                    <button
+                      className="bg-[#396FFB] px-5 py-1.5 rounded text-sm"
+                      onClick={handleGrade}
+                      disabled={loading}
+                    >
+                      {loading ? "채점 중..." : "제출"}
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
           </div>
-          {/* 답변 입력 */}
-
-          <div className="mt-6 relative">
-            <div className="font-semibold mb-2 flex items-center gap-2">
-              답변 작성
-              <span className="relative group cursor-pointer text-gray-400">
-                ⓘ
-                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
-                  <b className="text-[#f4f4f4]">
-                    차트 기술지표, 거시경제, 뉴스{" "}
-                  </b>{" "}
-                  등을 참고해 이후의 주가 흐름을 구체적으로 예측해주세요.
-                </div>
-              </span>
-            </div>
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="답변을 입력하세요"
-              maxLength={300}
-              className="w-full h-32 p-4 rounded border border-gray-600 bg-transparent resize-none focus:outline-none"
-            />
-            <div className="flex float-right items-center mt-2 gap-4">
-              <span className="text-sm text-gray-400">
-                {input.length} / 300 자
-              </span>
-              <button
-                className="bg-[#396FFB] px-5 py-1.5 rounded text-sm"
-                onClick={handleGrade}
-                disabled={loading}
-              >
-                {loading ? "채점 중..." : "제출"}
-              </button>
-            </div>
-          </div>
         </section>
+
         {/* 오른쪽 */}
         <aside className="w-full lg:w-[400px] shrink-0 flex flex-col gap-4">
           <div className="flex justify-between">
@@ -467,6 +471,7 @@ export default function PracticeClient() {
           </div>
         </aside>
       </main>
+
       {/* 힌트 모달 */}
       {showHint && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
@@ -485,6 +490,7 @@ export default function PracticeClient() {
           </div>
         </div>
       )}
+
       {/* Toast 알림 */}
       <ToastContainer
         position="bottom-right"
