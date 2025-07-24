@@ -570,7 +570,7 @@ export default function CandleChart({
                   y1={wickTop}
                   x2={x}
                   y2={wickBottom}
-                  stroke={isRising ? "#3B82F6" : "#EF4444"}
+                  stroke={isRising ? "#EF4444" : "#3B82F6"}
                   strokeWidth="2"
                 />
                 <rect
@@ -578,7 +578,7 @@ export default function CandleChart({
                   y={bodyTop}
                   width={candleWidth}
                   height={bodyHeight}
-                  fill={isRising ? "#3B82F6" : "#EF4444"}
+                  fill={isRising ? "#EF4444" : "#3B82F6"}
                   rx={4}
                   style={
                     highlight
@@ -642,7 +642,8 @@ export default function CandleChart({
             fontSize="11"
             textAnchor="end"
           >
-            {maxVolume.toLocaleString()}
+            {/* {maxVolume.toLocaleString()} */}
+            거래량
           </text>
         </svg>
         <svg
@@ -697,7 +698,7 @@ export default function CandleChart({
                 y={barY}
                 width={candleWidth}
                 height={barHeight}
-                fill={isRising ? "#3B82F6" : "#EF4444"}
+                fill={isRising ? "#EF4444" : "#3B82F6"}
                 opacity="0.6"
                 rx={2}
                 style={
