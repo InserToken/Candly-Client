@@ -282,7 +282,7 @@ export default function PracticeClient() {
   // }, [problemData]);
 
   function getBadges(problemtype: number) {
-    if ([1, 2].includes(problemtype)) return ["SMA"];
+    if ([1, 2].includes(problemtype)) return ["이동평균선"];
     if ([3, 4].includes(problemtype)) return ["RSI"];
     if ([5, 6].includes(problemtype)) return ["거래량"];
     if ([7, 8].includes(problemtype)) return ["볼린저 밴드"];
