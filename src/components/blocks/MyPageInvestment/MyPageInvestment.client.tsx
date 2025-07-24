@@ -1,11 +1,50 @@
+"use client";
+import React, { useState, useEffect } from "react";
+import { useAuthStore } from "@/stores/authStore";
+import { getStock } from "@/services/userStock-service";
+import fetchRealInvest from "@/services/fetchRealInvest";
+
 export default function MyPageInvestmentClient() {
-  const tableData = [
-    { id: 1, name: "삼성전자", rate: "70%", days: "23일" },
-    { id: 2, name: "네이버", rate: "65%", days: "40일" },
-    { id: 3, name: "한화에어로스페이스", rate: "60%", days: "23일" },
-    { id: 4, name: "에코프로머티", rate: "55%", days: "23일" },
-    { id: 5, name: "포스코퓨처엠", rate: "10%", days: "23일" },
-  ];
+  const auth = useAuthStore((s) => s.auth);
+  const [tableData, setTableData] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!auth?.token) return;
+
+      try {
+        const result = await getStock(auth.token);
+        const enriched = await Promise.all(
+          result.stocks.map(async (item: any, i: number) => {
+            let rate = "-";
+            let days = "-";
+
+            try {
+              const detail = await fetchRealInvest(item._id, auth.token);
+              console.log(detail);
+              rate = detail.hitRate ? `${detail.hitRate}%` : "-";
+              days = detail.daysPredicted ? `${detail.daysPredicted}일` : "-";
+            } catch (err) {
+              console.warn(`주식 ${item.name} 세부 데이터 실패:`, err);
+            }
+
+            return {
+              id: i + 1,
+              name: item.name,
+              rate,
+              days,
+            };
+          })
+        );
+
+        setTableData(enriched);
+      } catch (err) {
+        console.error("보유 주식 데이터를 불러오지 못했습니다:", err);
+      }
+    };
+
+    fetchData();
+  }, [auth]);
 
   return (
     <div>
