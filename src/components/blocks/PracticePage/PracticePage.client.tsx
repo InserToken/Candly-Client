@@ -74,6 +74,7 @@ export default function PracticeClient() {
   const [parentWidth, setParentWidth] = useState(780);
   const [showHint, setShowHint] = useState(false);
   const [prompt, setPrompt] = useState<string>("");
+  const [hintRef, setHintRef] = useState<string>("");
   const [gradeResult, setGradeResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
@@ -180,6 +181,7 @@ export default function PracticeClient() {
         .then((data) => {
           setTypeMeta(data);
           setPrompt(data.typeData?.[0]?.Prompting || "");
+          setHintRef(data.typeData?.[0]?.reference || "");
         })
         .catch((err) => console.error("fetchProblemTypeMeta error:", err));
     }
@@ -248,7 +250,6 @@ export default function PracticeClient() {
               </button>
               {tab === "chart" && (
                 <div className="flex flex-wrap gap-4 items-center justify-end text-sm text-gray-300 ml-auto pr-3">
-
                   <div className="flex items-center gap-3 text-sm">
                     {showIndicators && (
                       <>
@@ -308,16 +309,12 @@ export default function PracticeClient() {
                       className="px-1 cursor-pointer text-gray-400 hover:bg-gray-800 rounded-sm"
                       onClick={() => setShowIndicators((prev) => !prev)}
                     >
-
                       {showIndicators ? "– 보조지표 접기" : "+ 보조지표 설정"}
-
                     </span>
                   </div>
                 </div>
               )}
             </div>
-
-            
 
             {/** 차트 / 재무정보 컨테이너 **/}
             <div
@@ -330,7 +327,6 @@ export default function PracticeClient() {
             >
               {tab === "chart" ? (
                 Array.isArray(stockData) ? (
-
                   <CandleChart
                     w={parentWidth}
                     data={stockData}
@@ -348,8 +344,8 @@ export default function PracticeClient() {
                   date={problemData!.date}
                 />
               )}
+            </div>
           </div>
-
           {/* === 답변/피드백 === */}
           <div className="relative">
             {myAnswer ? (
@@ -500,6 +496,11 @@ export default function PracticeClient() {
             <div className="mb-4">
               {typeMeta?.typeData?.[0]?.hint || "힌트가 없습니다."}
             </div>
+            {hintRef && (
+              <div className="mb-4 text-sm text-gray-600 border-t pt-2">
+                <b>‼️:</b> {hintRef}
+              </div>
+            )}
             <button
               className="absolute top-3 right-4 text-gray-400 text-xl"
               onClick={() => setShowHint(false)}
