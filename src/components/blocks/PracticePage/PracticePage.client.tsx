@@ -320,7 +320,7 @@ export default function PracticeClient() {
             <div
               className={`w-full bg-[#1b1b1b] rounded-lg mb-6 flex overflow-auto ${
                 tab === "chart"
-                  ? "h-[500px] items-center justify-center"
+                  ? "h-[430px] items-center justify-center"
                   : "h-[calc(100vh-300px)] flex-col"
               }`}
               ref={chartBoxRef}
@@ -487,8 +487,6 @@ export default function PracticeClient() {
           </div>
         </aside>
       </main>
-
-      {/* 힌트 모달 */}
       {showHint && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
           <div className="bg-white rounded-xl p-6 w-[530px] text-black shadow-2xl relative">
