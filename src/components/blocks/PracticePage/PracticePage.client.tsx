@@ -342,6 +342,7 @@ export default function PracticeClient() {
                   date={problemData!.date}
                 />
               )}
+              </div>
           </div>
 
           {/* === 답변/피드백 === */}
