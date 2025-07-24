@@ -242,23 +242,33 @@ export default function InvestmentStockClient() {
 
   // 오늘날짜 이후만 수정/삭제 가능
   const futurePredictions = prediction.filter((item) => item.date > todayStr);
+  //보조지표 버튼
+  const [showIndicators, setShowIndicators] = useState(false);
 
   return (
     <div className="min-h-screen px-[80px] pt-1">
-      <h2 className="mb-3 text-2xl">
-        {stock.length === 0 ? (
-          <span className="invisible">.</span>
-        ) : (
-          stock.find((s) => s._id === params.stock_code)?.name || "종목 없음"
-        )}
-      </h2>
+      <span className="px-2 py-0.5 mr-2 rounded-full text-xs border border-[#fffff]">
+        {params.stock_code}
+      </span>
+      <div className="flex">
+        <h2 className="mb-3 mt-1 text-2xl">
+          {stock.length === 0 ? (
+            <span className="invisible">.</span>
+          ) : (
+            stock.find((s) => s._id === params.stock_code)?.name || "종목 없음"
+          )}
+        </h2>
+        <span className="ml-4  py-0.5 rounded  mt-auto mb-4">
+          현재가 | {currentPrice}
+        </span>
+      </div>
 
       <main className="flex flex-col lg:flex-row gap-6">
         {/* 왼쪽 영역 */}
         <section className="flex-1 max-w-[894px] w-full lg:max-w-[calc(100%-420px)]">
           {/* 탭 */}
           <div className="text-sm text-gray-300 mb-4">
-            <div className="flex flex-wrap items-center gap-1 mb-4">
+            <div className="flex flex-wrap items-center gap-1 mb-5">
               <button
                 className={`px-3 py-1 rounded-full ${
                   tab === "chart" ? "bg-[#2a2a2a] text-white" : "text-gray-400"
@@ -279,57 +289,67 @@ export default function InvestmentStockClient() {
               </button>
               {tab === "chart" && (
                 <div className="flex flex-wrap gap-4 items-center justify-end text-sm text-gray-300 ml-auto pr-3">
-                  <span className="flex items-center gap-1">
-                    <span className="pr-1">
-                      현재가 <b className="">{currentPrice}</b>
+                  <div className="flex items-center gap-3 text-sm">
+                    {showIndicators && (
+                      <>
+                        <span className="flex items-center gap-1">
+                          <span className="text-white pr-1">이동평균선</span>
+                          <span
+                            className={`cursor-pointer ${
+                              showLine.ma5 ? "text-[#00D5C0]" : "text-gray-500"
+                            }`}
+                            onClick={() => toggleLine("ma5")}
+                          >
+                            5
+                          </span>
+                          ·
+                          <span
+                            className={`cursor-pointer ${
+                              showLine.ma20 ? "text-[#E8395F]" : "text-gray-500"
+                            }`}
+                            onClick={() => toggleLine("ma20")}
+                          >
+                            20
+                          </span>
+                          ·
+                          <span
+                            className={`cursor-pointer ${
+                              showLine.ma60 ? "text-[#F87800]" : "text-gray-500"
+                            }`}
+                            onClick={() => toggleLine("ma60")}
+                          >
+                            60
+                          </span>
+                          ·
+                          <span
+                            className={`cursor-pointer ${
+                              showLine.ma120
+                                ? "text-[#7339FB]"
+                                : "text-gray-500"
+                            }`}
+                            onClick={() => toggleLine("ma120")}
+                          >
+                            120
+                          </span>
+                        </span>
+                        |
+                        <span
+                          className={`cursor-pointer ${
+                            showLine.bb ? "text-[#EDCB37]" : "text-gray-500"
+                          }`}
+                          onClick={() => toggleLine("bb")}
+                        >
+                          볼린저밴드
+                        </span>
+                      </>
+                    )}
+                    <span
+                      className="px-1 cursor-pointer text-gray-400 hover:bg-gray-800 rounded-sm"
+                      onClick={() => setShowIndicators((prev) => !prev)}
+                    >
+                      {showIndicators ? "– 보조지표 접기" : "+ 보조지표 설정"}
                     </span>
-                    |<span className="pl-1 pr-1">이동평균선</span>
-                    <span
-                      className={`cursor-pointer ${
-                        showLine.ma5 ? "text-[#00D5C0]" : "text-gray-500"
-                      }`}
-                      onClick={() => toggleLine("ma5")}
-                    >
-                      5
-                    </span>{" "}
-                    ·
-                    <span
-                      className={`cursor-pointer ${
-                        showLine.ma20 ? "text-[#E8395F]" : "text-gray-500"
-                      }`}
-                      onClick={() => toggleLine("ma20")}
-                    >
-                      20
-                    </span>{" "}
-                    ·
-                    <span
-                      className={`cursor-pointer ${
-                        showLine.ma60 ? "text-[#F87800]" : "text-gray-500"
-                      }`}
-                      onClick={() => toggleLine("ma60")}
-                    >
-                      60
-                    </span>{" "}
-                    ·
-                    <span
-                      className={`cursor-pointer ${
-                        showLine.ma120 ? "text-[#7339FB]" : "text-gray-500"
-                      }`}
-                      onClick={() => toggleLine("ma120")}
-                    >
-                      120
-                    </span>
-                  </span>
-                  <span
-                    className={`cursor-pointer ${
-                      showLine.bb ? "text-[#EDCB37]" : "text-gray-500"
-                    }`}
-                    onClick={() => toggleLine("bb")}
-                  >
-                    볼린저밴드
-                  </span>
-                  |<span className="text-[#396FFB]">거래량</span> |
-                  <span className="text-[#e75480]">RSI</span>
+                  </div>
                 </div>
               )}
             </div>
