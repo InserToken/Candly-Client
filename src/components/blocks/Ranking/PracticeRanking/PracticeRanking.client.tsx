@@ -191,17 +191,21 @@ export default function PracticeRankingClient() {
         </div>
       </div>
       {isModalOpen && selectedUser && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-[3px] z-50">
-          <div className="bg-[#16161A] rounded-xl p-6 w-180 h-130 shadow-lg">
-            <div className="h-75">
-              <h4 className="text-xl font-bold mb-4">답변</h4>
-              <div className="mb-36">{selectedAnswer}</div>
-              <h4 className="text-xl mb-4">피드백</h4>
-              <div>{selectedFeedback}</div>
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-[3px] z-50 ">
+          <div className="bg-[#16161A] rounded-xl p-8 w-180 h-170 shadow-lg">
+            <div className="h-70">
+              <h4 className="text-2xl font-bold mb-4 text-blue-500">답변</h4>
+              <div className="p-4 mb-8 border h-50 text-gray-400 tracking-wide leading-relaxed">
+                {selectedAnswer}
+              </div>
+              <h4 className="text-2xl mb-4 text-blue-500">피드백</h4>
+              <div className="p-4 border h-50 text-gray-400 tracking-wide leading-relaxed">
+                {selectedFeedback}
+              </div>
             </div>
             <button
               onClick={closeModal}
-              className="px-4 py-2 mt-32 bg-[#396FFB] rounded hover:bg-blue-500 w-full"
+              className="px-4 py-2 mt-74 bg-[#396FFB] rounded hover:bg-blue-500 w-full"
             >
               닫기
             </button>
