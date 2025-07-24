@@ -227,7 +227,6 @@ export default function PracticeClient() {
               </button>
               {tab === "chart" && (
                 <div className="flex flex-wrap gap-4 items-center justify-end text-sm text-gray-300 ml-auto pr-3">
-
                   <div className="flex items-center gap-3 text-sm">
                     {showIndicators && (
                       <>
@@ -287,29 +286,24 @@ export default function PracticeClient() {
                       className="px-1 cursor-pointer text-gray-400 hover:bg-gray-800 rounded-sm"
                       onClick={() => setShowIndicators((prev) => !prev)}
                     >
-
                       {showIndicators ? "– 보조지표 접기" : "+ 보조지표 설정"}
-
                     </span>
                   </div>
                 </div>
               )}
             </div>
 
-            
-
             {/** 차트 / 재무정보 컨테이너 **/}
             <div
               className={`w-full bg-[#1b1b1b] rounded-lg mb-6 flex overflow-auto ${
                 tab === "chart"
-                  ? "h-[500px] items-center justify-center"
+                  ? "h-[430px] items-center justify-center"
                   : "h-[calc(100vh-300px)] flex-col"
               }`}
               ref={chartBoxRef}
             >
               {tab === "chart" ? (
                 Array.isArray(stockData) ? (
-
                   <CandleChart
                     w={parentWidth}
                     data={stockData}
