@@ -13,10 +13,12 @@ interface AuthStore {
 const getInitialAuth = (): Auth | null => {
   if (typeof window === "undefined") return null;
   const token = sessionStorage.getItem("token");
+  const nickname = sessionStorage.getItem("nickname");
+  const email = sessionStorage.getItem("email");
   return token
     ? {
-        email: "", // 필요 시 빈 문자열 대신 기본값을 넣거나,
-        nickname: "", // 추후 프로필 조회 로직에서 채워도 된다
+        email: email || "",
+        nickname: nickname || "",
         token,
       }
     : null;
@@ -26,10 +28,14 @@ export const useAuthStore = create<AuthStore>((set) => ({
   auth: getInitialAuth(),
   setAuth: (auth) => {
     sessionStorage.setItem("token", auth.token);
+    sessionStorage.setItem("nickname", auth.nickname);
+    sessionStorage.setItem("email", auth.email);
     set({ auth });
   },
   clearAuth: () => {
     sessionStorage.removeItem("token");
+    sessionStorage.removeItem("nickname");
+    sessionStorage.removeItem("email");
     set({ auth: null });
   },
 }));
