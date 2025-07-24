@@ -133,7 +133,7 @@ export default function PracticeClient() {
         setFeedback(data.feedback || "피드백 없음.");
         setShowFeedback(true);
         setIsAnswered(true); // <- 차트 오버레이 해제
-      } catch (saveErr) {
+      } catch {
         toast.error("채점은 완료되었으나 저장에 실패했습니다.");
       }
     } catch (e: any) {
@@ -161,7 +161,6 @@ export default function PracticeClient() {
     return () => window.removeEventListener("resize", updateWidth);
   }, []);
 
-  // 데이터 패칭
   useEffect(() => {
     fetchPracticeProblem(params.problemId).then((data) => {
       setProblemData(data);
@@ -182,14 +181,12 @@ export default function PracticeClient() {
           setTypeMeta(data);
           setPrompt(data.typeData?.[0]?.Prompting || "");
         })
-        .catch((err) => {
-          console.error("fetchProblemTypeMeta error:", err);
-        });
+        .catch((err) => console.error("fetchProblemTypeMeta error:", err));
     }
   }, [problemType]);
 
   function getBadges(problemtype: number) {
-    if ([1, 2].includes(problemtype)) return ["SMA"];
+    if ([1, 2].includes(problemtype)) return ["이동평균선"];
     if ([3, 4].includes(problemtype)) return ["RSI"];
     if ([5, 6].includes(problemtype)) return ["거래량"];
     if ([7, 8].includes(problemtype)) return ["볼린저 밴드"];
@@ -199,21 +196,22 @@ export default function PracticeClient() {
 
   const stockData = problemData?.prices;
 
+  //보조지표 버튼
+  const [showIndicators, setShowIndicators] = useState(false);
+
   return (
     <div className="min-h-screen px-[80px] pt-1 relative">
-      {/* 로딩 오버레이 */}
       {loading && (
         <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center">
           <span className="text-white text-xl">채점 중...</span>
         </div>
       )}
 
-      {/* 뱃지들 */}
       <div className="mb-1">
         {getBadges(Number(problemData?.problemtype)).map((badge) => (
           <span
             key={badge}
-            className="px-2 py-0.5 mr-2 rounded-full text-xs border border-[#fffff]"
+            className="px-2 py-0.5 mr-2 rounded-full text-xs border border-white"
           >
             {badge}
           </span>
@@ -225,11 +223,11 @@ export default function PracticeClient() {
           {problemData?.date}
         </span>
       </div>
+
       <main className="flex flex-col lg:flex-row gap-6">
-        {/* 왼쪽 */}
         <section className="flex-1 max-w-[894px]">
           <div className="text-sm text-gray-300 mb-4">
-            <div className="flex flex-wrap items-center gap-1 mb-4">
+            <div className="flex flex-wrap items-center gap-1 mb-5">
               <button
                 className={`px-3 py-1 rounded-full ${
                   tab === "chart" ? "bg-[#2a2a2a] text-white" : "text-gray-400"
@@ -250,64 +248,89 @@ export default function PracticeClient() {
               </button>
               {tab === "chart" && (
                 <div className="flex flex-wrap gap-4 items-center justify-end text-sm text-gray-300 ml-auto pr-3">
-                  <span className="flex items-center gap-1">
-                    <span className="text-white pr-1">이동평균선</span>
+
+                  <div className="flex items-center gap-3 text-sm">
+                    {showIndicators && (
+                      <>
+                        <span className="flex items-center gap-1">
+                          <span className="text-white pr-1">이동평균선</span>
+                          <span
+                            className={`cursor-pointer ${
+                              showLine.ma5 ? "text-[#00D5C0]" : "text-gray-500"
+                            }`}
+                            onClick={() => toggleLine("ma5")}
+                          >
+                            5
+                          </span>
+                          ·
+                          <span
+                            className={`cursor-pointer ${
+                              showLine.ma20 ? "text-[#E8395F]" : "text-gray-500"
+                            }`}
+                            onClick={() => toggleLine("ma20")}
+                          >
+                            20
+                          </span>
+                          ·
+                          <span
+                            className={`cursor-pointer ${
+                              showLine.ma60 ? "text-[#F87800]" : "text-gray-500"
+                            }`}
+                            onClick={() => toggleLine("ma60")}
+                          >
+                            60
+                          </span>
+                          ·
+                          <span
+                            className={`cursor-pointer ${
+                              showLine.ma120
+                                ? "text-[#7339FB]"
+                                : "text-gray-500"
+                            }`}
+                            onClick={() => toggleLine("ma120")}
+                          >
+                            120
+                          </span>
+                        </span>
+                        |
+                        <span
+                          className={`cursor-pointer ${
+                            showLine.bb ? "text-[#EDCB37]" : "text-gray-500"
+                          }`}
+                          onClick={() => toggleLine("bb")}
+                        >
+                          볼린저밴드
+                        </span>
+                      </>
+                    )}
+
                     <span
-                      className={`cursor-pointer ${
-                        showLine.ma5 ? "text-[#00D5C0]" : "text-gray-500"
-                      }`}
-                      onClick={() => toggleLine("ma5")}
+                      className="px-1 cursor-pointer text-gray-400 hover:bg-gray-800 rounded-sm"
+                      onClick={() => setShowIndicators((prev) => !prev)}
                     >
-                      5
-                    </span>{" "}
-                    ·
-                    <span
-                      className={`cursor-pointer ${
-                        showLine.ma20 ? "text-[#E8395F]" : "text-gray-500"
-                      }`}
-                      onClick={() => toggleLine("ma20")}
-                    >
-                      20
-                    </span>{" "}
-                    ·
-                    <span
-                      className={`cursor-pointer ${
-                        showLine.ma60 ? "text-[#F87800]" : "text-gray-500"
-                      }`}
-                      onClick={() => toggleLine("ma60")}
-                    >
-                      60
-                    </span>{" "}
-                    ·
-                    <span
-                      className={`cursor-pointer ${
-                        showLine.ma120 ? "text-[#7339FB]" : "text-gray-500"
-                      }`}
-                      onClick={() => toggleLine("ma120")}
-                    >
-                      120
+
+                      {showIndicators ? "– 보조지표 접기" : "+ 보조지표 설정"}
+
                     </span>
-                  </span>
-                  <span
-                    className={`cursor-pointer ${
-                      showLine.bb ? "text-[#EDCB37]" : "text-gray-500"
-                    }`}
-                    onClick={() => toggleLine("bb")}
-                  >
-                    볼린저밴드
-                  </span>
-                  |<span className="text-[#396FFB]">거래량</span>
-                  <span className="text-[#e75480]">RSI</span>
+                  </div>
                 </div>
               )}
             </div>
-            {/* 차트 */}
-            {tab === "chart" && (
-              <div
-                className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center w-full text-gray-400 pb-1 relative"
-                ref={chartBoxRef}
-              >
-                {Array.isArray(stockData) ? (
+
+            
+
+            {/** 차트 / 재무정보 컨테이너 **/}
+            <div
+              className={`w-full bg-[#1b1b1b] rounded-lg mb-6 flex overflow-auto ${
+                tab === "chart"
+                  ? "h-[500px] items-center justify-center"
+                  : "h-[calc(100vh-300px)] flex-col"
+              }`}
+              ref={chartBoxRef}
+            >
+              {tab === "chart" ? (
+                Array.isArray(stockData) ? (
+
                   <CandleChart
                     w={parentWidth}
                     data={stockData}
@@ -318,15 +341,11 @@ export default function PracticeClient() {
                   />
                 ) : (
                   <div>문제가 없습니다.</div>
-                )}
-              </div>
-            )}
-            {tab === "finance" &&
-              problemData?.stock_code &&
-              problemData.date && (
+                )
+              ) : (
                 <FinanceTable
-                  stock_code={problemData.stock_code}
-                  date={problemData.date}
+                  stock_code={problemData!.stock_code}
+                  date={problemData!.date}
                 />
               )}
           </div>
@@ -419,6 +438,7 @@ export default function PracticeClient() {
               onClick={() => router.push(`/ranking/practice`)}
             />
           </div>
+
           {/* 뉴스 */}
           <div className="mt-4">
             <p className="text-2xl font-semibold mb-3.5">관련 뉴스</p>
@@ -491,7 +511,6 @@ export default function PracticeClient() {
         </div>
       )}
 
-      {/* Toast 알림 */}
       <ToastContainer
         position="bottom-right"
         hideProgressBar

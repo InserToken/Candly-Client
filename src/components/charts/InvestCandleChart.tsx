@@ -97,22 +97,36 @@ export default function InvestCandleChart({
 }: CandleChartProps) {
   // ==== 데이터 슬라이싱 ====
   const combinedChartData = useMemo(() => {
-    const dotCandles = (dotData ?? []).map((dot) => ({
-      ...dot,
-      open: dot.close,
-      high: dot.close,
-      low: dot.close,
-      volume: 0,
-    })) as Candle[];
+    const map = new Map<string, Candle>();
 
-    const merged = [...data, ...dotCandles];
+    // 1. 기존 candle data 먼저 삽입
+    for (const candle of data) {
+      map.set(candle.date, { ...candle });
+    }
 
-    const sorted = merged.sort(
+    // 2. dotData도 같은 date에 병합
+    for (const dot of dotData ?? []) {
+      const existing = map.get(dot.date);
+      if (!existing) {
+        // dotData만 존재하는 날짜에만 새로운 Candle 추가
+        map.set(dot.date, {
+          date: dot.date,
+          open: dot.close,
+          high: dot.close,
+          low: dot.close,
+          close: dot.close,
+          volume: 0,
+        });
+      }
+      // 기존 Candle이 있는 날짜는 건드리지 않음
+    }
+
+    // 정렬된 배열로 변환
+    return Array.from(map.values()).sort(
       (a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf()
     );
-
-    return sorted;
   }, [data, dotData]);
+
   const lastDate = dotData?.length ? dotData[dotData.length - 1].date : null;
   const lastIndex = lastDate
     ? combinedChartData.findIndex((d) => d.date === lastDate)
@@ -162,6 +176,15 @@ export default function InvestCandleChart({
           return newsDate.isSame(candleDate);
         })
       : [];
+
+  //차이표시여부
+  const tooltipDot = useMemo(() => {
+    if (!tooltip?.data || !dotData) return null;
+    const dot = dotData.find((d) =>
+      dayjs(d.date).isSame(tooltip.data!.date, "day")
+    );
+    return dot ?? null;
+  }, [tooltip?.data, dotData]);
 
   // 팬/줌 구간
   const slicedData = chartData.slice(startIndex, startIndex + visibleCandles);
@@ -230,8 +253,15 @@ export default function InvestCandleChart({
     const idx = getNearestCandleIdx(offsetX);
     const candle = slicedData[idx];
 
-    // dotData이면 툴팁 안 뜨게 처리
-    if (!candle || (dotData && dotData.some((d) => d.date === candle.date))) {
+    // 없는 날짜거나 candle이 전부 동일하면 dot 전용이므로 툴팁 제거
+    const isDotOnly =
+      candle &&
+      candle.open === candle.close &&
+      candle.high === candle.close &&
+      candle.low === candle.close &&
+      candle.volume === 0;
+
+    if (!candle || isDotOnly) {
       setTooltip(null);
       return;
     }
@@ -259,12 +289,14 @@ export default function InvestCandleChart({
     const idx = getNearestCandleIdx(offsetX);
     const candle = slicedData[idx];
 
-    // dotData이면 툴팁 안 뜨게 처리
-    if (
-      idx < 0 ||
-      idx >= slicedData.length ||
-      (dotData && dotData.some((d) => d.date === candle.date))
-    ) {
+    const isDotOnly =
+      candle &&
+      candle.open === candle.close &&
+      candle.high === candle.close &&
+      candle.low === candle.close &&
+      candle.volume === 0;
+
+    if (!candle || isDotOnly) {
       setTooltip(null);
       return;
     }
@@ -298,8 +330,17 @@ export default function InvestCandleChart({
     .map((d) => d.low)
     .filter((v) => typeof v === "number");
 
-  const maxPrice = highs.length ? Math.max(...highs) : 0;
-  const minPrice = lows.length ? Math.min(...lows) : 0;
+  const highCandidates = [...highs];
+  const lowCandidates = [...lows];
+
+  if (typeof todayPrice === "number" && !isNaN(todayPrice)) {
+    highCandidates.push(todayPrice);
+    lowCandidates.push(todayPrice);
+  }
+
+  const maxPrice = highCandidates.length ? Math.max(...highCandidates) : 0;
+  const minPrice = lowCandidates.length ? Math.min(...lowCandidates) : 0;
+
   const midPrice = Math.round((maxPrice + minPrice) / 2);
   const priceRange = maxPrice - minPrice;
   const padding = priceRange * 0.1;
@@ -619,7 +660,7 @@ export default function InvestCandleChart({
                   y1={wickTop}
                   x2={x}
                   y2={wickBottom}
-                  stroke={isRising ? "#3B82F6" : "#EF4444"}
+                  stroke={isRising ? "#EF4444" : "#3B82F6"}
                   strokeWidth="2"
                 />
                 <rect
@@ -627,7 +668,7 @@ export default function InvestCandleChart({
                   y={bodyTop}
                   width={candleWidth}
                   height={bodyHeight}
-                  fill={isRising ? "#3B82F6" : "#EF4444"}
+                  fill={isRising ? "#EF4444" : "#3B82F6"}
                   rx={4}
                   style={
                     highlight
@@ -697,7 +738,7 @@ export default function InvestCandleChart({
             fontSize="11"
             textAnchor="end"
           >
-            {maxVolume.toLocaleString()}
+            거래량
           </text>
         </svg>
         <svg
@@ -753,7 +794,7 @@ export default function InvestCandleChart({
                 y={barY}
                 width={candleWidth}
                 height={barHeight}
-                fill={isRising ? "#3B82F6" : "#EF4444"}
+                fill={isRising ? "#EF4444" : "#3B82F6"}
                 opacity="0.6"
                 rx={2}
                 style={
@@ -900,8 +941,8 @@ export default function InvestCandleChart({
             fontSize: 13,
             boxShadow: "0 2px 10px #0003",
             zIndex: 100,
-            width: 220, // <<--- 추가!
-            //minWidth: 130,     // 필요에 따라 minWidth는 지워도 됨
+            width: 220,
+            //minWidth: 130,
             whiteSpace: "normal",
             border: "1px solid #396FFB88",
           }}
@@ -914,7 +955,20 @@ export default function InvestCandleChart({
           <div>저: {tooltip.data.low.toLocaleString()}</div>
           <div>종: {tooltip.data.close.toLocaleString()}</div>
           <div>거래량: {tooltip.data.volume.toLocaleString()}</div>
-          {/* ====== 뉴스 영역 추가!! ====== */}
+          {tooltipDot && tooltipDot.close !== undefined && (
+            <>
+              <div className="text-[#e75480] font-bold">
+                오차: {(tooltipDot.close - tooltip.data.close).toFixed(2)} (
+                {(
+                  ((tooltipDot.close - tooltip.data.close) /
+                    tooltip.data.close) *
+                  100
+                ).toFixed(2)}
+                %)
+              </div>
+            </>
+          )}
+          {/* ====== 뉴스 영역 ====== */}
           {tooltipNews.length > 0 && (
             <div style={{ marginTop: 8 }}>
               <div style={{ fontWeight: 600, marginBottom: 2 }}>📰 뉴스</div>
