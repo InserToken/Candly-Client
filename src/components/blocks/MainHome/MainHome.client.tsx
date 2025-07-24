@@ -22,7 +22,7 @@ export default function MainHomeClient() {
 
       if (status.hasHoldings) {
         const stockData = await getStock(auth.token);
-        const firstCode = stockData.stocks[0]._id;
+        const firstCode = stockData.stocks[0]?.stock_code._id;
         console.log("주식 조회", firstCode);
         if (firstCode) {
           router.push(`/investment/${firstCode}`);

@@ -167,6 +167,7 @@ export default function InvestmentStockClient() {
       const result = await getStock(token);
       setStock(result.stocks);
       console.log("사용자의 보유주식 조회:", result.stocks);
+      console.log("param", params);
     };
 
     fetchData();
@@ -255,7 +256,8 @@ export default function InvestmentStockClient() {
           {stock.length === 0 ? (
             <span className="invisible">.</span>
           ) : (
-            stock.find((s) => s._id === params.stock_code)?.name || "종목 없음"
+            stock.find((s) => s.stock_code._id === params.stock_code)
+              ?.stock_code.name || "종목 없음"
           )}
         </h2>
         <span className="ml-4  py-0.5 rounded  mt-auto mb-4">
@@ -785,25 +787,27 @@ export default function InvestmentStockClient() {
                 <div
                   key={idx}
                   className={`px-4 py-2 rounded-lg flex items-center gap-3 cursor-pointer ${
-                    s._id === params.stock_code
+                    s.stock_code._id === params.stock_code
                       ? "bg-[#396FFB]"
                       : "bg-[#313136]"
                   }`}
                   onClick={() => {
-                    router.push(`/investment/${s._id}`, { scroll: false });
+                    router.push(`/investment/${s.stock_code._id}`, {
+                      scroll: false,
+                    });
                   }}
                 >
-                  {s.logo && (
+                  {s.stock_code.logo && (
                     <Image
-                      src={s.logo}
-                      alt={s.name}
+                      src={s.stock_code.logo}
+                      alt={s.stock_code.name}
                       width={28}
                       height={28}
                       className="rounded-full"
                     />
                   )}
 
-                  <span>{s.name}</span>
+                  <span>{s.stock_code.name}</span>
                 </div>
               ))}
             </div>
