@@ -63,11 +63,15 @@ export default function PracticeListClient() {
   // 체크박스 핸들러
   function handleCategoryCheck(idx: number) {
     setPage(1);
-    setCheckedCategories((prev) =>
-      prev.some((cat) => String(cat) === String(categories[idx].value))
-        ? prev.filter((cat, i) => i !== prev.findIndex((c, j) => j === idx))
-        : [...prev, categories[idx].value]
-    );
+    setCheckedCategories((prev) => {
+      const valueStr = String(categories[idx].value);
+      // 이미 체크되어 있으면 해제(제거)
+      if (prev.some((cat) => String(cat) === valueStr)) {
+        return prev.filter((cat) => String(cat) !== valueStr);
+      }
+      // 없으면 추가
+      return [...prev, categories[idx].value];
+    });
   }
 
   return (
