@@ -16,8 +16,9 @@ export default function RealRankingClient() {
   useEffect(() => {
     const fetchData = async () => {
       const result = await getStock(auth.token);
-      setStock(result.stocks);
+
       console.log("사용자의 보유주식 조회:", result.stocks);
+      setStock(result.stocks);
     };
 
     const fetchRankingData = async () => {
@@ -52,7 +53,7 @@ export default function RealRankingClient() {
   // stock이 바뀌고 나서 초기값 설정
   useEffect(() => {
     if (stock.length > 0 && !selectedCompany) {
-      setSelectedCompany(stock[0].name);
+      setSelectedCompany(stock[0].stock_code.name);
     }
   }, [stock]);
 
@@ -70,25 +71,25 @@ export default function RealRankingClient() {
               {stock.map((s, idx) => (
                 <div
                   key={idx}
-                  onClick={() => setSelectedCompany(s.name)}
+                  onClick={() => setSelectedCompany(s.stock_code.name)}
                   className={`flex items-center justify-between cursor-pointer px-5 py-4 rounded-lg
                     ${
-                      selectedCompany === s.name
+                      selectedCompany === s.stock_code.name
                         ? "bg-[#396FFB]"
                         : "bg-[#313136]"
                     }`}
                 >
                   <div className="flex items-center gap-3">
-                    {s.logo && (
+                    {s.stock_code.logo && (
                       <Image
-                        src={s.logo}
-                        alt={s.name}
+                        src={s.stock_code.logo}
+                        alt={s.stock_code.name}
                         width={24}
                         height={24}
                         className="rounded-full"
                       />
                     )}
-                    <span>{s.name}</span>
+                    <span>{s.stock_code.name}</span>
                   </div>
                 </div>
               ))}

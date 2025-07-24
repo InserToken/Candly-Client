@@ -63,6 +63,7 @@ export async function getStock(token: string) {
     throw new Error(data.message || "보유 주식 조회 실패");
   }
 
+  console.log("getStock", data);
   return data;
 }
 
