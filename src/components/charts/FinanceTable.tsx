@@ -67,7 +67,7 @@ export default function FinanceTable({
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full text-sm text-white max-h-[410px] overflow-y-auto pr-2">
+    <div className="flex flex-col gap-6 w-full text-sm text-white h-full overflow-y-auto pr-2">
       {/* 투자 지표 */}
       <div className="bg-[#1b1b1b] rounded-xl p-4 text-white text-sm w-full">
         <h3 className="text-base font-semibold mb-4">투자 지표</h3>
