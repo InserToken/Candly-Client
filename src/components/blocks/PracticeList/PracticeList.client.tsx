@@ -181,7 +181,7 @@ export default function PracticeListClient() {
               setCheckedCategories([]);
               setPage(1);
             }}
-            className="mt-4 px-2 py-2 rounded text-xs bg-[#396FFB] text-white"
+            className="mt-4 px-2 py-2 rounded text-xs bg-[#396FFB] hover:bg-blue-500"
           >
             전체해제
           </button>

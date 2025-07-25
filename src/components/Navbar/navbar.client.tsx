@@ -91,7 +91,7 @@ export default function Navbar() {
           height={30}
           className="pr-2.5"
         />
-        <div className="text-2xl pr-20">오르락내리락</div>
+        <div className="text-2xl pr-20">Candly</div>
       </button>
       <ul className="flex gap-15">
         {menuItems.map((item) => {
@@ -107,7 +107,7 @@ export default function Navbar() {
                   className={
                     "text-base transition-colors cursor-pointer " +
                     (isActive
-                      ? "text-[#396FFB] font-semibold"
+                      ? "text-[#396FFB] hover:text-blue-500 font-semibold"
                       : "text-[#E2E2E2] hover:text-white")
                   }
                 >
@@ -131,7 +131,7 @@ export default function Navbar() {
                   className={
                     "text-base transition-colors cursor-pointer " +
                     (isActive
-                      ? "text-[#396FFB] font-semibold"
+                      ? "text-[#396FFB] hover:text-blue-500 font-semibold"
                       : "text-[#E2E2E2] hover:text-white")
                   }
                   type="button"

@@ -6,7 +6,7 @@ export default function ClickCard({ name, icon, onClick }: ClickCardProps) {
     <button
       type="button"
       onClick={onClick}
-      className="bg-[#16161A] rounded-2xl shadow-md h-[140px] w-[195px] p-5 flex flex-col justify-between"
+      className="bg-[#16161A] hover:bg-[#24242C] rounded-2xl shadow-md h-[140px] w-[195px] p-5 flex flex-col justify-between"
     >
       <div className="flex justify-between">
         <Image src={`/${icon}`} alt={`${name} 아이콘`} width={50} height={50} />

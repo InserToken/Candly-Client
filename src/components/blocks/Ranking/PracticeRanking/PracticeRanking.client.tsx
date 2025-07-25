@@ -119,8 +119,8 @@ export default function PracticeRankingClient() {
                   onClick={() => setSelectedProblem(q.problem_id?._id ?? "")}
                   className={`flex items-center justify-between px-5 py-4 rounded-lg cursor-pointer ${
                     selectedProblem === q.problem_id?._id
-                      ? "bg-[#396FFB]"
-                      : "bg-[#313136]"
+                      ? "bg-[#396FFB] hover:bg-blue-500"
+                      : "bg-[#313136] hover:bg-[#24242C]"
                   }`}
                 >
                   <div className="flex items-center gap-3">

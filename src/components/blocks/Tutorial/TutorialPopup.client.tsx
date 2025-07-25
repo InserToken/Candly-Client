@@ -12,6 +12,16 @@ function TutorialOverlay({ onClose }) {
     "/tuto5.png",
     "/tuto6.png",
   ];
+
+  const titles = [
+    "홈",
+    "연습문제",
+    "연습문제",
+    "실전문제",
+    "랭킹",
+    "마이페이지",
+  ];
+
   return (
     <div
       style={{
@@ -27,7 +37,7 @@ function TutorialOverlay({ onClose }) {
     >
       <div
         style={{
-          background: "#373737",
+          background: "#0f0f0f",
           borderRadius: 20,
           padding: 8,
           display: "flex",
@@ -35,9 +45,10 @@ function TutorialOverlay({ onClose }) {
           alignItems: "center",
           minWidth: 1100,
           position: "relative",
+          border: "solid",
         }}
       >
-        <h3 className="mb-2 mt-2">튜토리얼</h3>
+        <h3 className="mb-2 mt-2">사용 가이드</h3>
         {/* X 버튼 */}
         <button
           onClick={onClose}
@@ -59,6 +70,9 @@ function TutorialOverlay({ onClose }) {
         >
           ×
         </button>
+        <div className="border-solid border-2 py-1.5 px-7 rounded-4xl border-[#f3f3f3]">
+          <h4 className="text-xl">{titles[index]}</h4>
+        </div>
         {/* 고정된 최소 이미지 영역 */}
         <div
           style={{

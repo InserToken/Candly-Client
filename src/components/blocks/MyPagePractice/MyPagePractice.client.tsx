@@ -115,7 +115,7 @@ export default function MyPagePracticeClient() {
             <p className="text-4xl font-bold">{problemScoreAvg?.score}</p>
             <p className="text-xl font-semibold">점</p>
           </div>
-          <div className="bg-[#16161A] w-60 h-20 rounded-lg flex items-center justify-center">
+          <div className="bg-[#16161A] hover:bg-[#24242C] w-60 h-20 rounded-lg flex items-center justify-center">
             <button
               onClick={openModal}
               className="text-xl font-semibold text-white cursor-pointer"
