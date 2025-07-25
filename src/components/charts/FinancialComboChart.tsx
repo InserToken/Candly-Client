@@ -50,11 +50,24 @@ export default function FinancialComboChart({
           {/* <YAxis yAxisId="left" stroke="#aaa" tick={{ fill: "#aaa" }} /> */}
 
           <YAxis
-            yAxisId="right"
+            yAxisId="left"
             orientation="left"
             stroke="#aaa"
             tick={{ fill: "#aaa" }}
+            tickFormatter={(value) => {
+              if (value >= 1e12) return `${value / 1e12}조`;
+              if (value >= 1e8) return `${value / 1e8}억`;
+              if (value >= 1e4) return `${value / 1e4}만`;
+              return value;
+            }}
           />
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            stroke="#aaa"
+            tick={{ fill: "#aaa" }}
+          />
+
           <Tooltip
             contentStyle={{
               backgroundColor: "#2a2a2a",

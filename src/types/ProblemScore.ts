@@ -3,7 +3,7 @@ export type ProblemScore = {
   feedback?: string;
   score: number;
   logic: number;
-  momentum: number;
+  technical: number;
   macroEconomy: number;
   marketIssues: number;
   quantEvidence: number;
@@ -27,7 +27,7 @@ export type GetPracticeScore = {
   feedback?: string;
   score: number;
   logic: number;
-  momentum: number;
+  technical: number;
   macroEconomy: number;
   marketIssues: number;
   quantEvidence: number;
