@@ -346,9 +346,9 @@ export default function FinanceTable({
         <FinancialComboChart
           data={financialData?.series?.period.map((_, idx: number) => ({
             label: periodLabels[idx],
-            bar1: financialData.series.revenue[idx],
-            bar2: financialData.series.netProfit_govern[idx],
-            line: financialData.series.profitMargin[idx],
+            bar1: Math.max(0, financialData.series.revenue[idx]),
+            bar2: Math.max(0, financialData.series.netProfit_govern[idx]),
+            line: Math.max(0, financialData.series.profitMargin[idx]),
           }))}
           bar1Key="bar1"
           bar2Key="bar2"
@@ -475,8 +475,8 @@ export default function FinanceTable({
         <FinancialComboChart
           data={financialData?.series?.period.map((_, idx: number) => ({
             label: periodLabels[idx],
-            bar1: financialData.series.operatingProfit[idx],
-            line: financialData.series.operatingMargin[idx],
+            bar1: Math.max(0, financialData.series.operatingProfit[idx]),
+            line: Math.max(0, financialData.series.operatingMargin[idx]),
           }))}
           bar1Key="bar1"
           lineKey="line"
