@@ -177,7 +177,12 @@ export default function InvestCandleChart({
       ? news.filter((item) => {
           const newsDate = dayjs(item.date);
           const candleDate = dayjs(tooltip.data!.date);
-          return newsDate.isSame(candleDate);
+          const today = dayjs().format("YYYY-MM-DD");
+          // 오늘 날짜 뉴스는 제외
+          return (
+            newsDate.isSame(candleDate) &&
+            newsDate.format("YYYY-MM-DD") !== today
+          );
         })
       : [];
 
@@ -265,7 +270,13 @@ export default function InvestCandleChart({
       candle.low === candle.close &&
       candle.volume === 0;
 
-    if (!candle || isDotOnly) {
+    if (!candle) {
+      setTooltip(null);
+      return;
+    }
+
+    const dot = dotData?.find((d) => dayjs(d.date).isSame(candle.date, "day"));
+    if (isDotOnly && !dot) {
       setTooltip(null);
       return;
     }
@@ -692,7 +703,7 @@ export default function InvestCandleChart({
           {dotPoints.length > 1 && (
             <polyline
               fill="none"
-              stroke="#10B981"
+              stroke="#F0F2F5"
               strokeWidth="2"
               points={dotPoints
                 .filter(
@@ -710,9 +721,9 @@ export default function InvestCandleChart({
               key={`dot-${i}`}
               cx={p.x}
               cy={p.y}
-              r={5}
-              fill="#10B981"
-              stroke="#10B981"
+              r={4}
+              fill="#F0F2F5"
+              stroke="#F0F2F5"
               strokeWidth={2}
               style={{ pointerEvents: "none" }}
             />
@@ -797,28 +808,30 @@ export default function InvestCandleChart({
             const vol = candle.volume ?? 0;
             const isRising = candle.close > candle.open;
             const barY = getVolumeY(vol) + VOLUME_TOP_PADDING;
-            const barHeight = VOLUME_HEIGHT - barY;
+            const barHeight = Math.max(0, VOLUME_HEIGHT - barY);
             const highlight = tooltip?.show && tooltip.idx === i;
             return (
-              <rect
-                key={i}
-                x={x - candleWidth / 2}
-                y={barY}
-                width={candleWidth}
-                height={barHeight}
-                fill={isRising ? "#EF4444" : "#3B82F6"}
-                opacity="0.6"
-                rx={2}
-                style={
-                  highlight
-                    ? {
-                        filter: "drop-shadow(0 0 7px #53A6FA88)",
-                        stroke: "#53A6FA",
-                        strokeWidth: 2,
-                      }
-                    : {}
-                }
-              />
+              barHeight > 0 && (
+                <rect
+                  key={i}
+                  x={x - candleWidth / 2}
+                  y={barY}
+                  width={candleWidth}
+                  height={barHeight}
+                  fill={isRising ? "#EF4444" : "#3B82F6"}
+                  opacity="0.6"
+                  rx={2}
+                  style={
+                    highlight
+                      ? {
+                          filter: "drop-shadow(0 0 7px #53A6FA88)",
+                          stroke: "#53A6FA",
+                          strokeWidth: 2,
+                        }
+                      : {}
+                  }
+                />
+              )
             );
           })}
         </svg>
@@ -970,15 +983,7 @@ export default function InvestCandleChart({
         <div
           style={{
             position: "fixed",
-            // position: "absolute",
-
-            // left: tooltip.x + 18,
             left: tooltip.x + 88,
-
-            // top:
-            //   tooltip.section === "volume"
-            //     ? CHART_HEIGHT + VOLUME_HEIGHT / 2 - 60
-            //     : 40,
             top:
               tooltip.section === "volume"
                 ? CHART_HEIGHT + VOLUME_HEIGHT / 2 - 60
@@ -991,8 +996,7 @@ export default function InvestCandleChart({
             fontSize: 13,
             boxShadow: "0 2px 10px #0003",
             zIndex: 100,
-            width: 220, // <<--- 추가!
-            //minWidth: 130,     // 필요에 따라 minWidth는 지워도 됨
+            width: 220,
             whiteSpace: "normal",
             border: "1px solid #396FFB88",
           }}
@@ -1000,25 +1004,69 @@ export default function InvestCandleChart({
           <div>
             <b style={{ fontSize: 15 }}>{tooltip.data.date}</b>
           </div>
-          <div>시: {tooltip.data.open.toLocaleString()}</div>
-          <div>고: {tooltip.data.high.toLocaleString()}</div>
-          <div>저: {tooltip.data.low.toLocaleString()}</div>
-          <div>종: {tooltip.data.close.toLocaleString()}</div>
-          <div>거래량: {tooltip.data.volume.toLocaleString()}</div>
-          {tooltipDot && tooltipDot.close !== undefined && (
-            <>
-              <div className="text-[#e75480] font-bold">
-                오차: {(tooltipDot.close - tooltip.data.close).toFixed(2)} (
-                {(
-                  ((tooltipDot.close - tooltip.data.close) /
-                    tooltip.data.close) *
-                  100
-                ).toFixed(2)}
-                %)
-              </div>
-            </>
-          )}
-          {/* ====== 뉴스 영역 ====== */}
+          {/* 일반 candle 값 or dot 전용 candle 값 구분 */}
+          {(() => {
+            // dotData도 있는 날짜면
+            const dot = dotData?.find((d) =>
+              dayjs(d.date).isSame(tooltip.data!.date, "day")
+            );
+            // "오늘" 날짜인지 확인
+            const isToday = dayjs(tooltip.data!.date).isSame(dayjs(), "day");
+
+            // 오늘이고 todayPrice가 있을 때 (실시간)
+            if (isToday && todayPrice) {
+              return (
+                <>
+                  <div>
+                    <span style={{ color: "#e75480", fontWeight: 600 }}>
+                      실시간 시세
+                    </span>
+                    : {todayPrice.toLocaleString()}
+                  </div>
+                  <div style={{ marginTop: 4 }}>
+                    <span style={{ color: "#10B981", fontWeight: 600 }}>
+                      예측값
+                    </span>
+                    : {dot.close.toLocaleString()}
+                  </div>
+                </>
+              );
+            }
+
+            // dotData(예측값)가 있는 경우
+            if (dot) {
+              return (
+                <div>
+                  <span style={{ color: "#10B981", fontWeight: 600 }}>
+                    예측값
+                  </span>{" "}
+                  : {dot.close.toLocaleString()}
+                </div>
+              );
+            }
+            // 일반 candle 값 표기
+            return (
+              <>
+                <div>시: {tooltip.data.open.toLocaleString()}</div>
+                <div>고: {tooltip.data.high.toLocaleString()}</div>
+                <div>저: {tooltip.data.low.toLocaleString()}</div>
+                <div>종: {tooltip.data.close.toLocaleString()}</div>
+                <div>거래량: {tooltip.data.volume.toLocaleString()}</div>
+                {/* dot값이 겹치는 경우 오차 등도 표시 */}
+                {dot && dot.close !== undefined && (
+                  <div className="text-[#e75480] font-bold">
+                    오차: {(dot.close - tooltip.data.close).toFixed(2)} (
+                    {(
+                      ((dot.close - tooltip.data.close) / tooltip.data.close) *
+                      100
+                    ).toFixed(2)}
+                    %)
+                  </div>
+                )}
+              </>
+            );
+          })()}
+          {/* 뉴스 영역 그대로 */}
           {tooltipNews.length > 0 && (
             <div style={{ marginTop: 8 }}>
               <div style={{ fontWeight: 600, marginBottom: 2, fontSize: 15 }}>
@@ -1026,18 +1074,7 @@ export default function InvestCandleChart({
               </div>
               {tooltipNews.map((item, i) => (
                 <div key={i} style={{ marginBottom: 7 }}>
-                  {/* <a
-                    href={item.news_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: "#5dbbff",
-                      textDecoration: "underline",
-                      fontWeight: 500,
-                    }}
-                  > */}
                   • {item.title}
-                  {/* </a> */}
                 </div>
               ))}
             </div>
