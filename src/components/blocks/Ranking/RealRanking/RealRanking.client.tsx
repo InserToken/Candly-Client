@@ -75,8 +75,8 @@ export default function RealRankingClient() {
                   className={`flex items-center justify-between cursor-pointer px-5 py-4 rounded-lg
                     ${
                       selectedCompany === s.stock_code.name
-                        ? "bg-[#396FFB]"
-                        : "bg-[#313136]"
+                        ? "bg-[#396FFB] hover:bg-blue-500"
+                        : "bg-[#313136] hover:bg-[#24242C]"
                     }`}
                 >
                   <div className="flex items-center gap-3">

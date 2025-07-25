@@ -233,7 +233,9 @@ export default function PracticeClient() {
             <div className="flex flex-wrap items-center gap-1 mb-5">
               <button
                 className={`px-3 py-1 rounded-full ${
-                  tab === "chart" ? "bg-[#2a2a2a] text-white" : "text-gray-400"
+                  tab === "chart"
+                    ? "bg-[#2a2a2a] hover:bg-[#5B5B63] text-white"
+                    : "text-gray-400 hover:bg-[#2a2a2a]"
                 }`}
                 onClick={() => setTab("chart")}
               >
@@ -242,8 +244,8 @@ export default function PracticeClient() {
               <button
                 className={`px-3 py-1 rounded-full ${
                   tab === "finance"
-                    ? "bg-[#2a2a2a] text-white"
-                    : "text-gray-400"
+                    ? "bg-[#2a2a2a] hover:bg-[#5B5B63] text-white"
+                    : "text-gray-400 hover:bg-[#2a2a2a]"
                 }`}
                 onClick={() => setTab("finance")}
               >
@@ -408,7 +410,7 @@ export default function PracticeClient() {
                       {input.length} / 300 자
                     </span>
                     <button
-                      className="bg-[#396FFB] px-5 py-1.5 rounded text-sm"
+                      className="bg-[#396FFB] hover:bg-blue-500 px-5 py-1.5 rounded text-sm"
                       onClick={handleGrade}
                       disabled={loading}
                     >
@@ -447,7 +449,7 @@ export default function PracticeClient() {
                   .map((item, idx) => (
                     <div
                       key={idx}
-                      className="bg-[#1b1b1b] rounded-xl p-4 text-sm flex gap-4"
+                      className="bg-[#1b1b1b] hover:bg-[#24242C] rounded-xl p-4 text-sm flex gap-4"
                     >
                       {item.img_url && (
                         <Image

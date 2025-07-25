@@ -273,7 +273,9 @@ export default function InvestmentStockClient() {
             <div className="flex flex-wrap items-center gap-1 mb-5">
               <button
                 className={`px-3 py-1 rounded-full ${
-                  tab === "chart" ? "bg-[#2a2a2a] text-white" : "text-gray-400"
+                  tab === "chart"
+                    ? "bg-[#2a2a2a] hover:bg-[#5B5B63] text-white"
+                    : "text-gray-400 hover:bg-[#2a2a2a]"
                 }`}
                 onClick={() => setTab("chart")}
               >
@@ -282,8 +284,8 @@ export default function InvestmentStockClient() {
               <button
                 className={`px-3 py-1 rounded-full ${
                   tab === "finance"
-                    ? "bg-[#2a2a2a] text-white"
-                    : "text-gray-400"
+                    ? "bg-[#2a2a2a] hover:bg-[#5B5B63] text-white"
+                    : "text-gray-400 hover:bg-[#2a2a2a]"
                 }`}
                 onClick={() => setTab("finance")}
               >
@@ -448,7 +450,7 @@ export default function InvestmentStockClient() {
                         >
                           <div className="flex justify-center gap-2">
                             <button
-                              className="bg-[#396FFB] text-white px-3 py-1 rounded text-sm"
+                              className="bg-[#396FFB] hover:bg-blue-500 text-white px-3 py-1 rounded text-sm"
                               onClick={() => {
                                 setEditIndex(idx);
                                 setInputDate(item.date);
@@ -458,7 +460,7 @@ export default function InvestmentStockClient() {
                               수정
                             </button>
                             <button
-                              className="bg-[#2a2a2a] text-white px-3 py-1 rounded text-sm"
+                              className="bg-[#2a2a2a] hover:bg-[#454548] text-white px-3 py-1 rounded text-sm"
                               onClick={() => {
                                 const newList = [...prediction]; // 🔁 전체 prediction에서 직접 제거
                                 const removed = futurePredictions[idx];
@@ -564,7 +566,7 @@ export default function InvestmentStockClient() {
                       <td>
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            className="w-8 h-8 bg-[#2a2a2a] text-white rounded"
+                            className="w-8 h-8 bg-[#2a2a2a] hover:bg-[#5B5B63] text-white rounded"
                             onClick={() => setInputclose((prev) => prev - 100)}
                           >
                             -
@@ -578,7 +580,7 @@ export default function InvestmentStockClient() {
                             className="bg-[#1b1b1b] border border-[#2a2a2a] rounded px-3 py-1 text-white w-[80px] text-center"
                           />
                           <button
-                            className="w-8 h-8 bg-[#2a2a2a] text-white rounded"
+                            className="w-8 h-8 bg-[#2a2a2a] hover:bg-[#5B5B63] text-white rounded"
                             onClick={() => setInputclose((prev) => prev + 100)}
                           >
                             +
@@ -594,7 +596,7 @@ export default function InvestmentStockClient() {
                           {/* 추가버튼 */}
                           {editIndex === null ? (
                             <button
-                              className="bg-[#396FFB] text-white px-4 py-1.5 rounded text-sm"
+                              className="bg-[#396FFB] hover:bg-blue-500 text-white px-4 py-1.5 rounded text-sm"
                               onClick={() => {
                                 if (!inputDate || !inputclose) return;
 
@@ -723,7 +725,7 @@ export default function InvestmentStockClient() {
                             </button>
                           ) : (
                             <button
-                              className="bg-[#396FFB] text-white px-4 py-1.5 rounded text-sm"
+                              className="bg-[#396FFB] hover:bg-blue-500 text-white px-4 py-1.5 rounded text-sm "
                               onClick={() => {
                                 const newList = [...prediction];
                                 newList[editIndex] = {
@@ -744,7 +746,7 @@ export default function InvestmentStockClient() {
                           )}
 
                           <button
-                            className="bg-[#396FFB] text-white px-4 py-1.5 rounded text-sm"
+                            className="bg-[#396FFB] hover:bg-blue-500 text-white px-4 py-1.5 rounded text-sm"
                             onClick={() => {
                               if (!auth || !auth.token) {
                                 alert("로그인이 필요합니다.");
@@ -788,8 +790,8 @@ export default function InvestmentStockClient() {
                   key={idx}
                   className={`px-4 py-2 rounded-lg flex items-center gap-3 cursor-pointer ${
                     s.stock_code._id === params.stock_code
-                      ? "bg-[#396FFB]"
-                      : "bg-[#313136]"
+                      ? "bg-[#396FFB] hover:bg-blue-500"
+                      : "bg-[#313136] hover:bg-[#24242C]"
                   }`}
                   onClick={() => {
                     router.push(`/investment/${s.stock_code._id}`, {
@@ -824,7 +826,7 @@ export default function InvestmentStockClient() {
                   .map((item, idx) => (
                     <div
                       key={idx}
-                      className="bg-[#1b1b1b] rounded-xl p-4 text-sm flex gap-4"
+                      className="bg-[#1b1b1b] hover:bg-[#24242C] rounded-xl p-4 text-sm flex gap-4"
                     >
                       {item.img_url && (
                         <Image
