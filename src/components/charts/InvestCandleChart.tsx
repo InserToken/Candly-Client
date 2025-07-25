@@ -66,6 +66,10 @@ const DATE_AXIS_HEIGHT = 24;
 const MIN_CANDLES = 10;
 const SHOW_LEN = 200;
 
+const CHART_PADDING_TOP = 10;
+const CHART_PADDING_BOTTOM = 10;
+const VOLUME_TOP_PADDING = 15;
+
 function getDateTickFormat(
   index: number,
   candle: Candle,
@@ -495,7 +499,7 @@ export default function InvestCandleChart({
         width: "100%",
         maxWidth: w,
         position: "relative",
-        // overflow: "hidden",
+        overflow: "hidden",
         background: "inherit",
       }}
       ref={chartRef}
@@ -727,7 +731,15 @@ export default function InvestCandleChart({
           )}
         </svg>
       </div>
-
+      <div
+        style={{
+          width: "100%",
+          height: "1px",
+          backgroundColor: "#fff",
+          opacity: 0.7,
+          marginLeft: LEFT_AXIS_WIDTH,
+        }}
+      />
       {/* 2. 거래량(볼륨) 차트 (중간) */}
       <div className="flex" style={{ position: "relative", width: "100%" }}>
         <svg width={LEFT_AXIS_WIDTH} height={VOLUME_HEIGHT}>
@@ -784,7 +796,7 @@ export default function InvestCandleChart({
             const x = i * candleSpacing;
             const vol = candle.volume ?? 0;
             const isRising = candle.close > candle.open;
-            const barY = getVolumeY(vol);
+            const barY = getVolumeY(vol) + VOLUME_TOP_PADDING;
             const barHeight = VOLUME_HEIGHT - barY;
             const highlight = tooltip?.show && tooltip.idx === i;
             return (
@@ -811,7 +823,15 @@ export default function InvestCandleChart({
           })}
         </svg>
       </div>
-
+      <div
+        style={{
+          width: "100%",
+          height: "1px",
+          backgroundColor: "#fff",
+          opacity: 0.7,
+          marginLeft: LEFT_AXIS_WIDTH,
+        }}
+      />
       {/* 3. RSI 차트 (중간) */}
       <div className="flex" style={{ position: "relative", width: "100%" }}>
         <svg width={LEFT_AXIS_WIDTH} height={RSI_HEIGHT}>
@@ -924,7 +944,7 @@ export default function InvestCandleChart({
         </svg>
       </div>
       {/* 툴팁 */}
-      {tooltip?.show && tooltip.data && tooltip.idx !== undefined && (
+      {/* {tooltip?.show && tooltip.data && tooltip.idx !== undefined && (
         <div
           style={{
             position: "absolute",
@@ -943,6 +963,36 @@ export default function InvestCandleChart({
             zIndex: 100,
             width: 220,
             //minWidth: 130,
+            whiteSpace: "normal",
+            border: "1px solid #396FFB88",
+          }} */}
+      {tooltip?.show && tooltip?.data && tooltip?.idx !== undefined && (
+        <div
+          style={{
+            position: "fixed",
+            // position: "absolute",
+
+            // left: tooltip.x + 18,
+            left: tooltip.x + 88,
+
+            // top:
+            //   tooltip.section === "volume"
+            //     ? CHART_HEIGHT + VOLUME_HEIGHT / 2 - 60
+            //     : 40,
+            top:
+              tooltip.section === "volume"
+                ? CHART_HEIGHT + VOLUME_HEIGHT / 2 - 60
+                : 120,
+            background: "#232323",
+            color: "#fff",
+            padding: "12px 16px",
+            borderRadius: 8,
+            pointerEvents: "none",
+            fontSize: 13,
+            boxShadow: "0 2px 10px #0003",
+            zIndex: 100,
+            width: 220, // <<--- 추가!
+            //minWidth: 130,     // 필요에 따라 minWidth는 지워도 됨
             whiteSpace: "normal",
             border: "1px solid #396FFB88",
           }}
