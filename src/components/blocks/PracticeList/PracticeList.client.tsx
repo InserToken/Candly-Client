@@ -8,6 +8,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuthStore } from "@/stores/authStore";
 
+import { debounce } from "es-toolkit";
+
 // 체크박스용 카테고리 정의 (value를 숫자 배열로)
 const categories = [
   { label: "이동평균선", value: [1, 2] },
@@ -56,8 +58,16 @@ export default function PracticeListClient() {
       setCorrectProblems(result.data);
     };
 
-    fetchData();
-    fetchCorrect();
+    const fetchAll = debounce(() => {
+      fetchData();
+      fetchCorrect();
+    }, 200);
+
+    fetchAll();
+
+    return () => {
+      fetchAll.cancel();
+    };
   }, [page, keyword, filterCategory]);
 
   // 체크박스 핸들러

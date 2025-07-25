@@ -321,7 +321,7 @@ export default function PracticeClient() {
             <div
               className={`w-full bg-[#1b1b1b] rounded-lg mb-6 flex overflow-auto ${
                 tab === "chart"
-                  ? "h-[430px] items-center justify-center"
+                  ? "h-[424px] items-center justify-center"
                   : "h-[calc(100vh-300px)] flex-col"
               }`}
               ref={chartBoxRef}

@@ -128,12 +128,12 @@ export default function MyPageInvestmentClient() {
 
       <div className="flex items-center gap-4 mb-8">
         <div className="h-20 w-55 bg-[#16161A] rounded-lg text-center flex items-baseline gap-1.5 justify-center pt-4">
-          <p className="text-xl font-semibold">보유 종목</p>
+          <p className="text-xl font-semibold pr-1">보유 종목</p>
           <p className="text-4xl font-bold">{stockCount}</p>
           <p className="text-xl font-semibold">개</p>
         </div>
         <div className="h-20 w-55 bg-[#16161A] rounded-lg text-center flex items-baseline gap-1.5 justify-center pt-4">
-          <p className="text-xl font-semibold">적중률</p>
+          <p className="text-xl font-semibold pr-1">적중률</p>
           <p className="text-4xl font-bold">
             {avgScore !== null ? avgScore : "-"}
           </p>
@@ -141,8 +141,8 @@ export default function MyPageInvestmentClient() {
         </div>
       </div>
 
-      <div className="bg-[#1C1C20] rounded-lg overflow-hidden">
-        <table className="min-w-full text-2xl text-left text-white ">
+      <div className="bg-[#1C1C20] rounded-l overflow-hidden">
+        <table className="min-w-full text-xl text-left ">
           <thead className="bg-[#0F0F0F] text-gray-300">
             <tr>
               <th className="px-4 py-4"></th>

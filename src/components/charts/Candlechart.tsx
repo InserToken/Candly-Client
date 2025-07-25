@@ -204,7 +204,11 @@ export default function CandleChart({
     const idx = getNearestCandleIdx(offsetX);
 
     // === overlay 영역이면 tooltip 안뜸! ===
-    if (idx < 0 || idx >= slicedData.length || isOverlayIdx(idx)) {
+    if (
+      idx < 0 ||
+      idx >= slicedData.length ||
+      (!isAnswered && isOverlayIdx(idx))
+    ) {
       setTooltip(null);
       return;
     }

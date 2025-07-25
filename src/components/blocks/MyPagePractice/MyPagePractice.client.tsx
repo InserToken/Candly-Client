@@ -107,11 +107,11 @@ export default function MyPagePracticeClient() {
         <p className="text-2xl font-semibold mb-6">연습문제 히스토리</p>
         <div className="flex items-center gap-4 mb-8">
           <div className="bg-[#16161A] w-55 h-20 rounded-lg items-baseline flex text-center gap-1.5 pt-4 justify-center">
-            <p className="text-xl font-semibold">푼 문제 수</p>
+            <p className="text-xl font-semibold pr-1">푼 문제 수</p>
             <p className="text-4xl font-bold">{solvedProblem}</p>
           </div>
           <div className="bg-[#16161A] w-60 h-20 rounded-lg items-baseline flex text-center gap-1.5 pt-4 justify-center">
-            <p className="text-xl font-semibold">평균 점수</p>
+            <p className="text-xl font-semibold pr-1">평균 점수</p>
             <p className="text-4xl font-bold">{problemScoreAvg?.score}</p>
             <p className="text-xl font-semibold">점</p>
           </div>
@@ -178,7 +178,7 @@ export default function MyPagePracticeClient() {
                 label: "예측 논리",
                 value: problemScoreAvg?.logic,
                 explain:
-                  "주가 상승/하락에 대한 명확한 이유나 흐름을 스스로 논리적으로 설명했는지 확인해 보세요.",
+                  "주가 상승/하락에 대한 명확한 이유나 흐름을 논리적으로 설명했는지 평가합니다.",
               },
               {
                 label: "기술적 분석",
@@ -190,7 +190,7 @@ export default function MyPagePracticeClient() {
                 label: "거시경제",
                 value: problemScoreAvg?.macroEconomy,
                 explain:
-                  "금리, 환율, 인플레이션 등 거시경제 요소가 주가에 미치는 영향을 고려했는지 확인합니다.",
+                  "금리, 환율, 인플레이션 등 거시경제 요소가 주가에 미치는 영향을 고려했는지 평가합니다.",
               },
               {
                 label: "시황 이슈",
@@ -202,7 +202,7 @@ export default function MyPagePracticeClient() {
                 label: "정량적 근거",
                 value: problemScoreAvg?.quantEvidence,
                 explain:
-                  "PER, PBR, 실적 등 수치 기반 재무 데이터를 근거로 삼았는지 확인해 보세요.",
+                  "PER, PBR, 실적 등 수치 기반 재무 데이터를 근거로 판단했는지 평가합니다.",
               },
             ].map((item, idx) => (
               <div key={idx} className="flex flex-col items-center">
