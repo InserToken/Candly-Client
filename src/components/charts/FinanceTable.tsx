@@ -15,13 +15,30 @@ export default function FinanceTable({
 }: Props) {
   const [financialData, setFinancialData] = useState<any>(null);
 
-  const formatNumber = (num: number | null, unit = "") =>
-    typeof num === "number"
-      ? num.toLocaleString(undefined, { maximumFractionDigits: 2 }) + unit
-      : "-";
+  const formatNumber = (num: number | null | undefined, unit = "") => {
+    if (
+      num === null ||
+      num === undefined ||
+      isNaN(num) ||
+      num === 0 ||
+      !isFinite(num)
+    ) {
+      return "-";
+    }
+    return num.toLocaleString(undefined, { maximumFractionDigits: 2 }) + unit;
+  };
 
   function formatLargeNumber(value: number | null | undefined): string {
-    if (value == null || isNaN(value)) return "-";
+    if (
+      value === null ||
+      value === undefined ||
+      isNaN(value) ||
+      value === 0 ||
+      !isFinite(value)
+    ) {
+      return "-";
+    }
+
     const abs = Math.abs(value);
     if (abs >= 1e12) return (value / 1e12).toFixed(1) + "조원";
     if (abs >= 1e8) return (value / 1e8).toFixed(1) + "억원";
@@ -285,7 +302,7 @@ export default function FinanceTable({
               </span>
             </div>
             <span className="ml-auto">
-              {formatLargeNumber(financialData.equity_ttm)}
+              {formatLargeNumber(financialData.equityTTM)}
             </span>
           </div>
         </div>

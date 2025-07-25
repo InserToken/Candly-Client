@@ -88,6 +88,10 @@ export default function CandleChart({
       ? { ...d, open: d.close, high: d.close, low: d.close }
       : d
   );
+  // 차트 패딩
+  const CHART_PADDING_TOP = 10;
+  const CHART_PADDING_BOTTOM = 10;
+  const VOLUME_TOP_PADDING = 15;
   // ==== 데이터 슬라이싱 ====
   const startIdx = Math.max(0, data.length - SHOW_LEN - SKIP_LAST);
   const endIdx = data.length;
@@ -200,7 +204,11 @@ export default function CandleChart({
     const idx = getNearestCandleIdx(offsetX);
 
     // === overlay 영역이면 tooltip 안뜸! ===
-    if (idx < 0 || idx >= slicedData.length || isOverlayIdx(idx)) {
+    if (
+      idx < 0 ||
+      idx >= slicedData.length ||
+      (!isAnswered && isOverlayIdx(idx))
+    ) {
       setTooltip(null);
       return;
     }
@@ -285,7 +293,9 @@ export default function CandleChart({
   const chartMin = minPrice - padding;
   const chartRange = chartMax - chartMin;
   const getY = (price: number) =>
-    ((chartMax - price) / chartRange) * CHART_HEIGHT;
+    ((chartMax - price) / chartRange) *
+      (CHART_HEIGHT - CHART_PADDING_TOP - CHART_PADDING_BOTTOM) +
+    CHART_PADDING_TOP;
 
   // 가격 축 3개만
   const getPriceTicks = () => [
@@ -697,7 +707,7 @@ export default function CandleChart({
             const x = i * candleSpacing;
             const vol = candle.volume ?? 0;
             const isRising = candle.close > candle.open;
-            const barY = getVolumeY(vol);
+            const barY = getVolumeY(vol) + VOLUME_TOP_PADDING;
             const barHeight = VOLUME_HEIGHT - barY;
             const highlight = tooltip?.show && tooltip.idx === i;
             return (
