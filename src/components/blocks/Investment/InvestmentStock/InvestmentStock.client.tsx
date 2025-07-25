@@ -267,7 +267,7 @@ export default function InvestmentStockClient() {
 
       <main className="flex flex-col lg:flex-row gap-6">
         {/* 왼쪽 영역 */}
-        <section className="flex-1 max-w-[894px] w-full lg:max-w-[calc(100%-420px)]">
+        <section className="flex-1 max-w-[1100px] w-full lg:max-w-[calc(100%-420px)]">
           {/* 탭 */}
           <div className="text-sm text-gray-300 mb-4">
             <div className="flex flex-wrap items-center gap-1 mb-5">
