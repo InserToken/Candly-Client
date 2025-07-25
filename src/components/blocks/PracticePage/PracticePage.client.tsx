@@ -74,6 +74,7 @@ export default function PracticeClient() {
   const [parentWidth, setParentWidth] = useState(780);
   const [showHint, setShowHint] = useState(false);
   const [prompt, setPrompt] = useState<string>("");
+  const [hintRef, setHintRef] = useState<string>("");
   const [gradeResult, setGradeResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
@@ -128,6 +129,7 @@ export default function PracticeClient() {
           quantEvidence: data.breakdown?.quantEvidence,
           date: new Date().toISOString(),
         };
+        console.log("채점 결과", data);
         await postPracticeScore(token, practiceScoreData);
         toast.success("채점 및 저장 완료!");
         setFeedback(data.feedback || "피드백 없음.");
@@ -180,6 +182,7 @@ export default function PracticeClient() {
         .then((data) => {
           setTypeMeta(data);
           setPrompt(data.typeData?.[0]?.Prompting || "");
+          setHintRef(data.typeData?.[0]?.reference || "");
         })
         .catch((err) => console.error("fetchProblemTypeMeta error:", err));
     }
@@ -344,7 +347,6 @@ export default function PracticeClient() {
               )}
             </div>
           </div>
-
           {/* === 답변/피드백 === */}
           <div className="relative">
             {myAnswer ? (
@@ -486,7 +488,6 @@ export default function PracticeClient() {
           </div>
         </aside>
       </main>
-
       {showHint && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
           <div className="bg-white rounded-xl p-6 w-[530px] text-black shadow-2xl relative">
@@ -494,6 +495,11 @@ export default function PracticeClient() {
             <div className="mb-4">
               {typeMeta?.typeData?.[0]?.hint || "힌트가 없습니다."}
             </div>
+            {hintRef && (
+              <div className="mb-4 text-sm text-gray-600 border-t pt-2">
+                <b>‼️:</b> {hintRef}
+              </div>
+            )}
             <button
               className="absolute top-3 right-4 text-gray-400 text-xl"
               onClick={() => setShowHint(false)}
