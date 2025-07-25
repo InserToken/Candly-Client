@@ -948,7 +948,7 @@ export default function InvestCandleChart({
           }}
         >
           <div>
-            <b>{tooltip.data.date}</b>
+            <b style={{ fontSize: 15 }}>{tooltip.data.date}</b>
           </div>
           <div>시: {tooltip.data.open.toLocaleString()}</div>
           <div>고: {tooltip.data.high.toLocaleString()}</div>
@@ -971,10 +971,12 @@ export default function InvestCandleChart({
           {/* ====== 뉴스 영역 ====== */}
           {tooltipNews.length > 0 && (
             <div style={{ marginTop: 8 }}>
-              <div style={{ fontWeight: 600, marginBottom: 2 }}>📰 뉴스</div>
+              <div style={{ fontWeight: 600, marginBottom: 2, fontSize: 15 }}>
+                뉴스
+              </div>
               {tooltipNews.map((item, i) => (
                 <div key={i} style={{ marginBottom: 7 }}>
-                  <a
+                  {/* <a
                     href={item.news_url}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -983,9 +985,9 @@ export default function InvestCandleChart({
                       textDecoration: "underline",
                       fontWeight: 500,
                     }}
-                  >
-                    {item.title}
-                  </a>
+                  > */}
+                  • {item.title}
+                  {/* </a> */}
                 </div>
               ))}
             </div>
