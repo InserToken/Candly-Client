@@ -37,6 +37,7 @@ function TutorialOverlay({ onClose }) {
           position: "relative",
         }}
       >
+        <h3 className="mb-2 mt-2">튜토리얼</h3>
         {/* X 버튼 */}
         <button
           onClick={onClose}
@@ -58,7 +59,6 @@ function TutorialOverlay({ onClose }) {
         >
           ×
         </button>
-
         {/* 고정된 최소 이미지 영역 */}
         <div
           style={{
@@ -85,7 +85,6 @@ function TutorialOverlay({ onClose }) {
             }}
           />
         </div>
-
         {images.length > 1 && (
           <div style={{ marginBottom: 12 }}>
             <button
