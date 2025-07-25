@@ -429,7 +429,7 @@ export default function CandleChart({
               key={i}
               x={LEFT_AXIS_WIDTH - 5}
               y={line.y + 5}
-              fill="#9CA3AF"
+              fill="#f4f4f4"
               fontSize="12"
               textAnchor="end"
             >
@@ -631,14 +631,22 @@ export default function CandleChart({
           </div>
         )}
       </div>
-
+      <div
+        style={{
+          width: "100%",
+          height: "1px",
+          backgroundColor: "#fff",
+          opacity: 0.7,
+          marginLeft: LEFT_AXIS_WIDTH,
+        }}
+      />
       {/* 2. 거래량(볼륨) 차트 (중간) */}
       <div className="flex" style={{ position: "relative", width: "100%" }}>
         <svg width={LEFT_AXIS_WIDTH} height={VOLUME_HEIGHT}>
           <text
             x={LEFT_AXIS_WIDTH - 5}
             y={16}
-            fill="#b9b9b9"
+            fill="#f4f4f4"
             fontSize="11"
             textAnchor="end"
           >
@@ -671,6 +679,7 @@ export default function CandleChart({
             stroke="#444"
             strokeDasharray="2,2"
           />
+
           {tooltip?.show && tooltip.idx !== undefined && (
             <line
               x1={tooltip.idx * candleSpacing}
@@ -731,14 +740,22 @@ export default function CandleChart({
           />
         )}
       </div>
-
+      <div
+        style={{
+          width: "100%",
+          height: "1px",
+          backgroundColor: "#fff",
+          opacity: 0.7,
+          marginLeft: LEFT_AXIS_WIDTH,
+        }}
+      />
       {/* 3. RSI 차트 (중간) */}
       <div className="flex" style={{ position: "relative", width: "100%" }}>
         <svg width={LEFT_AXIS_WIDTH} height={RSI_HEIGHT}>
           <text
             x={LEFT_AXIS_WIDTH - 8}
             y={16}
-            fill="#b9b9b9"
+            fill="#f4f4f4"
             fontSize="11"
             textAnchor="end"
           >
@@ -864,7 +881,7 @@ export default function CandleChart({
                   key={i}
                   x={x}
                   y={18}
-                  fill="#9CA3AF"
+                  fill="#f4f4f4"
                   fontSize="12"
                   textAnchor="middle"
                 >
