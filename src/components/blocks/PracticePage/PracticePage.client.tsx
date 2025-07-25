@@ -228,7 +228,7 @@ export default function PracticeClient() {
       </div>
 
       <main className="flex flex-col lg:flex-row gap-6">
-        <section className="flex-1 max-w-[894px]">
+        <section className="flex-1 max-w-[1100px] w-full lg:max-w-[calc(100%-420px)]">
           <div className="text-sm text-gray-300 mb-4">
             <div className="flex flex-wrap items-center gap-1 mb-5">
               <button
@@ -342,10 +342,12 @@ export default function PracticeClient() {
                   <div>문제가 없습니다.</div>
                 )
               ) : (
-                <FinanceTable
-                  stock_code={problemData!.stock_code}
-                  date={problemData!.date}
-                />
+                <div className="h-[calc(100vh-300px)] w-full">
+                  <FinanceTable
+                    stock_code={problemData!.stock_code}
+                    date={problemData!.date}
+                  />
+                </div>
               )}
             </div>
           </div>
