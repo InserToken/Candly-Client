@@ -40,7 +40,7 @@ export default function MyPagePracticeClient() {
           feedback: item.feedback,
           score: item.score,
           logic: item.logic,
-          momentum: item.momentum,
+          technical: item.technical,
           macroEconomy: item.macroEconomy,
           marketIssues: item.marketIssues,
           quantEvidence: item.quantEvidence,
@@ -66,7 +66,7 @@ export default function MyPagePracticeClient() {
           date: new Date(),
           score: average("score"),
           logic: average("logic"),
-          momentum: average("momentum"),
+          technical: average("technical"),
           macroEconomy: average("macroEconomy"),
           marketIssues: average("marketIssues"),
           quantEvidence: average("quantEvidence"),
@@ -174,15 +174,48 @@ export default function MyPagePracticeClient() {
 
           <div className="w-200 h-70 bg-[#16161A] rounded-lg flex items-center justify-center gap-6 px-6 py-8 font-semibold">
             {[
-              { label: "예측 논리", value: problemScoreAvg?.logic },
-              { label: "기술적 분석", value: problemScoreAvg?.momentum },
-              { label: "거시경제", value: problemScoreAvg?.macroEconomy },
-              { label: "시황 이슈", value: problemScoreAvg?.marketIssues },
-              { label: "정량적 근거", value: problemScoreAvg?.quantEvidence },
+              {
+                label: "예측 논리",
+                value: problemScoreAvg?.logic,
+                explain:
+                  "주가 상승/하락에 대한 명확한 이유나 흐름을 스스로 논리적으로 설명했는지 확인해 보세요.",
+              },
+              {
+                label: "기술적 분석",
+                value: problemScoreAvg?.technical,
+                explain:
+                  "이동평균선, 거래량, RSI 등 차트 기반 지표를 근거로 판단했는지 평가합니다.",
+              },
+              {
+                label: "거시경제",
+                value: problemScoreAvg?.macroEconomy,
+                explain:
+                  "금리, 환율, 인플레이션 등 거시경제 요소가 주가에 미치는 영향을 고려했는지 확인합니다.",
+              },
+              {
+                label: "시황 이슈",
+                value: problemScoreAvg?.marketIssues,
+                explain:
+                  "해당 시점의 뉴스나 업종 이슈 등 시장 상황을 제대로 반영했는지 평가합니다.",
+              },
+              {
+                label: "정량적 근거",
+                value: problemScoreAvg?.quantEvidence,
+                explain:
+                  "PER, PBR, 실적 등 수치 기반 재무 데이터를 근거로 삼았는지 확인해 보세요.",
+              },
             ].map((item, idx) => (
               <div key={idx} className="flex flex-col items-center">
                 <CircularProgressChart value={item.value ?? 0} />
-                <span className="text-sm text-white mt-3">{item.label}</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-white mt-3">{item.label}</span>
+                  <span className="mt-3 relative group cursor-pointer text-gray-400">
+                    ⓘ
+                    <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                      <b className="text-[#f4f4f4]">{item.explain}</b>
+                    </div>
+                  </span>
+                </div>
               </div>
             ))}
           </div>

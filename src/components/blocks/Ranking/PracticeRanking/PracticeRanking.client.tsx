@@ -111,7 +111,7 @@ export default function PracticeRankingClient() {
 
         <div className="flex justify-center gap-4 flex-wrap h-[600px]">
           {/* 내가 푼 문제들 */}
-          <div className="bg-[#16161A] rounded-2xl p-6 w-full h-[600px] max-w-md overflow-y-auto">
+          <div className="bg-[#16161A] rounded-2xl p-6 w-full h-[600px] max-w-[530px] overflow-y-auto">
             <div className="space-y-2">
               {uniqueProblems.map((q, idx) => (
                 <div
@@ -160,7 +160,7 @@ export default function PracticeRankingClient() {
           </div>
 
           {/* 선택된 종목의 랭킹 */}
-          <div className="bg-[#16161A] rounded-2xl p-6 w-full h-[600px] max-w-xl overflow-y-auto">
+          <div className="bg-[#16161A] rounded-2xl p-6 w-full h-[600px] max-w-[550px] overflow-y-auto">
             <div className="w-full">
               <div className="grid grid-cols-4 text-left text-sm px-3 mb-2">
                 <div>순위</div>
