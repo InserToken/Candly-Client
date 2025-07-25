@@ -91,7 +91,7 @@ export default function CandleChart({
   // 차트 패딩
   const CHART_PADDING_TOP = 10;
   const CHART_PADDING_BOTTOM = 10;
-  const VOLUME_TOP_PADDING = 15;
+  const VOLUME_TOP_PADDING = 5;
   // ==== 데이터 슬라이싱 ====
   const startIdx = Math.max(0, data.length - SHOW_LEN - SKIP_LAST);
   const endIdx = data.length;
