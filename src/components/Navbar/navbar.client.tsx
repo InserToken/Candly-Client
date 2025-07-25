@@ -107,7 +107,7 @@ export default function Navbar() {
                   className={
                     "text-base transition-colors cursor-pointer " +
                     (isActive
-                      ? "text-[#396FFB] font-semibold"
+                      ? "text-[#396FFB] hover:text-blue-500 font-semibold"
                       : "text-[#E2E2E2] hover:text-white")
                   }
                 >
@@ -131,7 +131,7 @@ export default function Navbar() {
                   className={
                     "text-base transition-colors cursor-pointer " +
                     (isActive
-                      ? "text-[#396FFB] font-semibold"
+                      ? "text-[#396FFB] hover:text-blue-500 font-semibold"
                       : "text-[#E2E2E2] hover:text-white")
                   }
                   type="button"
