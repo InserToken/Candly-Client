@@ -50,21 +50,36 @@ export default function MyPagePracticeClient() {
         })
       );
 
-      // 평균 계산
+      // 항목별 만점 기준
+      const maxScores = {
+        logic: 25,
+        technical: 25,
+        macroEconomy: 15,
+        marketIssues: 20,
+        quantEvidence: 15,
+      };
+
       if (convertedScores.length > 0) {
-        const average = (key: keyof ProblemScore) => {
+        const average = (key: keyof typeof maxScores) => {
           const total = convertedScores.reduce((sum, item) => {
             const value = item[key];
             return typeof value === "number" ? sum + value : sum;
           }, 0);
-          return Math.round(total / convertedScores.length);
+          const rawAvg = total / convertedScores.length;
+          const percent = Math.round((rawAvg / maxScores[key]) * 100);
+          return percent;
         };
 
         const avgData: ProblemScore = {
           answer: "",
           feedback: "",
           date: new Date(),
-          score: average("score"),
+          score:
+            average("logic") +
+            average("technical") +
+            average("macroEconomy") +
+            average("marketIssues") +
+            average("quantEvidence"), // 총점수도 % 기준으로 변경 가능
           logic: average("logic"),
           technical: average("technical"),
           macroEconomy: average("macroEconomy"),
