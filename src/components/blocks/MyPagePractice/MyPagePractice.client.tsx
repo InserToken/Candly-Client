@@ -5,6 +5,7 @@ import CircularProgressChart from "./CircularProgressChart";
 import { useEffect, useState } from "react";
 import { fetchMyPagePractice } from "@/services/fetchMyPagePractice";
 import type { ProblemScore } from "@/types/ProblemScore";
+import Link from "next/link";
 
 export default function MyPagePracticeClient() {
   const [today, setToday] = useState<Date | null>(null);
@@ -45,6 +46,7 @@ export default function MyPagePracticeClient() {
           quantEvidence: item.quantEvidence,
           date: new Date(item.date),
           title: item.problem_id?.title,
+          pid: item.problem_id?._id,
         })
       );
 
@@ -133,7 +135,7 @@ export default function MyPagePracticeClient() {
               weekdayLabels={["S", "M", "T", "W", "T", "F", "S"]}
               showOutOfRangeDays={true}
               horizontal={true}
-              gutterSize={1.5}
+              gutterSize={0.5}
               classForValue={(value) => {
                 if (!value || !value.count || value.count === 0) {
                   return "fill-[#313136]";
@@ -197,26 +199,26 @@ export default function MyPagePracticeClient() {
               </div>
               <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
                 {recentProblemList.map((item, idx) => (
-                  <div
+                  <Link
                     key={idx}
-                    className="bg-[#1E1E24] p-4 rounded-lg border border-[#2A2A30]"
+                    href={`/practice/${item.pid}`}
+                    className="block"
                   >
-                    <p className="text-sm text-gray-400 mb-1">
-                      {item.date.toISOString().slice(0, 10)}
-                    </p>
-                    <p className="text-lg font-semibold text-white">
-                      {item.title}
-                    </p>
+                    <div className="bg-[#1E1E24] p-4 rounded-lg border border-[#2A2A30] hover:border-blue-500 transition-colors duration-150">
+                      <p className="text-sm text-gray-400 mb-1">
+                        {item.date.toISOString().slice(0, 10)}
+                      </p>
+                      <p className="text-lg font-semibold text-white">
+                        {item.title}
+                      </p>
 
-                    <div className="flex justify-between items-center mt-2">
-                      <span className="text-blue-400 font-bold">
-                        점수: {item.score}점
-                      </span>
-                      <span className="text-sm text-gray-300 italic">
-                        {item.feedback || item.answer.slice(0, 40) + "..."}
-                      </span>
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-blue-400 font-bold">
+                          점수: {item.score}점
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
               <div className="p-6 border-t border-[#2A2A30]">

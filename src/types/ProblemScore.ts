@@ -9,7 +9,7 @@ export type ProblemScore = {
   quantEvidence: number;
   date: Date;
   title?: string;
-
+  pid?: string;
   problem_id?: {
     _id?: string;
     title?: string;
