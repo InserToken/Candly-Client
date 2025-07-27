@@ -703,7 +703,7 @@ export default function InvestCandleChart({
           {dotPoints.length > 1 && (
             <polyline
               fill="none"
-              stroke="#F0F2F5"
+              stroke="#C9DF00"
               strokeWidth="2"
               points={dotPoints
                 .filter(
@@ -722,9 +722,9 @@ export default function InvestCandleChart({
               cx={p.x}
               cy={p.y}
               r={4}
-              fill="#F0F2F5"
-              stroke="#F0F2F5"
-              strokeWidth={2}
+              fill="#C9DF00"
+              // stroke="#C9DF00"
+              strokeWidth={1.5}
               style={{ pointerEvents: "none" }}
             />
           ))}
