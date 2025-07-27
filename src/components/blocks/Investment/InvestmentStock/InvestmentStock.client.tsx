@@ -7,6 +7,8 @@ import {
   dateToString,
   getNextDateString,
   isValidTradingDate,
+  isValidDateString,
+  isBeforeYearLimit,
 } from "@/utils/date";
 import { interpolateBetween } from "@/utils/interpolate";
 import useHolidayStore from "@/stores/useHolidayStore";
@@ -677,19 +679,16 @@ export default function InvestmentStockClient() {
                               className="bg-[#396FFB] hover:bg-blue-500 text-white px-4 py-1.5 rounded text-sm"
                               onClick={() => {
                                 if (!inputDate || !inputclose) return;
-
-                                const datePattern =
-                                  /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
-                                if (!datePattern.test(inputDate)) {
-                                  alert(
-                                    "날짜 형식이 잘못되었습니다. 예: 2025-01-08"
-                                  );
-                                  return;
-                                }
-
                                 const inputDateObj = parseDateString(inputDate);
                                 const today = new Date();
                                 const todayStr = dateToString(today);
+
+                                if (!isValidDateString(inputDate)) {
+                                  alert(
+                                    "날짜 형식이 잘못되었거나 존재하지 않는 날짜입니다."
+                                  );
+                                  return;
+                                }
 
                                 if (inputDate <= todayStr) {
                                   alert(
@@ -698,7 +697,7 @@ export default function InvestmentStockClient() {
                                   return;
                                 }
 
-                                if (inputDateObj.getFullYear() >= 2027) {
+                                if (!isBeforeYearLimit(inputDate, 2026)) {
                                   alert("2026년까지의 날짜만 예측 가능합니다.");
                                   return;
                                 }

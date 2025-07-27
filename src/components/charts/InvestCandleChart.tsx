@@ -186,15 +186,6 @@ export default function InvestCandleChart({
         })
       : [];
 
-  //차이표시여부
-  const tooltipDot = useMemo(() => {
-    if (!tooltip?.data || !dotData) return null;
-    const dot = dotData.find((d) =>
-      dayjs(d.date).isSame(tooltip.data!.date, "day")
-    );
-    return dot ?? null;
-  }, [tooltip?.data, dotData]);
-
   // 팬/줌 구간
   const slicedData = chartData.slice(startIndex, startIndex + visibleCandles);
   const ma5_visible = ma5_full.slice(startIndex, startIndex + visibleCandles);
@@ -206,6 +197,12 @@ export default function InvestCandleChart({
   );
   const bb_visible = bbands_full.slice(startIndex, startIndex + visibleCandles);
   const rsi_visible = rsi_full.slice(startIndex, startIndex + visibleCandles);
+  const tooltipIdx = tooltip?.idx;
+  const rsi =
+    typeof tooltipIdx === "number" &&
+    typeof rsi_visible[tooltipIdx] === "number"
+      ? rsi_visible[tooltipIdx]!.toFixed(2)
+      : "-";
 
   // 팬/줌 핸들러
   const handleWheelLikeReact = React.useCallback(
@@ -275,7 +272,9 @@ export default function InvestCandleChart({
       return;
     }
 
+    if (!candle) return;
     const dot = dotData?.find((d) => dayjs(d.date).isSame(candle.date, "day"));
+
     if (isDotOnly && !dot) {
       setTooltip(null);
       return;
@@ -478,8 +477,8 @@ export default function InvestCandleChart({
 
   // 볼린저 밴드 영역 채우기를 위한 path 데이터 생성
   const createBollingerBandPath = () => {
-    const upperPoints = [];
-    const lowerPoints = [];
+    const upperPoints: string[] = [];
+    const lowerPoints: string[] = [];
 
     bb_visible.forEach((bb, i) => {
       if (bb?.upper && bb?.lower) {
@@ -802,7 +801,7 @@ export default function InvestCandleChart({
             />
           )}
           {/* 볼륨 막대 */}
-          {slicedData.map((candle, i) => {
+          {slicedData.map((candle: Candle, i: number) => {
             if (candle.close === -1) return null;
             const x = i * candleSpacing;
             const vol = candle.volume ?? 0;
@@ -1004,7 +1003,7 @@ export default function InvestCandleChart({
             const isToday = dayjs(tooltip.data!.date).isSame(dayjs(), "day");
 
             // 오늘이고 todayPrice가 있을 때 (실시간)
-            if (isToday && todayPrice) {
+            if (isToday && todayPrice && dot && dot.close) {
               return (
                 <>
                   <div>
@@ -1043,17 +1042,20 @@ export default function InvestCandleChart({
                 <div>종: {tooltip.data.close.toLocaleString()}</div>
                 <div>거래량: {tooltip.data.volume.toLocaleString()}</div>
                 <div>
-                  RSI:{" "}
+                  {/* RSI:{" "}
                   {typeof rsi_visible[tooltip.idx] === "number"
                     ? rsi_visible[tooltip.idx].toFixed(2)
-                    : "-"}
+                    : "-"} */}
+                  RSI: {rsi}
                 </div>
                 {/* dot값이 겹치는 경우 오차 등도 표시 */}
-                {dot && dot.close !== undefined && (
+                {dot && (dot as any).close !== undefined && (
                   <div className="text-[#e75480] font-bold">
-                    오차: {(dot.close - tooltip.data.close).toFixed(2)} (
+                    오차: {((dot as any).close - tooltip.data.close).toFixed(2)}{" "}
+                    (
                     {(
-                      ((dot.close - tooltip.data.close) / tooltip.data.close) *
+                      (((dot as any).close - tooltip.data.close) /
+                        tooltip.data.close) *
                       100
                     ).toFixed(2)}
                     %)
