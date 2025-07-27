@@ -969,28 +969,6 @@ export default function InvestCandleChart({
         </svg>
       </div>
       {/* 툴팁 */}
-      {/* {tooltip?.show && tooltip.data && tooltip.idx !== undefined && (
-        <div
-          style={{
-            position: "absolute",
-            left: tooltip.x + 18,
-            top:
-              tooltip.section === "volume"
-                ? CHART_HEIGHT + VOLUME_HEIGHT / 2 - 60
-                : 40,
-            background: "#232323",
-            color: "#fff",
-            padding: "12px 16px",
-            borderRadius: 8,
-            pointerEvents: "none",
-            fontSize: 13,
-            boxShadow: "0 2px 10px #0003",
-            zIndex: 100,
-            width: 220,
-            //minWidth: 130,
-            whiteSpace: "normal",
-            border: "1px solid #396FFB88",
-          }} */}
       {tooltip?.show && tooltip?.data && tooltip?.idx !== undefined && (
         <div
           style={{
