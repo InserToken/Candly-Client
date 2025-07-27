@@ -903,6 +903,18 @@ export default function InvestCandleChart({
             strokeWidth="1"
             opacity={0.3}
           />
+          {tooltip?.show && tooltip.idx !== undefined && (
+            <line
+              x1={tooltip.idx * candleSpacing}
+              y1={0}
+              x2={tooltip.idx * candleSpacing}
+              y2={VOLUME_HEIGHT}
+              stroke="#53A6FA"
+              strokeWidth={1.5}
+              opacity={0.7}
+              pointerEvents="none"
+            />
+          )}
           {/* RSI 라인 */}
           <polyline
             fill="none"
@@ -1037,7 +1049,7 @@ export default function InvestCandleChart({
             if (dot) {
               return (
                 <div>
-                  <span style={{ color: "#10B981", fontWeight: 600 }}>
+                  <span style={{ color: "#396FFB", fontWeight: 600 }}>
                     예측값
                   </span>{" "}
                   : {dot.close.toLocaleString()}
@@ -1052,6 +1064,12 @@ export default function InvestCandleChart({
                 <div>저: {tooltip.data.low.toLocaleString()}</div>
                 <div>종: {tooltip.data.close.toLocaleString()}</div>
                 <div>거래량: {tooltip.data.volume.toLocaleString()}</div>
+                <div>
+                  RSI:{" "}
+                  {typeof rsi_visible[tooltip.idx] === "number"
+                    ? rsi_visible[tooltip.idx].toFixed(2)
+                    : "-"}
+                </div>
                 {/* dot값이 겹치는 경우 오차 등도 표시 */}
                 {dot && dot.close !== undefined && (
                   <div className="text-[#e75480] font-bold">

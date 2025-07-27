@@ -959,6 +959,12 @@ export default function CandleChart({
           <div>저: {tooltip.data.low.toLocaleString()}</div>
           <div>종: {tooltip.data.close.toLocaleString()}</div>
           <div>거래량: {tooltip.data.volume.toLocaleString()}</div>
+          <div>
+            RSI:{" "}
+            {typeof rsi_visible[tooltip.idx] === "number"
+              ? rsi_visible[tooltip.idx].toFixed(2)
+              : "-"}
+          </div>
           {/* ====== 뉴스 영역 추가!! ====== */}
           {tooltipNews.length > 0 && (
             <div style={{ marginTop: 8 }}>
