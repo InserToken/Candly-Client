@@ -312,6 +312,19 @@ export default function PracticeClient() {
                     >
                       {showIndicators ? "– 보조지표 접기" : "+ 보조지표 설정"}
                     </span>
+                    <span className="relative group cursor-pointer text-gray-400">
+                      ⓘ
+                      <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black  text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
+                        <b className="text-[#f4f4f4]">이동평균선: </b> 주가
+                        흐름의 평균 경로를 나타내는 선.
+                        <br />
+                        <b className="text-[#f4f4f4]">볼린저밴드: </b>주가의
+                        변동 범위(위험도)를 띠 형태로 보여주는 지표.
+                        <br />
+                        <b className="text-[#f4f4f4]">RSI: </b>예주가의
+                        과열(과매수)이나 침체(과매도) 상태를 알려주는 지표.
+                      </div>
+                    </span>
                   </div>
                 </div>
               )}
