@@ -112,7 +112,8 @@ export default function InvestmentStockClient() {
   }, [holidaySet]);
 
   // 수정 중인 인덱스 추적
-  const [editIndex, setEditIndex] = useState<number | null>(null);
+  // const [editDate, seteditDate] = useState<number | null>(null);
+  const [editDate, setEditDate] = useState<string | null>(null);
 
   // 실제 차트정보 가져오기
   type PriceItem = {
@@ -179,7 +180,9 @@ export default function InvestmentStockClient() {
   const lastClose =
     prediction.length > 0
       ? prediction[prediction.length - 1].close
-      : lastCandle?.close ?? 0;
+      : stockData?.length > 0
+      ? stockData[stockData.length - 1].close
+      : 0;
 
   const firstPrediction = prediction[0];
 
@@ -309,7 +312,7 @@ export default function InvestmentStockClient() {
         <section className="flex-1 max-w-[1100px] w-full lg:max-w-[calc(100%-420px)]">
           {/* 탭 */}
           <div className="text-sm text-gray-300 mb-4">
-            <div className="flex flex-wrap items-center gap-1 mb-5">
+            <div className="flex flex-wrap items-center gap-1 mb-3">
               <button
                 className={`px-3 py-1 rounded-full ${
                   tab === "chart"
@@ -411,7 +414,11 @@ export default function InvestmentStockClient() {
             </div>
             {tab === "chart" ? (
               <div
-                className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center w-full text-gray-400 pb-1 "
+                className={`w-full bg-[#1b1b1b] rounded-lg mb-6 flex overflow-auto ${
+                  tab === "chart"
+                    ? "h-[424px] items-center justify-center"
+                    : "h-[calc(100vh-300px)] flex-col"
+                }`}
                 ref={chartBoxRef}
               >
                 {Array.isArray(stockData) ? (
@@ -504,7 +511,7 @@ export default function InvestmentStockClient() {
                             <button
                               className="bg-[#396FFB] hover:bg-blue-500 text-white px-3 py-1 rounded text-sm"
                               onClick={() => {
-                                setEditIndex(idx);
+                                setEditDate(item.date);
                                 setInputDate(item.date);
                                 setInputclose(item.close);
                               }}
@@ -572,14 +579,22 @@ export default function InvestmentStockClient() {
 
                                 setPrediction(newList);
 
-                                if (editIndex === idx) {
-                                  setEditIndex(null);
+                                if (editDate === d.date) {
+                                  setEditDate(null);
+
                                   if (newList.length > 0) {
-                                    setInputDate(
-                                      getNextDateString(
-                                        newList[newList.length - 1].date
-                                      )
+                                    const sorted = [...newList].sort(
+                                      (a, b) =>
+                                        new Date(a.date).getTime() -
+                                        new Date(b.date).getTime()
                                     );
+
+                                    // 편집한 날짜가 가장 마지막 날짜라면 다음 날짜로 inputDate 설정
+                                    if (
+                                      d.date === sorted[sorted.length - 1].date
+                                    ) {
+                                      setInputDate(getNextDateString(d.date));
+                                    }
                                   }
                                 }
                               }}
@@ -605,9 +620,9 @@ export default function InvestmentStockClient() {
                           type="text"
                           value={inputDate}
                           onChange={(e) => setInputDate(e.target.value)}
-                          readOnly={editIndex !== null}
+                          readOnly={editDate !== null}
                           className={`bg-[#1b1b1b] border border-[#2a2a2a] rounded px-3 py-1 text-white w-full ${
-                            editIndex !== null ? "cursor-not-allowed" : ""
+                            editDate !== null ? "cursor-not-allowed" : ""
                           }`}
                         />
                       </td>
@@ -625,10 +640,18 @@ export default function InvestmentStockClient() {
                           </button>
                           <input
                             type="text"
-                            value={inputclose}
-                            onChange={(e) =>
-                              setInputclose(Number(e.target.value))
+                            value={
+                              typeof inputclose === "number" &&
+                              !isNaN(inputclose)
+                                ? inputclose
+                                : ""
                             }
+                            onChange={(e) => {
+                              const num = Number(e.target.value);
+                              if (!isNaN(num)) {
+                                setInputclose(num);
+                              }
+                            }}
                             className="bg-[#1b1b1b] border border-[#2a2a2a] rounded px-3 py-1 text-white w-[80px] text-center"
                           />
                           <button
@@ -646,7 +669,7 @@ export default function InvestmentStockClient() {
                       <td>
                         <div className="flex justify-center gap-2">
                           {/* 추가버튼 */}
-                          {editIndex === null ? (
+                          {editDate === null ? (
                             <button
                               className="bg-[#396FFB] hover:bg-blue-500 text-white px-4 py-1.5 rounded text-sm"
                               onClick={() => {
@@ -779,18 +802,22 @@ export default function InvestmentStockClient() {
                             <button
                               className="bg-[#396FFB] hover:bg-blue-500 text-white px-4 py-1.5 rounded text-sm "
                               onClick={() => {
-                                const newList = [...prediction];
-                                newList[editIndex] = {
-                                  ...newList[editIndex],
-                                  close: inputclose,
-                                };
-                                setPrediction(newList);
-                                setEditIndex(null);
-                                setInputDate(
-                                  getNextDateString(
-                                    newList[newList.length - 1].date
-                                  )
+                                if (!editDate) return;
+
+                                const newList = prediction.map((item) =>
+                                  item.date === editDate
+                                    ? { ...item, close: inputclose }
+                                    : item
                                 );
+
+                                setPrediction(newList);
+                                setEditDate(null);
+
+                                const lastDate =
+                                  newList.length > 0
+                                    ? newList[newList.length - 1].date
+                                    : todayStr;
+                                setInputDate(getNextDateString(lastDate));
                               }}
                             >
                               수정 저장
