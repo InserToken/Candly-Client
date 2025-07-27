@@ -5,7 +5,7 @@ import { Metadata } from "next";
 import AppInitializer from "@/components/Appinitializer";
 
 export const metadata: Metadata = {
-  title: "오르락내리락",
+  title: "Candly",
 };
 
 export default function RootLayout({
