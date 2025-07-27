@@ -12,7 +12,6 @@ import { interpolateBetween } from "@/utils/interpolate";
 import useHolidayStore from "@/stores/useHolidayStore";
 import { useAuthStore } from "@/stores/authStore";
 import { getStock, checkHasStock } from "@/services/userStock-service";
-import { Stocks } from "@/types/UserStock";
 import { useRouter } from "next/navigation";
 import FinanceTable from "@/components/charts/FinanceTable";
 import { fetchRealNews } from "@/services/fetchRealNews";
@@ -22,6 +21,7 @@ import { fetchRealChart } from "@/services/fetchRealChart";
 import InvestCandleChart from "@/components/charts/InvestCandleChart";
 import { ChartData } from "@/components/charts/Mixedchart";
 import { getCurrentPrice } from "@/services/getCurrentPrice";
+import { UserStock } from "@/types/UserStock";
 
 export default function InvestmentStockClient() {
   const router = useRouter();
@@ -189,7 +189,7 @@ export default function InvestmentStockClient() {
   const [inputclose, setInputclose] = useState<number>(lastClose);
 
   //보유주식 가져오기
-  const [stock, setStock] = useState<Stocks[]>([]);
+  const [stock, setStock] = useState<UserStock[]>([]);
   useEffect(() => {
     const fetchData = async () => {
       const token = sessionStorage.getItem("token");
@@ -579,7 +579,7 @@ export default function InvestmentStockClient() {
 
                                 setPrediction(newList);
 
-                                if (editDate === d.date) {
+                                if (editDate === removed.date) {
                                   setEditDate(null);
 
                                   if (newList.length > 0) {
@@ -591,9 +591,12 @@ export default function InvestmentStockClient() {
 
                                     // 편집한 날짜가 가장 마지막 날짜라면 다음 날짜로 inputDate 설정
                                     if (
-                                      d.date === sorted[sorted.length - 1].date
+                                      removed.date ===
+                                      sorted[sorted.length - 1].date
                                     ) {
-                                      setInputDate(getNextDateString(d.date));
+                                      setInputDate(
+                                        getNextDateString(removed.date)
+                                      );
                                     }
                                   }
                                 }
