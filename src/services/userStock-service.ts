@@ -77,3 +77,19 @@ export async function getRankReal() {
 
   return data;
 }
+
+export async function checkHasStock(token: string, stockCode: string) {
+  const res = await fetch(
+    ` ${process.env.NEXT_PUBLIC_API_URL}/api/userStock/stock/${stockCode}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error("보유하지 않은 종목");
+  }
+  return await res.json();
+}

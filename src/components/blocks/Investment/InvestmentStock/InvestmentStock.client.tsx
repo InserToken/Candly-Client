@@ -11,7 +11,7 @@ import {
 import { interpolateBetween } from "@/utils/interpolate";
 import useHolidayStore from "@/stores/useHolidayStore";
 import { useAuthStore } from "@/stores/authStore";
-import { getStock } from "@/services/userStock-service";
+import { getStock, checkHasStock } from "@/services/userStock-service";
 import { Stocks } from "@/types/UserStock";
 import { useRouter } from "next/navigation";
 import FinanceTable from "@/components/charts/FinanceTable";
@@ -22,6 +22,7 @@ import { fetchRealChart } from "@/services/fetchRealChart";
 import InvestCandleChart from "@/components/charts/InvestCandleChart";
 import { ChartData } from "@/components/charts/Mixedchart";
 import { getCurrentPrice } from "@/services/getCurrentPrice";
+
 export default function InvestmentStockClient() {
   const router = useRouter();
   const auth = useAuthStore((s) => s.auth);
@@ -31,7 +32,7 @@ export default function InvestmentStockClient() {
   const [tab, setTab] = useState<"chart" | "finance">("chart");
   // === 차트 부모 width 동적 측정 ===
   const chartBoxRef = useRef<HTMLDivElement>(null);
-  const [parentWidth, setParentWidth] = useState(780); // 초기값
+  const [parentWidth, setParentWidth] = useState(922); // 초기값
   const [showLine, setShowLine] = useState({
     ma5: true,
     ma20: true,
@@ -39,6 +40,31 @@ export default function InvestmentStockClient() {
     ma120: true,
     bb: true,
   });
+
+  const [allowed, setAllowed] = useState(false); // 데이터 요청 허용 여부
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    if (!auth || !auth.token) return;
+    setLoading(true);
+    checkHasStock(auth.token, params.stock_code)
+      .then(() => {
+        setAllowed(true); // 통과
+        setLoading(false);
+      })
+      .catch(() => {
+        console.log("catch");
+        setLoading(false);
+      });
+  }, [auth, params.stock_code, router]);
+
+  useEffect(() => {
+    if (!loading && allowed === false) {
+      const timeout = setTimeout(() => {
+        router.replace("/");
+      }, 1200);
+      return () => clearTimeout(timeout);
+    }
+  }, [allowed, loading, router]);
 
   useEffect(() => {
     function updateWidth() {
@@ -65,7 +91,7 @@ export default function InvestmentStockClient() {
   const [prediction, setPrediction] = useState<ChartData[]>([]);
 
   useEffect(() => {
-    if (!auth || !auth.token) {
+    if (!allowed || !auth || !auth.token) {
       return;
     }
     fetchRealInvest(params.stock_code, auth.token).then((data) => {
@@ -76,7 +102,7 @@ export default function InvestmentStockClient() {
       }));
       setPrediction(dotFormatted);
     });
-  }, []);
+  }, [allowed, auth, params.stock_code]);
   //공휴일 받아오기
   useEffect(() => {
     if (holidaySet) {
@@ -100,10 +126,11 @@ export default function InvestmentStockClient() {
   type StockData = { prices: PriceItem[] };
   const [stockData, setStockData] = useState<any>([]);
   useEffect(() => {
+    if (!allowed || !auth || !auth.token) return;
     fetchRealChart(params.stock_code).then((data) => {
       setStockData(data);
     });
-  }, []);
+  }, [allowed, auth, params.stock_code]);
   const dotData = [...prediction];
 
   const initialLatestDate =
@@ -157,12 +184,13 @@ export default function InvestmentStockClient() {
   const firstPrediction = prediction[0];
 
   const [inputclose, setInputclose] = useState<number>(lastClose);
+
   //보유주식 가져오기
   const [stock, setStock] = useState<Stocks[]>([]);
   useEffect(() => {
     const fetchData = async () => {
       const token = sessionStorage.getItem("token");
-      if (!token) return;
+      if (!allowed || !token) return;
 
       const result = await getStock(token);
       setStock(result.stocks);
@@ -171,7 +199,7 @@ export default function InvestmentStockClient() {
     };
 
     fetchData();
-  }, []);
+  }, [allowed, auth, params.stock_code]);
 
   // 보간
   let interpolatedBetween: ChartData[] = [];
@@ -236,15 +264,26 @@ export default function InvestmentStockClient() {
   };
   const [news, setNews] = useState<NewsItem[]>([]);
   useEffect(() => {
+    if (!allowed || !auth || !auth.token) return;
     fetchRealNews(params.stock_code).then((data) => {
       setNews(data);
     });
-  }, []);
+  }, [allowed, auth, params.stock_code]);
 
   // 오늘날짜 이후만 수정/삭제 가능
   const futurePredictions = prediction.filter((item) => item.date > todayStr);
   //보조지표 버튼
   const [showIndicators, setShowIndicators] = useState(false);
+
+  if (loading) return null;
+
+  if (!allowed) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-gray-400 text-xl">
+        <div>⛔️ 보유하지 않은 종목입니다. 홈으로 이동합니다.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen px-[80px] pt-1">
@@ -353,6 +392,19 @@ export default function InvestmentStockClient() {
                     >
                       {showIndicators ? "– 보조지표 접기" : "+ 보조지표 설정"}
                     </span>
+                    <span className="relative group cursor-pointer text-gray-400">
+                      ⓘ
+                      <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black  text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
+                        <b className="text-[#f4f4f4]">이동평균선: </b> 주가
+                        흐름의 평균 경로를 나타내는 선.
+                        <br />
+                        <b className="text-[#f4f4f4]">볼린저밴드: </b>주가의
+                        변동 범위(위험도)를 띠 형태로 보여주는 지표.
+                        <br />
+                        <b className="text-[#f4f4f4]">RSI: </b>예주가의
+                        과열(과매수)이나 침체(과매도) 상태를 알려주는 지표.
+                      </div>
+                    </span>
                   </div>
                 </div>
               )}
@@ -392,7 +444,7 @@ export default function InvestmentStockClient() {
               예측 입력
               <span className="relative group cursor-pointer text-gray-400">
                 ⓘ
-                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black  text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black  text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
                   <b className="text-[#f4f4f4]">추가: </b> 날짜와 종가를
                   입력하면 그래프에 예측값이 표시됩니다.
                   <br />
