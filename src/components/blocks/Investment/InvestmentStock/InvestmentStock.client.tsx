@@ -33,8 +33,9 @@ export default function InvestmentStockClient() {
   }>();
   const [tab, setTab] = useState<"chart" | "finance">("chart");
   // === 차트 부모 width 동적 측정 ===
+
   const chartBoxRef = useRef<HTMLDivElement>(null);
-  const [parentWidth, setParentWidth] = useState(922); // 초기값
+  const [parentWidth, setParentWidth] = useState(780); // 초기값
   const [showLine, setShowLine] = useState({
     ma5: true,
     ma20: true,
@@ -77,7 +78,7 @@ export default function InvestmentStockClient() {
     updateWidth();
     window.addEventListener("resize", updateWidth);
     return () => window.removeEventListener("resize", updateWidth);
-  }, []);
+  }, [allowed, loading]);
 
   const holidaySet = useHolidayStore((state) => state.holidaySet);
 

@@ -504,10 +504,9 @@ export default function InvestCandleChart({
   // --- 렌더 ---
   return (
     <div
-      className="flex flex-col "
+      className="flex flex-col w-full"
       style={{
         width: "100%",
-        maxWidth: w,
         position: "relative",
         overflow: "hidden",
         background: "inherit",
