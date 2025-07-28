@@ -10,7 +10,7 @@ import Image from "next/image";
 const menuItems = [
   { label: "홈", href: "/" },
   { label: "연습문제", href: "/practice" },
-  { label: "실전투자", href: "/investment", dynamic: true },
+  { label: "실전예측", href: "/investment", dynamic: true },
   { label: "랭킹", href: "/ranking" },
   { label: "마이페이지", href: "/mypage" },
 ];
@@ -52,7 +52,7 @@ export default function Navbar() {
         router.push("/investment");
       }
     } catch (err) {
-      console.error("실전투자 이동 중 오류:", err);
+      console.error("실전예측 이동 중 오류:", err);
       router.push("/investment");
     }
   };
