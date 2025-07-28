@@ -11,7 +11,7 @@ export default function MyPagePracticeClient() {
   const [today, setToday] = useState<Date | null>(null);
   const [pastDate, setPastDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [avgScore, setAvgScore] = useState(0);
   const [solvedProblem, setSolvedProblem] = useState(0);
   const [problemScoreAvg, setProblemScoreAvg] = useState<ProblemScore>();
   const [calendarData, setCalendarData] = useState<
@@ -33,7 +33,6 @@ export default function MyPagePracticeClient() {
     fetchMyPagePractice().then((res) => {
       const scoreList = res.data;
       setSolvedProblem(scoreList.length);
-
       const convertedScores: ProblemScore[] = scoreList.map(
         (item: ProblemScore) => ({
           answer: item.answer,
@@ -49,13 +48,17 @@ export default function MyPagePracticeClient() {
           pid: item.problem_id?._id,
         })
       );
-
+      const sum = convertedScores.reduce(
+        (acc, cur) => acc + (cur.score ?? 0),
+        0
+      );
+      setAvgScore(sum / scoreList.length);
       // 항목별 만점 기준
       const maxScores = {
-        logic: 25,
-        technical: 25,
-        macroEconomy: 15,
-        marketIssues: 20,
+        logic: 15,
+        technical: 50,
+        macroEconomy: 10,
+        marketIssues: 10,
         quantEvidence: 15,
       };
 
@@ -79,7 +82,7 @@ export default function MyPagePracticeClient() {
             average("technical") +
             average("macroEconomy") +
             average("marketIssues") +
-            average("quantEvidence"), // 총점수도 % 기준으로 변경 가능
+            average("quantEvidence"),
           logic: average("logic"),
           technical: average("technical"),
           macroEconomy: average("macroEconomy"),
@@ -127,7 +130,7 @@ export default function MyPagePracticeClient() {
           </div>
           <div className="bg-[#16161A] w-60 h-20 rounded-lg items-baseline flex text-center gap-1.5 pt-4 justify-center">
             <p className="text-xl font-semibold pr-1">평균 점수</p>
-            <p className="text-4xl font-bold">{problemScoreAvg?.score}</p>
+            <p className="text-4xl font-bold">{avgScore}</p>
             <p className="text-xl font-semibold">점</p>
           </div>
           <div className="bg-[#16161A] hover:bg-[#24242C] w-60 h-20 rounded-lg flex items-center justify-center">
