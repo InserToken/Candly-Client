@@ -136,7 +136,7 @@ export default function MyPagePracticeClient() {
           <div className="bg-[#16161A] hover:bg-[#24242C] w-60 h-20 rounded-lg flex items-center justify-center">
             <button
               onClick={openModal}
-              className="text-xl font-semibold text-white cursor-pointer"
+              className="w-full h-full flex items-center justify-center text-xl font-semibold text-white cursor-pointer"
             >
               최근 푼 문제 확인
             </button>
