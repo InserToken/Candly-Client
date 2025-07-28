@@ -995,15 +995,13 @@ export default function InvestCandleChart({
           </div>
           {/* 일반 candle 값 or dot 전용 candle 값 구분 */}
           {(() => {
-            // dotData도 있는 날짜면
             const dot = dotData?.find((d) =>
               dayjs(d.date).isSame(tooltip.data!.date, "day")
             );
-            // "오늘" 날짜인지 확인
             const isToday = dayjs(tooltip.data!.date).isSame(dayjs(), "day");
 
-            // 오늘이고 todayPrice가 있을 때 (실시간)
-            if (isToday && todayPrice && dot && dot.close) {
+            // 실시간 시세 + 예측값만 있는 경우 (오늘)
+            if (isToday && todayPrice && dot?.close) {
               return (
                 <>
                   <div>
@@ -1022,47 +1020,55 @@ export default function InvestCandleChart({
               );
             }
 
-            // dotData(예측값)가 있는 경우
-            if (dot) {
+            // 예측값만 있는 경우
+            if (
+              dot?.close &&
+              (!tooltip.data?.open || tooltip.data.volume === 0)
+            ) {
               return (
                 <div>
                   <span style={{ color: "#396FFB", fontWeight: 600 }}>
                     예측값
-                  </span>{" "}
+                  </span>
                   : {dot.close.toLocaleString()}
                 </div>
               );
             }
-            // 일반 candle 값 표기
-            return (
-              <>
-                <div>시: {tooltip.data.open.toLocaleString()}</div>
-                <div>고: {tooltip.data.high.toLocaleString()}</div>
-                <div>저: {tooltip.data.low.toLocaleString()}</div>
-                <div>종: {tooltip.data.close.toLocaleString()}</div>
-                <div>거래량: {tooltip.data.volume.toLocaleString()}</div>
-                <div>
-                  {/* RSI:{" "}
-                  {typeof rsi_visible[tooltip.idx] === "number"
-                    ? rsi_visible[tooltip.idx].toFixed(2)
-                    : "-"} */}
-                  RSI: {rsi}
-                </div>
-                {/* dot값이 겹치는 경우 오차 등도 표시 */}
-                {dot && (dot as any).close !== undefined && (
-                  <div className="text-[#e75480] font-bold">
-                    오차: {((dot as any).close - tooltip.data.close).toFixed(2)}{" "}
-                    (
-                    {(
-                      (((dot as any).close - tooltip.data.close) /
-                        tooltip.data.close) *
-                      100
-                    ).toFixed(2)}
-                    %)
-                  </div>
-                )}
-              </>
+
+            // 일반 캔들값 (or 예측값도 있는 경우 같이 표시)
+            const rows = [];
+
+            rows.push(
+              <div key="open">시: {tooltip.data.open.toLocaleString()}</div>,
+              <div key="high">고: {tooltip.data.high.toLocaleString()}</div>,
+              <div key="low">저: {tooltip.data.low.toLocaleString()}</div>,
+              <div key="close">종: {tooltip.data.close.toLocaleString()}</div>,
+              <div key="vol">
+                거래량: {tooltip.data.volume.toLocaleString()}
+              </div>,
+              <div key="rsi">RSI: {rsi}</div>
             );
+
+            if (dot?.close) {
+              rows.push(
+                <div key="pred" style={{ marginTop: 6 }}>
+                  <span style={{ color: "#396FFB", fontWeight: 600 }}>
+                    예측값
+                  </span>
+                  : {dot.close.toLocaleString()}
+                </div>,
+                <div key="diff" className="text-[#d23e3e] font-bold">
+                  오차: {(dot.close - tooltip.data.close).toFixed(2)} (
+                  {(
+                    ((dot.close - tooltip.data.close) / tooltip.data.close) *
+                    100
+                  ).toFixed(2)}
+                  %)
+                </div>
+              );
+            }
+
+            return rows;
           })()}
           {/* 뉴스 영역 그대로 */}
           {tooltipNews.length > 0 && (
