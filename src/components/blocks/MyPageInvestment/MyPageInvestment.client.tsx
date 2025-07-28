@@ -101,8 +101,20 @@ export default function MyPageInvestmentClient() {
         });
 
         const validScores = stockResult.stocks
-          .map((item: any) => item.cumulative_score)
-          .filter((score: any) => typeof score === "number");
+          .map((item: any) => {
+            const predictCount =
+              investResult.find(
+                (s: any) =>
+                  s.stock_code === item.stock_code?._id ||
+                  s.stock_id === item._id
+              )?.scores?.length ?? 0;
+
+            return predictCount > 0 && typeof item.cumulative_score === "number"
+              ? item.cumulative_score
+              : null;
+          })
+          .filter((score: any) => score !== null);
+
         const avg =
           validScores.length > 0
             ? Math.round(
