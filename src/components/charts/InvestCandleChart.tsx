@@ -1085,7 +1085,8 @@ export default function InvestCandleChart({
                     : {todayPrice.toLocaleString()}
                   </div>
                   <div style={{ marginTop: 4 }}>
-                    <span style={{ color: "#10B981", fontWeight: 600 }}>
+                    <span style={{ color: "#C9DF00", fontWeight: 600 }}>
+
                       예측값
                     </span>
                     : {dot.close.toLocaleString()}
@@ -1098,7 +1099,7 @@ export default function InvestCandleChart({
             if (dot) {
               return (
                 <div>
-                  <span style={{ color: "#396FFB", fontWeight: 600 }}>
+                  <span style={{ color: "#C9DF00", fontWeight: 600 }}>
                     예측값
                   </span>{" "}
                   : {dot.close.toLocaleString()}
