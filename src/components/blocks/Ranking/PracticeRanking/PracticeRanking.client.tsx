@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   getRankPracProblem,
   getRankPracScore,
 } from "@/services/ranking-service";
 import { GetPracticeScore, ProblemScore } from "@/types/ProblemScore";
 import { useAuthStore } from "@/stores/authStore";
+import Image from "next/image";
 
 export default function PracticeRankingClient() {
   const [problems, setProblem] = useState<ProblemScore[]>([]);
@@ -20,12 +21,12 @@ export default function PracticeRankingClient() {
     const fetchData = async () => {
       const result = await getRankPracProblem(auth.token);
       setProblem(result.data);
-      console.log("내가 푼 문제 조회:", result);
+      //console.log("내가 푼 문제 조회:", result);
     };
 
     const fetchRankingData = async () => {
       const result = await getRankPracScore();
-      console.log("랭킹 조회", result);
+      //console.log("랭킹 조회", result);
       const grouped: {
         [key: string]: {
           name: string;
@@ -46,13 +47,22 @@ export default function PracticeRankingClient() {
         grouped[problemId].push({ name, score, answer, feedback });
       });
 
-      console.log("grouped", grouped);
+      //console.log("grouped", grouped);
       setRankingData(grouped);
     };
 
     fetchData();
     fetchRankingData();
   }, []);
+
+  function getBadges(problemtype: number) {
+    if ([1, 2].includes(problemtype)) return ["SMA"];
+    if ([3, 4].includes(problemtype)) return ["RSI"];
+    if ([5, 6].includes(problemtype)) return ["거래량"];
+    if ([7, 8].includes(problemtype)) return ["볼린저 밴드"];
+    if ([9, 10].includes(problemtype)) return ["볼린저 밴드", "RSI"];
+    return ["기타"];
+  }
 
   const uniqueProblems = problems.filter((p, idx, arr) => {
     const id = p.problem_id?._id;
@@ -101,7 +111,7 @@ export default function PracticeRankingClient() {
 
         <div className="flex justify-center gap-4 flex-wrap h-[600px]">
           {/* 내가 푼 문제들 */}
-          <div className="bg-[#16161A] rounded-2xl p-6 w-full h-[600px] max-w-md overflow-y-auto">
+          <div className="bg-[#16161A] rounded-2xl p-6 w-full h-[600px] max-w-[530px] overflow-y-auto">
             <div className="space-y-2">
               {uniqueProblems.map((q, idx) => (
                 <div
@@ -109,21 +119,48 @@ export default function PracticeRankingClient() {
                   onClick={() => setSelectedProblem(q.problem_id?._id ?? "")}
                   className={`flex items-center justify-between px-5 py-4 rounded-lg cursor-pointer ${
                     selectedProblem === q.problem_id?._id
-                      ? "bg-[#396FFB]"
-                      : "bg-[#313136]"
+                      ? "bg-[#396FFB] hover:bg-blue-500"
+                      : "bg-[#313136] hover:bg-[#24242C]"
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <span>{q.problem_id?.title}</span>
+                    {q.problem_id?.stock_code?.logo && (
+                      <Image
+                        src={q.problem_id?.stock_code?.logo}
+                        alt={q.problem_id?.stock_code?.name}
+                        width={24}
+                        height={24}
+                        className="rounded-full"
+                      />
+                    )}
+                    <span>{q.problem_id?.title?.split("_")[0]}</span>
+                    {/* 문제타입 뱃지 */}
+                    {getBadges(Number(q.problem_id?.problemtype)).map(
+                      (badge) => (
+                        <span
+                          key={badge}
+                          className="px-2 py-0.5 rounded-full text-xs border border-[#fffff]"
+                        >
+                          {badge}
+                        </span>
+                      )
+                    )}
                   </div>
-                  {/* <span>{q.problem_id?.date}</span> */}
+                  {/* 날짜 뱃지 */}
+                  <span className="px-2 py-0.5 rounded text-sm">
+                    {new Date(q.problem_id?.date).toLocaleDateString("ko-KR", {
+                      year: "2-digit",
+                      month: "2-digit",
+                      day: "2-digit",
+                    })}
+                  </span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* 선택된 종목의 랭킹 */}
-          <div className="bg-[#16161A] rounded-2xl p-6 w-full h-[600px] max-w-xl overflow-y-auto">
+          <div className="bg-[#16161A] rounded-2xl p-6 w-full h-[600px] max-w-[550px] overflow-y-auto">
             <div className="w-full">
               <div className="grid grid-cols-4 text-left text-sm px-3 mb-2">
                 <div>순위</div>
@@ -154,17 +191,21 @@ export default function PracticeRankingClient() {
         </div>
       </div>
       {isModalOpen && selectedUser && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-[3px] z-50">
-          <div className="bg-[#16161A] rounded-xl p-6 w-150 h-100 shadow-lg">
-            <div className="h-75">
-              <h4 className="text-xl font-bold mb-4">답변</h4>
-              <div className="mb-28">{selectedAnswer}</div>
-              <h4 className="text-xl">피드백</h4>
-              <div>{selectedFeedback}</div>
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-[3px] z-50 ">
+          <div className="bg-[#16161A] rounded-xl p-8 w-180 h-170 shadow-lg">
+            <div className="h-70">
+              <h4 className="text-2xl font-bold mb-4 text-blue-500">답변</h4>
+              <div className="p-4 mb-8 border h-50 text-gray-400 tracking-wide leading-relaxed">
+                {selectedAnswer}
+              </div>
+              <h4 className="text-2xl mb-4 text-blue-500">피드백</h4>
+              <div className="p-4 border h-50 text-gray-400 tracking-wide leading-relaxed">
+                {selectedFeedback}
+              </div>
             </div>
             <button
               onClick={closeModal}
-              className="px-4 py-2 bg-[#396FFB] rounded hover:bg-blue-500 w-full"
+              className="px-4 py-2 mt-74 bg-[#396FFB] rounded hover:bg-blue-500 w-full"
             >
               닫기
             </button>

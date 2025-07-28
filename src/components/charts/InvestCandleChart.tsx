@@ -3,6 +3,14 @@ import React, { useRef, useState, useMemo, useEffect } from "react";
 import dayjs from "dayjs";
 import { getMovingAverage, getBollingerBands, getRSI } from "@/utils/indicator";
 
+interface ShowLine {
+  ma5: boolean;
+  ma20: boolean;
+  ma60: boolean;
+  ma120: boolean;
+  bb: boolean;
+}
+
 export type Candle = {
   date: string;
   open: number;
@@ -27,6 +35,8 @@ type CandleChartProps = {
   indi_data: Candle[];
   news: NewsItem[];
   dotData?: ChartData[];
+  todayPrice?: number | null;
+  showLine: ShowLine;
 };
 
 type CandleData = {
@@ -42,6 +52,7 @@ type DotData = {
   date: string;
   close: number;
   type: "dot";
+  source?: "realtime" | "prediction";
 };
 
 export type ChartData = CandleData | DotData;
@@ -52,13 +63,12 @@ const VOLUME_HEIGHT = 100;
 const RSI_HEIGHT = 80;
 const DATE_AXIS_HEIGHT = 24;
 
-const TOTAL_HEIGHT =
-  CHART_HEIGHT + VOLUME_HEIGHT + RSI_HEIGHT + DATE_AXIS_HEIGHT;
-
 const MIN_CANDLES = 10;
 const SHOW_LEN = 200;
-const SKIP_LAST = 20;
-const HIDE_COUNT = 21; // 마지막 21개 가림
+
+const CHART_PADDING_TOP = 10;
+const CHART_PADDING_BOTTOM = 10;
+const VOLUME_TOP_PADDING = 15;
 
 function getDateTickFormat(
   index: number,
@@ -86,27 +96,48 @@ export default function InvestCandleChart({
   indi_data,
   news,
   dotData,
+  todayPrice,
+  showLine,
 }: CandleChartProps) {
   // ==== 데이터 슬라이싱 ====
   const combinedChartData = useMemo(() => {
-    const dotCandles = (dotData ?? []).map((dot) => ({
-      ...dot,
-      open: dot.close,
-      high: dot.close,
-      low: dot.close,
-      volume: 0,
-    })) as Candle[];
+    const map = new Map<string, Candle>();
 
-    const merged = [...data, ...dotCandles];
+    // 1. 기존 candle data 먼저 삽입
+    for (const candle of data) {
+      map.set(candle.date, { ...candle });
+    }
 
-    const sorted = merged.sort((a, b) =>
-      dayjs(a.date).isAfter(dayjs(b.date)) ? 1 : -1
+    // 2. dotData도 같은 date에 병합
+    for (const dot of dotData ?? []) {
+      const existing = map.get(dot.date);
+      if (!existing) {
+        // dotData만 존재하는 날짜에만 새로운 Candle 추가
+        map.set(dot.date, {
+          date: dot.date,
+          open: dot.close,
+          high: dot.close,
+          low: dot.close,
+          close: dot.close,
+          volume: 0,
+        });
+      }
+      // 기존 Candle이 있는 날짜는 건드리지 않음
+    }
+
+    // 정렬된 배열로 변환
+    return Array.from(map.values()).sort(
+      (a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf()
     );
-
-    return sorted;
   }, [data, dotData]);
-  const startIdx = Math.max(0, combinedChartData.length - SHOW_LEN - SKIP_LAST);
-  const endIdx = combinedChartData.length;
+
+  const lastDate = dotData?.length ? dotData[dotData.length - 1].date : null;
+  const lastIndex = lastDate
+    ? combinedChartData.findIndex((d) => d.date === lastDate)
+    : combinedChartData.length - 1;
+
+  const endIdx = combinedChartData.length; // 항상 마지막까지 포함
+  const startIdx = Math.max(0, endIdx - SHOW_LEN);
   const chartData = combinedChartData.slice(startIdx, endIdx);
 
   const ma5_full = getMovingAverage(indi_data, 5).slice(startIdx, endIdx);
@@ -116,7 +147,8 @@ export default function InvestCandleChart({
   const bbands_full = getBollingerBands(data, 20, 2).slice(startIdx, endIdx);
   const rsi_full = getRSI(data, 20).slice(startIdx, endIdx);
 
-  const MAX_CANDLES = useMemo(() => chartData.length, [chartData]);
+  const MAX_CANDLES = chartData.length;
+
   const [visibleCandles, setVisibleCandles] = useState(40);
   const [startIndex, setStartIndex] = useState(0);
   useEffect(() => {
@@ -145,7 +177,12 @@ export default function InvestCandleChart({
       ? news.filter((item) => {
           const newsDate = dayjs(item.date);
           const candleDate = dayjs(tooltip.data!.date);
-          return newsDate.isSame(candleDate);
+          const today = dayjs().format("YYYY-MM-DD");
+          // 오늘 날짜 뉴스는 제외
+          return (
+            newsDate.isSame(candleDate) &&
+            newsDate.format("YYYY-MM-DD") !== today
+          );
         })
       : [];
 
@@ -160,6 +197,12 @@ export default function InvestCandleChart({
   );
   const bb_visible = bbands_full.slice(startIndex, startIndex + visibleCandles);
   const rsi_visible = rsi_full.slice(startIndex, startIndex + visibleCandles);
+  const tooltipIdx = tooltip?.idx;
+  const rsi =
+    typeof tooltipIdx === "number" &&
+    typeof rsi_visible[tooltipIdx] === "number"
+      ? rsi_visible[tooltipIdx]!.toFixed(2)
+      : "-";
 
   // 팬/줌 핸들러
   const handleWheelLikeReact = React.useCallback(
@@ -216,8 +259,23 @@ export default function InvestCandleChart({
     const idx = getNearestCandleIdx(offsetX);
     const candle = slicedData[idx];
 
-    // dotData이면 툴팁 안 뜨게 처리
-    if (!candle || (dotData && dotData.some((d) => d.date === candle.date))) {
+    // 없는 날짜거나 candle이 전부 동일하면 dot 전용이므로 툴팁 제거
+    const isDotOnly =
+      candle &&
+      candle.open === candle.close &&
+      candle.high === candle.close &&
+      candle.low === candle.close &&
+      candle.volume === 0;
+
+    if (!candle) {
+      setTooltip(null);
+      return;
+    }
+
+    if (!candle) return;
+    const dot = dotData?.find((d) => dayjs(d.date).isSame(candle.date, "day"));
+
+    if (isDotOnly && !dot) {
       setTooltip(null);
       return;
     }
@@ -245,13 +303,14 @@ export default function InvestCandleChart({
     const idx = getNearestCandleIdx(offsetX);
     const candle = slicedData[idx];
 
-    // dotData이면 툴팁 안 뜨게 처리
-    if (
-      idx < 0 ||
-      idx >= slicedData.length ||
-      isOverlayIdx(idx) ||
-      (dotData && dotData.some((d) => d.date === candle.date))
-    ) {
+    const isDotOnly =
+      candle &&
+      candle.open === candle.close &&
+      candle.high === candle.close &&
+      candle.low === candle.close &&
+      candle.volume === 0;
+
+    if (!candle || isDotOnly) {
       setTooltip(null);
       return;
     }
@@ -285,8 +344,17 @@ export default function InvestCandleChart({
     .map((d) => d.low)
     .filter((v) => typeof v === "number");
 
-  const maxPrice = highs.length ? Math.max(...highs) : 0;
-  const minPrice = lows.length ? Math.min(...lows) : 0;
+  const highCandidates = [...highs];
+  const lowCandidates = [...lows];
+
+  if (typeof todayPrice === "number" && !isNaN(todayPrice)) {
+    highCandidates.push(todayPrice);
+    lowCandidates.push(todayPrice);
+  }
+
+  const maxPrice = highCandidates.length ? Math.max(...highCandidates) : 0;
+  const minPrice = lowCandidates.length ? Math.min(...lowCandidates) : 0;
+
   const midPrice = Math.round((maxPrice + minPrice) / 2);
   const priceRange = maxPrice - minPrice;
   const padding = priceRange * 0.1;
@@ -352,35 +420,6 @@ export default function InvestCandleChart({
     getY
   );
 
-  // --- [QUIZ Overlay: 보이는 영역만큼만 가림] ---
-  const overlayStartGlobalIdx = startIdx + chartData.length - HIDE_COUNT;
-  const chartLastGlobalIdx = startIdx + chartData.length - 1;
-
-  const slicedStartGlobalIdx = startIdx + startIndex;
-  const slicedEndGlobalIdx = slicedStartGlobalIdx + slicedData.length - 1;
-
-  const visibleOverlayStart = Math.max(
-    overlayStartGlobalIdx,
-    slicedStartGlobalIdx
-  );
-  const visibleOverlayEnd = Math.min(slicedEndGlobalIdx, chartLastGlobalIdx);
-
-  const numVisibleOverlay = Math.max(
-    0,
-    visibleOverlayEnd - visibleOverlayStart + 1
-  );
-  const overlayLocalStart =
-    numVisibleOverlay > 0 ? visibleOverlayStart - slicedStartGlobalIdx : 0;
-  const overlayLeft = LEFT_AXIS_WIDTH + overlayLocalStart * candleSpacing;
-  const overlayWidth = numVisibleOverlay * candleSpacing;
-  const overlayLocalEnd = overlayLocalStart + numVisibleOverlay - 1;
-
-  function isOverlayIdx(idx: number) {
-    return (
-      numVisibleOverlay > 0 && idx > overlayLocalStart && idx <= overlayLocalEnd
-    );
-  }
-
   const chartRef = useRef<HTMLDivElement>(null);
 
   // addEventListener로 등록
@@ -398,24 +437,69 @@ export default function InvestCandleChart({
   }, [handleWheelLikeReact]);
 
   // 날짜를 기준으로 dotData를 필터링하여 렌더링 대상만 추출
+  const slicedDateMap = new Map(
+    slicedData.map((candle, index) => [
+      dayjs(candle.date).format("YYYY-MM-DD"),
+      index,
+    ])
+  );
+
   const dotPoints = (dotData ?? [])
     .filter((dot) => dot.close !== -1)
-    .filter((dot) =>
-      slicedData.some((candle) =>
-        dayjs(candle.date).isSame(dayjs(dot.date), "day")
-      )
-    )
     .map((dot) => {
-      const i = slicedData.findIndex((candle) =>
-        dayjs(candle.date).isSame(dayjs(dot.date), "day")
-      );
-      if (i === -1) return null;
+      const key = dayjs(dot.date).format("YYYY-MM-DD");
+      const i = slicedDateMap.get(key);
+      if (i === undefined) return null;
       const x = i * candleSpacing;
       const y = getY(dot.close);
       if (typeof y !== "number" || isNaN(y)) return null;
       return { x, y };
     })
     .filter(Boolean) as { x: number; y: number }[];
+
+  //오늘시세
+  const todayDot = useMemo(() => {
+    if (!todayPrice) return null;
+
+    const today = dayjs().format("YYYY-MM-DD");
+    const index = slicedData.findIndex((d) =>
+      dayjs(d.date).isSame(today, "day")
+    );
+    if (index === -1) return null;
+
+    const x = index * candleSpacing;
+    const y = getY(todayPrice);
+
+    return { x, y };
+  }, [todayPrice, slicedData, candleSpacing]);
+
+  const PADDING_RIGHT = 8;
+
+  // 볼린저 밴드 영역 채우기를 위한 path 데이터 생성
+  const createBollingerBandPath = () => {
+    const upperPoints: string[] = [];
+    const lowerPoints: string[] = [];
+
+    bb_visible.forEach((bb, i) => {
+      if (bb?.upper && bb?.lower) {
+        const x = i * candleSpacing;
+        upperPoints.push(`${x},${getY(bb.upper)}`);
+        lowerPoints.push(`${x},${getY(bb.lower)}`);
+      }
+    });
+
+    if (upperPoints.length === 0) return "";
+
+    // 상단선을 그리고, 하단선을 역순으로 연결해서 닫힌 영역 만들기
+    const pathData = [
+      `M ${upperPoints[0]}`, // 시작점으로 이동
+      `L ${upperPoints.slice(1).join(" L ")}`, // 상단선 그리기
+      `L ${lowerPoints.slice().reverse().join(" L ")}`, // 하단선을 역순으로 그리기
+      "Z", // path 닫기
+    ].join(" ");
+
+    return pathData;
+  };
 
   // --- 렌더 ---
   return (
@@ -447,9 +531,9 @@ export default function InvestCandleChart({
           ))}
         </svg>
         <svg
-          width={chartWidth}
+          width={chartWidth + PADDING_RIGHT}
           height={CHART_HEIGHT}
-          viewBox={`0 0 ${chartWidth} ${CHART_HEIGHT}`}
+          viewBox={`0 0 ${chartWidth + PADDING_RIGHT} ${CHART_HEIGHT}`}
           style={{
             width: "100%",
             background: "#1b1b1b",
@@ -478,56 +562,77 @@ export default function InvestCandleChart({
               opacity={0.7}
             />
           ))}
+          {/* 볼린저 밴드 영역 채우기 */}
+          {showLine?.bb && (
+            <path
+              d={createBollingerBandPath()}
+              fill="#EDCB37"
+              fillOpacity={0.1}
+              stroke="none"
+            />
+          )}
           {/* 이동평균선/BB */}
-          <polyline
-            fill="none"
-            stroke="#00D5C0"
-            strokeWidth="2"
-            points={ma5Points}
-            opacity={0.8}
-          />
-          <polyline
-            fill="none"
-            stroke="#E8395F"
-            strokeWidth="2"
-            points={ma20Points}
-            opacity={0.8}
-          />
-          <polyline
-            fill="none"
-            stroke="#F87800"
-            strokeWidth="2"
-            points={ma60Points}
-            opacity={0.85}
-          />
-          <polyline
-            fill="none"
-            stroke="#7339FB"
-            strokeWidth="2"
-            points={ma120Points}
-            opacity={0.7}
-          />
-          <polyline
+          {showLine?.ma5 && (
+            <polyline
+              fill="none"
+              stroke="#00D5C0"
+              strokeWidth="2"
+              points={ma5Points}
+              opacity={0.8}
+            />
+          )}
+          {showLine?.ma20 && (
+            <polyline
+              fill="none"
+              stroke="#E8395F"
+              strokeWidth="2"
+              points={ma20Points}
+              opacity={0.85}
+            />
+          )}
+          {showLine?.ma60 && (
+            <polyline
+              fill="none"
+              stroke="#F87800"
+              strokeWidth="2"
+              points={ma60Points}
+              opacity={0.85}
+            />
+          )}
+          {showLine?.ma120 && (
+            <polyline
+              fill="none"
+              stroke="#7339FB"
+              strokeWidth="2"
+              points={ma120Points}
+              opacity={0.7}
+            />
+          )}
+          {/* <polyline
             fill="none"
             stroke="#EDCB37"
             strokeWidth="2"
             points={bb_middle_points}
             opacity={0.8}
-          />
-          <polyline
-            fill="none"
-            stroke="#EDCB37"
-            strokeWidth="1.5"
-            points={bb_upper_points}
-            opacity={0.7}
-          />
-          <polyline
-            fill="none"
-            stroke="#EDCB37"
-            strokeWidth="1.5"
-            points={bb_lower_points}
-            opacity={0.7}
-          />
+          /> */}
+          {showLine?.bb && (
+            <polyline
+              fill="none"
+              stroke="#EDCB37"
+              strokeWidth="1.5"
+              points={bb_upper_points}
+              opacity={0.7}
+            />
+          )}
+          {showLine?.bb && (
+            <polyline
+              fill="none"
+              stroke="#EDCB37"
+              strokeWidth="1.5"
+              points={bb_lower_points}
+              opacity={0.7}
+            />
+          )}
           {tooltip?.show && tooltip.idx !== undefined && (
             <line
               x1={tooltip.idx * candleSpacing}
@@ -569,7 +674,7 @@ export default function InvestCandleChart({
                   y1={wickTop}
                   x2={x}
                   y2={wickBottom}
-                  stroke={isRising ? "#3B82F6" : "#EF4444"}
+                  stroke={isRising ? "#EF4444" : "#3B82F6"}
                   strokeWidth="2"
                 />
                 <rect
@@ -577,7 +682,7 @@ export default function InvestCandleChart({
                   y={bodyTop}
                   width={candleWidth}
                   height={bodyHeight}
-                  fill={isRising ? "#3B82F6" : "#EF4444"}
+                  fill={isRising ? "#EF4444" : "#3B82F6"}
                   rx={4}
                   style={
                     highlight
@@ -593,13 +698,18 @@ export default function InvestCandleChart({
             );
           })}
 
-          {/* dot 포인트 연결선 */}
+          {/* dot 포인트 연결선 (todayDot 제외) */}
           {dotPoints.length > 1 && (
             <polyline
               fill="none"
-              stroke="#10B981"
+              stroke="#C9DF00"
               strokeWidth="2"
-              points={dotPoints.map((p) => `${p.x},${p.y}`).join(" ")}
+              points={dotPoints
+                .filter(
+                  (p) => !todayDot || p.x !== todayDot.x || p.y !== todayDot.y // todayDot과 좌표 일치하면 제외
+                )
+                .map((p) => `${p.x},${p.y}`)
+                .join(" ")}
               opacity={0.9}
             />
           )}
@@ -610,16 +720,36 @@ export default function InvestCandleChart({
               key={`dot-${i}`}
               cx={p.x}
               cy={p.y}
-              r={5}
-              fill="#10B981"
-              stroke="#10B981"
-              strokeWidth={2}
-              style={{ pointerEvents: "auto" }}
+              r={4}
+              fill="#C9DF00"
+              // stroke="#C9DF00"
+              strokeWidth={1.5}
+              style={{ pointerEvents: "none" }}
             />
           ))}
+          {todayDot && (
+            <circle
+              cx={todayDot.x}
+              cy={todayDot.y}
+              r={5}
+              fill="#e75480"
+              stroke="#f4f4f4"
+              strokeWidth={2}
+              opacity={0.9}
+              style={{ pointerEvents: "none" }}
+            />
+          )}
         </svg>
       </div>
-
+      <div
+        style={{
+          width: "100%",
+          height: "1px",
+          backgroundColor: "#fff",
+          opacity: 0.7,
+          marginLeft: LEFT_AXIS_WIDTH,
+        }}
+      />
       {/* 2. 거래량(볼륨) 차트 (중간) */}
       <div className="flex" style={{ position: "relative", width: "100%" }}>
         <svg width={LEFT_AXIS_WIDTH} height={VOLUME_HEIGHT}>
@@ -630,13 +760,13 @@ export default function InvestCandleChart({
             fontSize="11"
             textAnchor="end"
           >
-            {maxVolume.toLocaleString()}
+            거래량
           </text>
         </svg>
         <svg
-          width={chartWidth}
+          width={chartWidth + PADDING_RIGHT}
           height={VOLUME_HEIGHT}
-          viewBox={`0 0 ${chartWidth} ${VOLUME_HEIGHT}`}
+          viewBox={`0 0 ${chartWidth + PADDING_RIGHT} ${VOLUME_HEIGHT}`}
           style={{
             width: "100%",
             background: "#1b1b1b",
@@ -671,39 +801,49 @@ export default function InvestCandleChart({
             />
           )}
           {/* 볼륨 막대 */}
-          {slicedData.map((candle, i) => {
+          {slicedData.map((candle: Candle, i: number) => {
             if (candle.close === -1) return null;
             const x = i * candleSpacing;
             const vol = candle.volume ?? 0;
             const isRising = candle.close > candle.open;
-            const barY = getVolumeY(vol);
-            const barHeight = VOLUME_HEIGHT - barY;
+            const barY = getVolumeY(vol) + VOLUME_TOP_PADDING;
+            const barHeight = Math.max(0, VOLUME_HEIGHT - barY);
             const highlight = tooltip?.show && tooltip.idx === i;
             return (
-              <rect
-                key={i}
-                x={x - candleWidth / 2}
-                y={barY}
-                width={candleWidth}
-                height={barHeight}
-                fill={isRising ? "#3B82F6" : "#EF4444"}
-                opacity="0.6"
-                rx={2}
-                style={
-                  highlight
-                    ? {
-                        filter: "drop-shadow(0 0 7px #53A6FA88)",
-                        stroke: "#53A6FA",
-                        strokeWidth: 2,
-                      }
-                    : {}
-                }
-              />
+              barHeight > 0 && (
+                <rect
+                  key={i}
+                  x={x - candleWidth / 2}
+                  y={barY}
+                  width={candleWidth}
+                  height={barHeight}
+                  fill={isRising ? "#EF4444" : "#3B82F6"}
+                  opacity="0.6"
+                  rx={2}
+                  style={
+                    highlight
+                      ? {
+                          filter: "drop-shadow(0 0 7px #53A6FA88)",
+                          stroke: "#53A6FA",
+                          strokeWidth: 2,
+                        }
+                      : {}
+                  }
+                />
+              )
             );
           })}
         </svg>
       </div>
-
+      <div
+        style={{
+          width: "100%",
+          height: "1px",
+          backgroundColor: "#fff",
+          opacity: 0.7,
+          marginLeft: LEFT_AXIS_WIDTH,
+        }}
+      />
       {/* 3. RSI 차트 (중간) */}
       <div className="flex" style={{ position: "relative", width: "100%" }}>
         <svg width={LEFT_AXIS_WIDTH} height={RSI_HEIGHT}>
@@ -718,9 +858,9 @@ export default function InvestCandleChart({
           </text>
         </svg>
         <svg
-          width={chartWidth}
+          width={chartWidth + PADDING_RIGHT}
           height={RSI_HEIGHT}
-          viewBox={`0 0 ${chartWidth} ${RSI_HEIGHT}`}
+          viewBox={`0 0 ${chartWidth + PADDING_RIGHT} ${RSI_HEIGHT}`}
           style={{
             width: "100%",
             background: "#181818",
@@ -762,10 +902,22 @@ export default function InvestCandleChart({
             strokeWidth="1"
             opacity={0.3}
           />
+          {tooltip?.show && tooltip.idx !== undefined && (
+            <line
+              x1={tooltip.idx * candleSpacing}
+              y1={0}
+              x2={tooltip.idx * candleSpacing}
+              y2={VOLUME_HEIGHT}
+              stroke="#53A6FA"
+              strokeWidth={1.5}
+              opacity={0.7}
+              pointerEvents="none"
+            />
+          )}
           {/* RSI 라인 */}
           <polyline
             fill="none"
-            stroke="#FFD600"
+            stroke="#e75480"
             strokeWidth="2"
             points={rsi_visible
               .map((val, i) =>
@@ -785,9 +937,9 @@ export default function InvestCandleChart({
       <div className="flex" style={{ position: "relative", width: "100%" }}>
         <svg width={LEFT_AXIS_WIDTH} height={DATE_AXIS_HEIGHT} />
         <svg
-          width={chartWidth}
+          width={chartWidth + PADDING_RIGHT}
           height={DATE_AXIS_HEIGHT}
-          viewBox={`0 0 ${chartWidth} ${DATE_AXIS_HEIGHT}`}
+          viewBox={`0 0 ${chartWidth + PADDING_RIGHT} ${DATE_AXIS_HEIGHT}`}
           style={{
             width: "100%",
             background: "#1b1b1b",
@@ -816,15 +968,15 @@ export default function InvestCandleChart({
         </svg>
       </div>
       {/* 툴팁 */}
-      {tooltip?.show && tooltip.data && tooltip.idx !== undefined && (
+      {tooltip?.show && tooltip?.data && tooltip?.idx !== undefined && (
         <div
           style={{
-            position: "absolute",
-            left: tooltip.x + 18,
+            position: "fixed",
+            left: tooltip.x + 88,
             top:
               tooltip.section === "volume"
                 ? CHART_HEIGHT + VOLUME_HEIGHT / 2 - 60
-                : 40,
+                : 120,
             background: "#232323",
             color: "#fff",
             padding: "12px 16px",
@@ -833,38 +985,100 @@ export default function InvestCandleChart({
             fontSize: 13,
             boxShadow: "0 2px 10px #0003",
             zIndex: 100,
-            width: 220, // <<--- 추가!
-            //minWidth: 130,     // 필요에 따라 minWidth는 지워도 됨
+            width: 220,
             whiteSpace: "normal",
             border: "1px solid #396FFB88",
           }}
         >
           <div>
-            <b>{tooltip.data.date}</b>
+            <b style={{ fontSize: 15 }}>{tooltip.data.date}</b>
           </div>
-          <div>시: {tooltip.data.open.toLocaleString()}</div>
-          <div>고: {tooltip.data.high.toLocaleString()}</div>
-          <div>저: {tooltip.data.low.toLocaleString()}</div>
-          <div>종: {tooltip.data.close.toLocaleString()}</div>
-          <div>거래량: {tooltip.data.volume.toLocaleString()}</div>
-          {/* ====== 뉴스 영역 추가!! ====== */}
+          {/* 일반 candle 값 or dot 전용 candle 값 구분 */}
+          {(() => {
+            const dot = dotData?.find((d) =>
+              dayjs(d.date).isSame(tooltip.data!.date, "day")
+            );
+            const isToday = dayjs(tooltip.data!.date).isSame(dayjs(), "day");
+
+            // 실시간 시세 + 예측값만 있는 경우 (오늘)
+            if (isToday && todayPrice && dot?.close) {
+              return (
+                <>
+                  <div>
+                    <span style={{ color: "#e75480", fontWeight: 600 }}>
+                      실시간 시세
+                    </span>
+                    : {todayPrice.toLocaleString()}
+                  </div>
+                  <div style={{ marginTop: 4 }}>
+                    <span style={{ color: "#396FFB", fontWeight: 600 }}>
+                      예측값
+                    </span>
+                    : {dot.close.toLocaleString()}
+                  </div>
+                </>
+              );
+            }
+
+            // 예측값만 있는 경우
+            if (
+              dot?.close &&
+              (!tooltip.data?.open || tooltip.data.volume === 0)
+            ) {
+              return (
+                <div>
+                  <span style={{ color: "#396FFB", fontWeight: 600 }}>
+                    예측값
+                  </span>
+                  : {dot.close.toLocaleString()}
+                </div>
+              );
+            }
+
+            // 일반 캔들값 (or 예측값도 있는 경우 같이 표시)
+            const rows = [];
+
+            rows.push(
+              <div key="open">시: {tooltip.data.open.toLocaleString()}</div>,
+              <div key="high">고: {tooltip.data.high.toLocaleString()}</div>,
+              <div key="low">저: {tooltip.data.low.toLocaleString()}</div>,
+              <div key="close">종: {tooltip.data.close.toLocaleString()}</div>,
+              <div key="vol">
+                거래량: {tooltip.data.volume.toLocaleString()}
+              </div>,
+              <div key="rsi">RSI: {rsi}</div>
+            );
+
+            if (dot?.close) {
+              rows.push(
+                <div key="pred" style={{ marginTop: 6 }}>
+                  <span style={{ color: "#396FFB", fontWeight: 600 }}>
+                    예측값
+                  </span>
+                  : {dot.close.toLocaleString()}
+                </div>,
+                <div key="diff" className="text-[#d23e3e] font-bold">
+                  오차: {(dot.close - tooltip.data.close).toFixed(2)} (
+                  {(
+                    ((dot.close - tooltip.data.close) / tooltip.data.close) *
+                    100
+                  ).toFixed(2)}
+                  %)
+                </div>
+              );
+            }
+
+            return rows;
+          })()}
+          {/* 뉴스 영역 그대로 */}
           {tooltipNews.length > 0 && (
             <div style={{ marginTop: 8 }}>
-              <div style={{ fontWeight: 600, marginBottom: 2 }}>📰 뉴스</div>
+              <div style={{ fontWeight: 600, marginBottom: 2, fontSize: 15 }}>
+                뉴스
+              </div>
               {tooltipNews.map((item, i) => (
                 <div key={i} style={{ marginBottom: 7 }}>
-                  <a
-                    href={item.news_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: "#5dbbff",
-                      textDecoration: "underline",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {item.title}
-                  </a>
+                  • {item.title}
                 </div>
               ))}
             </div>

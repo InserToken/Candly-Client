@@ -28,7 +28,7 @@ export default function LoadingPage() {
       const wait = elapsed < minDelay ? minDelay - elapsed : 0;
 
       setTimeout(() => {
-        console.log("✅ getStock result:", result);
+        //("✅ getStock result:", result);
 
         if ("message" in result) {
           setStatus("error");

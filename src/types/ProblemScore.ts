@@ -3,18 +3,19 @@ export type ProblemScore = {
   feedback?: string;
   score: number;
   logic: number;
-  momentum: number;
+  technical: number;
   macroEconomy: number;
   marketIssues: number;
   quantEvidence: number;
   date: Date;
   title?: string;
-
+  pid?: string;
   problem_id?: {
     _id?: string;
     title?: string;
     stock_code?: string;
     date?: string;
+    problemtype: number;
   };
 };
 
@@ -26,7 +27,7 @@ export type GetPracticeScore = {
   feedback?: string;
   score: number;
   logic: number;
-  momentum: number;
+  technical: number;
   macroEconomy: number;
   marketIssues: number;
   quantEvidence: number;

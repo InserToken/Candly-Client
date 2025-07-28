@@ -12,6 +12,6 @@ export async function getPracticeList(
   if (!res.ok) {
     throw new Error(data.message || "연습 문제 전체 조회 실패");
   }
-  console.log("연습문제 전체 조회", data);
+  //console.log("연습문제 전체 조회", data);
   return data;
 }

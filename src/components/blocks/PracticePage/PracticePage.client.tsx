@@ -1,16 +1,18 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import ClickCard from "@/components/buttons/ClickCard";
 import CandleChart from "@/components/charts/Candlechart";
 import { fetchPracticeProblem } from "@/services/fetchPracticeProblem";
 import { fetchProblemTypeMeta } from "@/services/fetchProblemTypeMeta";
 import { fetchPracticeNews } from "@/services/fetchPracticeNews";
-import { fetchFinancial } from "@/services/fetchFinancial";
-import { useRouter } from "next/navigation";
 import { gradeWithGemini } from "@/services/gradeWithGemini";
-import FinancialComboChart from "@/components/charts/FinancialComboChart";
+import { postPracticeScore } from "@/services/practiceScoreService";
+import FinanceTable from "@/components/charts/FinanceTable";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { fetchMyPracticeAnswer } from "@/services/fetchMyPracticeAnswer";
 
 type PriceItem = {
   date: string;
@@ -40,78 +42,115 @@ type NewsItem = {
 
 export default function PracticeClient() {
   const router = useRouter();
+  const params = useParams<{ problemId: string }>();
+  const [myAnswer, setMyAnswer] = useState<any>(null);
+  useEffect(() => {
+    if (!params.problemId) return;
+    fetchMyPracticeAnswer(params.problemId).then((result) => {
+      setMyAnswer(result); // 이미 푼 경우 state에 저장!
+      setIsAnswered(!!result);
+    });
+  }, [params.problemId]);
+
+  // useEffect(() => {
+  //   if (!params.problemId) return;
+  //   fetchMyPracticeAnswer(params.problemId).then((result) => {
+  //     if (result) {
+  //       console.log("이미 푼 문제!", result); // 🔥 여기에 찍힘!
+  //     } else {
+  //       console.log("아직 푼 적 없는 문제입니다.");
+  //     }
+  //   });
+  // }, [params.problemId]);
   const [input, setInput] = useState("");
   const [tab, setTab] = useState<"chart" | "finance">("chart");
-  const params = useParams<{ problemId: string }>();
   const [problemData, setProblemData] = useState<PracticeProblemData | null>(
     null
   );
   const [news, setNews] = useState<NewsItem[]>([]);
-  const stockData = problemData?.prices;
   const [problemType, setProblemType] = useState<number | null>(null);
   const [typeMeta, setTypeMeta] = useState<any>(null);
   const chartBoxRef = useRef<HTMLDivElement>(null);
-  const [parentWidth, setParentWidth] = useState(780); // 초기값
+  const [parentWidth, setParentWidth] = useState(780);
   const [showHint, setShowHint] = useState(false);
   const [prompt, setPrompt] = useState<string>("");
+  const [hintRef, setHintRef] = useState<string>("");
   const [gradeResult, setGradeResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [financialData, setFinancialData] = useState<any>(null);
 
+  const [showLine, setShowLine] = useState({
+    ma5: true,
+    ma20: true,
+    ma60: true,
+    ma120: true,
+    bb: true,
+  });
+
+  // === 피드백 상태 ===
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedback, setFeedback] = useState<string>("");
+  // === 차트 오버레이 상태 ===
+  const [isAnswered, setIsAnswered] = useState(false);
+
+  // 채점 및 저장
   const handleGrade = async () => {
     setLoading(true);
     setGradeResult(null);
     try {
-      console.log("요청 프롬프트:", prompt); // 프롬프트 먼저 찍기
-      console.log("유저 답변:", input); // 유저 답변도 같이 찍기
-
       const result = await gradeWithGemini(prompt, input);
+      let dataStr = result.result;
+      dataStr = dataStr.replace(/```json|```/gi, "");
+      dataStr = dataStr.replace(/'''json|'''/gi, "");
+      dataStr = dataStr.trim();
 
-      console.log("채점 API 결과:", result); // 전체 응답
-      console.log("LLM 응답 데이터(result.result):", result.result); // LLM 텍스트/JSON
-      console.log("프롬프트 확인", prompt);
-      setGradeResult(result.result);
+      let data;
+      try {
+        data = typeof dataStr === "string" ? JSON.parse(dataStr) : dataStr;
+      } catch (err) {
+        toast.error("AI 응답을 JSON으로 변환할 수 없습니다.");
+        setLoading(false);
+        return;
+      }
+      setGradeResult(data);
+
+      try {
+        const token =
+          sessionStorage.getItem("token") ||
+          localStorage.getItem("accessToken");
+        const practiceScoreData = {
+          problem_id: params.problemId,
+          answer: input,
+          score: data.score,
+          feedback: data.feedback,
+          logic: data.breakdown?.logic,
+          technical: data.breakdown?.technical,
+          macroEconomy: data.breakdown?.macroEconomy,
+          marketIssues: data.breakdown?.marketIssues,
+          quantEvidence: data.breakdown?.quantEvidence,
+          date: new Date().toISOString(),
+        };
+        //console.log("채점 결과", data);
+        await postPracticeScore(token, practiceScoreData);
+        toast.success("채점 및 저장 완료!");
+        setFeedback(data.feedback || "피드백 없음.");
+        setShowFeedback(true);
+        setIsAnswered(true); // <- 차트 오버레이 해제
+      } catch {
+        toast.error("채점은 완료되었으나 저장에 실패했습니다.");
+      }
     } catch (e: any) {
-      alert(e.message || "채점 실패");
+      toast.error(e.message || "채점 실패");
     } finally {
       setLoading(false);
     }
   };
 
-  const formatNumber = (num: number | null, unit = "") =>
-    typeof num === "number"
-      ? num.toLocaleString(undefined, { maximumFractionDigits: 2 }) + unit
-      : "-";
-
-  function formatLargeNumber(value: number | null | undefined): string {
-    if (value == null || isNaN(value)) return "-";
-
-    const abs = Math.abs(value);
-
-    if (abs >= 1e12) {
-      return (value / 1e12).toFixed(1) + "조원"; // 1조 = 1e12
-    } else if (abs >= 1e8) {
-      return (value / 1e8).toFixed(1) + "억원"; // 1억 = 1e8
-    } else if (abs >= 1e4) {
-      return (value / 1e4).toFixed(1) + "만원";
-    } else {
-      return value.toLocaleString("ko-KR") + "원";
-    }
-  }
-
-  const reprtMap: { [key: string]: string } = {
-    "11013": "3월",
-    "11012": "6월",
-    "11014": "9월",
-    "4Q": "12월 ",
+  const toggleLine = (key: keyof typeof showLine) => {
+    setShowLine((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
   };
-
-  const periodLabels = financialData?.series?.period.map((raw: string) => {
-    const [year, code] = raw.split(".");
-    const reprt_code = code === "4Q" ? "4Q" : code;
-    const label = reprtMap[reprt_code] || reprt_code;
-    return `${year} ${label}`;
-  });
 
   useEffect(() => {
     function updateWidth() {
@@ -124,7 +163,6 @@ export default function PracticeClient() {
     return () => window.removeEventListener("resize", updateWidth);
   }, []);
 
-  // 데이터 패칭
   useEffect(() => {
     fetchPracticeProblem(params.problemId).then((data) => {
       setProblemData(data);
@@ -144,59 +182,55 @@ export default function PracticeClient() {
         .then((data) => {
           setTypeMeta(data);
           setPrompt(data.typeData?.[0]?.Prompting || "");
+          setHintRef(data.typeData?.[0]?.reference || "");
         })
-        .catch((err) => {
-          console.error("fetchProblemTypeMeta error:", err);
-        });
+        .catch((err) => console.error("fetchProblemTypeMeta error:", err));
     }
   }, [problemType]);
 
-  // 찍어보기
-  useEffect(() => {
-    fetchPracticeProblem(params.problemId).then((data) => {
-      setProblemData(data);
-      console.log("🔥 fetchPracticeProblem 결과:", data);
+  function getBadges(problemtype: number) {
+    if ([1, 2].includes(problemtype)) return ["이동평균선"];
+    if ([3, 4].includes(problemtype)) return ["RSI"];
+    if ([5, 6].includes(problemtype)) return ["거래량"];
+    if ([7, 8].includes(problemtype)) return ["볼린저 밴드"];
+    if ([9, 10].includes(problemtype)) return ["볼린저 밴드", "RSI"];
+    return ["기타"];
+  }
 
-      // === 볼린저밴드 계산용 윈도우 확인 ===
-      const bbData = data.prices; // 또는 원하는 배열명 사용
-      const targetDate = "2019-08-02";
-      const windowSize = 20;
-      const idx = bbData.findIndex((d) => d.date === targetDate);
-      if (idx >= windowSize - 1) {
-        const window = bbData
-          .slice(idx - windowSize + 1, idx + 1)
-          .map((d) => d.close);
-        console.log("🔥 JS 2019-08-02 윈도우(20개)", window);
+  const stockData = problemData?.prices;
 
-        // JS에서 볼린저밴드 직접 계산해보기 (함수 예시)
-        const mean = window.reduce((a, b) => a + b, 0) / windowSize;
-        const std = Math.sqrt(
-          window.reduce((a, v) => a + (v - mean) ** 2, 0) / windowSize
-        );
-        const upper = mean + 2 * std;
-        const lower = mean - 2 * std;
-        console.log("🔥 JS BB 값:", { upper, mean, lower });
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!problemData?.stock_code || !problemData?.date) return;
-
-    fetchFinancial(problemData.stock_code, problemData.date).then((data) => {
-      setFinancialData(data);
-    });
-  }, [problemData]);
+  //보조지표 버튼
+  const [showIndicators, setShowIndicators] = useState(false);
 
   return (
-    <div className="min-h-screen px-[80px] pt-1">
-      <h2 className="mb-3 text-2xl">{problemData?.title}</h2>
+    <div className="min-h-screen px-[80px] pt-1 relative">
+      {loading && (
+        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center">
+          <span className="text-white text-xl">채점 중...</span>
+        </div>
+      )}
+
+      <div className="mb-1">
+        {getBadges(Number(problemData?.problemtype)).map((badge) => (
+          <span
+            key={badge}
+            className="px-2 py-0.5 mr-2 rounded-full text-xs border border-white"
+          >
+            {badge}
+          </span>
+        ))}
+      </div>
+      <div className="flex">
+        <h2 className="mb-3 text-2xl">{problemData?.title?.split("_")[0]}</h2>
+        <span className="ml-2 px-2 py-0.5 rounded text-sm mt-auto mb-4">
+          {problemData?.date}
+        </span>
+      </div>
+
       <main className="flex flex-col lg:flex-row gap-6">
-        {/* 왼쪽 영역 */}
-        <section className="flex-1 max-w-[894px]">
+        <section className="flex-1 max-w-[1100px] w-full lg:max-w-[calc(100%-420px)]">
           <div className="text-sm text-gray-300 mb-4">
-            {/* 탭 버튼 */}
-            <div className="flex flex-wrap items-center gap-1 mb-4">
+            <div className="flex flex-wrap items-center gap-1 mb-3">
               <button
                 className={`px-3 py-1 rounded-full ${
                   tab === "chart" ? "bg-[#2a2a2a] text-white" : "text-gray-400"
@@ -217,291 +251,192 @@ export default function PracticeClient() {
               </button>
               {tab === "chart" && (
                 <div className="flex flex-wrap gap-4 items-center justify-end text-sm text-gray-300 ml-auto pr-3">
-                  <span className="flex items-center gap-1">
-                    <span className="text-white pr-1">이동평균선</span>
-                    <span className="text-[#00D5C0]">5</span> ·
-                    <span className="text-[#E8395F]">20</span> ·
-                    <span className="text-[#F87800]">60</span> ·
-                    <span className="text-[#7339FB]">120</span>
-                  </span>
-                  <span className="text-[#EDCB37]">볼린저밴드</span> |
-                  <span className="text-[#396FFB]">거래량</span>
-                  <span className="text-[#e75480]">RSI</span>
+                  <div className="flex items-center gap-3 text-sm">
+                    {showIndicators && (
+                      <>
+                        <span className="flex items-center gap-1">
+                          <span className="text-white pr-1">이동평균선</span>
+                          <span
+                            className={`cursor-pointer ${
+                              showLine.ma5 ? "text-[#00D5C0]" : "text-gray-500"
+                            }`}
+                            onClick={() => toggleLine("ma5")}
+                          >
+                            5
+                          </span>
+                          ·
+                          <span
+                            className={`cursor-pointer ${
+                              showLine.ma20 ? "text-[#E8395F]" : "text-gray-500"
+                            }`}
+                            onClick={() => toggleLine("ma20")}
+                          >
+                            20
+                          </span>
+                          ·
+                          <span
+                            className={`cursor-pointer ${
+                              showLine.ma60 ? "text-[#F87800]" : "text-gray-500"
+                            }`}
+                            onClick={() => toggleLine("ma60")}
+                          >
+                            60
+                          </span>
+                          ·
+                          <span
+                            className={`cursor-pointer ${
+                              showLine.ma120
+                                ? "text-[#7339FB]"
+                                : "text-gray-500"
+                            }`}
+                            onClick={() => toggleLine("ma120")}
+                          >
+                            120
+                          </span>
+                        </span>
+                        |
+                        <span
+                          className={`cursor-pointer ${
+                            showLine.bb ? "text-[#EDCB37]" : "text-gray-500"
+                          }`}
+                          onClick={() => toggleLine("bb")}
+                        >
+                          볼린저밴드
+                        </span>
+                      </>
+                    )}
+
+                    <span
+                      className="px-1 cursor-pointer text-gray-400 hover:bg-gray-800 rounded-sm"
+                      onClick={() => setShowIndicators((prev) => !prev)}
+                    >
+                      {showIndicators ? "– 보조지표 접기" : "+ 보조지표 설정"}
+                    </span>
+                    <span className="relative group cursor-pointer text-gray-400">
+                      ⓘ
+                      <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black  text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
+                        <b className="text-[#f4f4f4]">이동평균선: </b> 주가
+                        흐름의 평균 경로를 나타내는 선.
+                        <br />
+                        <b className="text-[#f4f4f4]">볼린저밴드: </b>주가의
+                        변동 범위(위험도)를 띠 형태로 보여주는 지표.
+                        <br />
+                        <b className="text-[#f4f4f4]">RSI: </b>예주가의
+                        과열(과매수)이나 침체(과매도) 상태를 알려주는 지표.
+                      </div>
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
-            {/* 콘텐츠 영역 */}
-            {tab === "chart" && (
-              <div
-                className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center w-full text-gray-400 pb-1"
-                ref={chartBoxRef}
-              >
-                {Array.isArray(stockData) ? (
+
+            {/** 차트 / 재무정보 컨테이너 **/}
+            <div
+              className={`w-full bg-[#1b1b1b] rounded-lg mb-6 flex overflow-auto ${
+                tab === "chart"
+                  ? "h-[424px] items-center justify-center"
+                  : "h-[calc(100vh-300px)] flex-col"
+              }`}
+              ref={chartBoxRef}
+            >
+              {tab === "chart" ? (
+                Array.isArray(stockData) ? (
                   <CandleChart
                     w={parentWidth}
                     data={stockData}
                     indi_data={stockData}
                     news={news}
+                    isAnswered={isAnswered}
+                    showLine={showLine}
                   />
                 ) : (
                   <div>문제가 없습니다.</div>
-                )}
-              </div>
-            )}
-            {tab === "finance" && (
-              <div className="flex flex-col gap-6 w-full text-sm text-white max-h-[410px] overflow-y-auto pr-2">
-                {/* 투자 지표 */}
-                <div className="bg-[#1b1b1b] rounded-xl p-4 text-white text-sm w-full">
-                  <h3 className="text-base font-semibold mb-4">투자 지표</h3>
-
-                  {/* 위 두 섹션 (가치평가, 수익) */}
-                  <div className="grid grid-cols-2 gap-2 mb-4">
-                    {/* 가치평가 */}
-                    <div className="space-y-2">
-                      <p className="text-gray-400">가치평가</p>
-                      <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                        <span>PER</span>
-                        <span>{formatNumber(financialData?.per, "배")}</span>
-                      </div>
-                      <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                        <span>PSR</span>
-                        <span>{formatNumber(financialData?.psr, "배")}</span>
-                      </div>
-                      <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                        <span>PBR</span>
-                        <span>{formatNumber(financialData?.pbr, "배")}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-gray-400">수익</p>
-
-                      <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                        <span>EPS</span>
-                        <span>{formatNumber(financialData?.eps, "원")}</span>
-                      </div>
-                      <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                        <span>BPS</span>
-                        <span>{formatNumber(financialData?.bps, "원")}</span>
-                      </div>
-                      <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                        <span>ROE</span>
-                        <span>{formatNumber(financialData?.roe, "%")}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <p className="text-gray-400">기타 재무 정보</p>
-                    <div />
-                    <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                      <span>당기순이익</span>
-                      <span>
-                        {formatNumber(financialData?.ttmProfit, "원")}
-                      </span>
-                    </div>
-                    <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                      <span>증감액</span>
-                      <span>
-                        {formatNumber(financialData?.profit_diff, "원")}
-                      </span>
-                    </div>
-                    <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                      <span>매출액</span>
-                      <span>
-                        {formatNumber(financialData?.ttmRevenue, "원")}
-                      </span>
-                    </div>
-                    <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between">
-                      <span>증감률</span>
-                      <span>
-                        {formatNumber(financialData?.profit_diff_rate, "%")}
-                      </span>
-                    </div>
-                    <div className="bg-[#2a2a2a] rounded px-4 py-2 flex justify-between ">
-                      <span>순자산</span>
-                      <span>
-                        {formatNumber(financialData?.ttmequity, "원")}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                {/* 수익성 */}
-                <div className="bg-[#1b1b1b] rounded-lg p-4">
-                  <h3 className="text-lg font-bold mb-4">수익성</h3>
-
-                  <FinancialComboChart
-                    data={financialData?.series?.period.map(
-                      (_, idx: number) => ({
-                        label: periodLabels[idx],
-                        bar1: financialData.series.revenue[idx],
-                        bar2: financialData.series.netProfit_govern[idx],
-                        line: financialData.series.profitMargin[idx],
-                      })
-                    )}
-                    bar1Key="bar1"
-                    bar2Key="bar2"
-                    lineKey="line"
-                    bar1Label="매출"
-                    bar2Label="순이익"
-                    lineLabel="순이익률"
+                )
+              ) : (
+                <div className="h-[calc(100vh-300px)] w-full">
+                  <FinanceTable
+                    stock_code={problemData!.stock_code}
+                    date={problemData!.date}
                   />
-
-                  <div className="overflow-x-auto rounded-lg">
-                    <table className="min-w-max text-sm text-white border-separate border-spacing-0">
-                      <thead>
-                        <tr className="bg-[#313136]">
-                          <th className="text-left px-3 py-4 sticky left-0 bg-[#313136] z-10 rounded-tl-lg min-w-[120px]">
-                            항목
-                          </th>
-                          {periodLabels.map((label, idx) => (
-                            <th
-                              key={idx}
-                              className={`text-center px-4 py-4 whitespace-nowrap ${
-                                idx === periodLabels.length - 1
-                                  ? "rounded-tr-lg"
-                                  : ""
-                              }`}
-                            >
-                              {label}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[
-                          { label: "매출", key: "revenue" },
-                          { label: "순이익", key: "netProfit_govern" },
-                          { label: "순이익률", key: "profitMargin" },
-                          { label: "순이익 성장률", key: "growthRate" },
-                        ].map(({ label, key }, rowIndex, arr) => (
-                          <tr
-                            key={key}
-                            className={
-                              rowIndex % 2 === 0
-                                ? "bg-[#1C1C20]"
-                                : "bg-[#313136]"
-                            }
-                          >
-                            <td className="py-4 px-3 font-medium sticky left-0 z-10 bg-inherit min-w-[120px]">
-                              {label}
-                            </td>
-                            {financialData?.series?.[key].map(
-                              (value: number | null, idx: number) => (
-                                <td key={idx} className="text-center py-4 px-4">
-                                  {key == "revenue" || key == "netProfit_govern"
-                                    ? formatLargeNumber(value)
-                                    : formatNumber(value) + "%"}
-                                </td>
-                              )
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
                 </div>
-
-                {/* 성장성 */}
-                <div className="bg-[#1b1b1b] rounded-lg p-4">
-                  <h3 className="text-lg font-bold mb-4">성장성</h3>
-                  <FinancialComboChart
-                    data={financialData?.series?.period.map(
-                      (_, idx: number) => ({
-                        label: periodLabels[idx],
-                        bar1: financialData.series.operatingProfit[idx],
-                        line: financialData.series.operatingMargin[idx],
-                      })
-                    )}
-                    bar1Key="bar1"
-                    lineKey="line"
-                    bar1Label="영업이익"
-                    lineLabel="영업이익률"
-                  />
-                  <div className="overflow-x-auto rounded-lg">
-                    <table className="min-w-max text-sm text-white border-separate border-spacing-0">
-                      <thead>
-                        <tr className="bg-[#313136]">
-                          <th className="text-left px-3 py-4 sticky left-0 bg-[#313136] z-10 rounded-tl-lg min-w-[120px]">
-                            항목
-                          </th>
-                          {periodLabels.map((label, idx) => (
-                            <th
-                              key={idx}
-                              className={`text-center px-4 py-4 whitespace-nowrap ${
-                                idx === periodLabels.length - 1
-                                  ? "rounded-tr-lg"
-                                  : ""
-                              }`}
-                            >
-                              {label}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[
-                          { label: "영업이익", key: "operatingProfit" },
-                          { label: "영업이익률", key: "operatingMargin" },
-                          {
-                            label: "영업이익 성장률",
-                            key: "operatingGrowthRate",
-                          },
-                        ].map(({ label, key }, rowIndex, arr) => (
-                          <tr
-                            key={key}
-                            className={
-                              rowIndex % 2 === 0
-                                ? "bg-[#1C1C20]"
-                                : "bg-[#313136]"
-                            }
-                          >
-                            <td className="py-4 px-3 font-medium sticky left-0 z-10 bg-inherit min-w-[120px]">
-                              {label}
-                            </td>
-                            {financialData?.series?.[key].map(
-                              (value: number | null, idx: number) => (
-                                <td key={idx} className="text-center py-3 px-4">
-                                  {key == "operatingProfit"
-                                    ? formatLargeNumber(value)
-                                    : formatNumber(value) + "%"}
-                                </td>
-                              )
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          {/* 답변 작성 */}
-          <div>
-            <label className="text-sm font-semibold mb-2 inline-block">
-              답변 작성 <span className="text-gray-400">ⓘ</span>
-            </label>
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="답변을 입력하세요"
-              maxLength={300}
-              className="w-full h-32 p-4 rounded border border-gray-600 bg-transparent resize-none focus:outline-none"
-            />
-            <div className="flex float-right items-center mt-2 gap-4">
-              <span className="text-sm text-gray-400">
-                {input.length} / 300 자
-              </span>
-              <button
-                className="bg-[#396FFB] px-5 py-1.5 rounded text-sm"
-                onClick={handleGrade}
-                disabled={loading}
-              >
-                {loading ? "채점 중..." : "제출"}
-              </button>
+              )}
             </div>
           </div>
+          {/* === 답변/피드백 === */}
+          <div className="relative">
+            {myAnswer ? (
+              // ===== 이미 푼 문제인 경우 =====
+              <div className="w-full mb-3 p-4 rounded border border-[#396FFB] bg-[#f7fafd] text-black shadow">
+                <div className="mb-1 font-semibold text-[#396FFB]">
+                  이미 푼 문제입니다!
+                </div>
+                <div className="mb-2">
+                  <b>내 답변:</b> {myAnswer.answer}
+                </div>
+                <div className="mb-1 font-semibold text-[#396FFB]">피드백</div>
+                <div className="whitespace-pre-line">{myAnswer.feedback}</div>
+                <div className="mt-2 text-sm text-gray-500">
+                  점수: <b>{myAnswer.score}</b>
+                </div>
+              </div>
+            ) : (
+              // ===== 아직 안 푼 문제인 경우 =====
+              <>
+                {showFeedback && (
+                  <div className="w-full mb-3 p-4 rounded border border-[#396FFB] bg-[#f7fafd] text-black shadow">
+                    {/* 답변 입력 직후라 answer를 변수로 직접 표시 */}
+                    <div className="mb-1 font-semibold text-[#396FFB]">
+                      내 답변
+                    </div>
+                    <div className="mb-2 whitespace-pre-line">{input}</div>
+                    <div className="mb-1 font-semibold text-[#396FFB]">
+                      피드백
+                    </div>
+                    <div className="whitespace-pre-line">{feedback}</div>
+                    <div className="mt-2 text-sm text-gray-500">
+                      점수: <b>{gradeResult?.score}</b>
+                    </div>
+                  </div>
+                )}
+                <div className="mt-6 relative">
+                  <div className="font-semibold mb-2 flex items-center gap-2">
+                    답변 작성
+                    <span className="relative group cursor-pointer text-gray-400">
+                      ⓘ
+                      <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                        <b className="text-[#f4f4f4]">
+                          차트 기술지표, 거시경제, 뉴스{" "}
+                        </b>{" "}
+                        등을 참고해 이후의 주가 흐름을 구체적으로 예측해주세요.
+                      </div>
+                    </span>
+                  </div>
+                  <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="답변을 입력하세요"
+                    maxLength={300}
+                    className="w-full h-32 p-4 rounded border border-gray-600 bg-transparent resize-none focus:outline-none"
+                  />
+                  <div className="flex float-right items-center mt-2 gap-4">
+                    <span className="text-sm text-gray-400">
+                      {input.length} / 300 자
+                    </span>
+                    <button
+                      className="bg-[#396FFB] px-5 py-1.5 rounded text-sm"
+                      onClick={handleGrade}
+                      disabled={loading}
+                    >
+                      {loading ? "채점 중..." : "제출"}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </section>
-        {/* 오른쪽 영역 */}
+
+        {/* 오른쪽 */}
         <aside className="w-full lg:w-[400px] shrink-0 flex flex-col gap-4">
           <div className="flex justify-between">
             <ClickCard
@@ -515,6 +450,7 @@ export default function PracticeClient() {
               onClick={() => router.push(`/ranking/practice`)}
             />
           </div>
+
           {/* 뉴스 */}
           <div className="mt-4">
             <p className="text-2xl font-semibold mb-3.5">관련 뉴스</p>
@@ -567,7 +503,6 @@ export default function PracticeClient() {
           </div>
         </aside>
       </main>
-      {/* 힌트 모달 */}
       {showHint && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
           <div className="bg-white rounded-xl p-6 w-[530px] text-black shadow-2xl relative">
@@ -575,6 +510,11 @@ export default function PracticeClient() {
             <div className="mb-4">
               {typeMeta?.typeData?.[0]?.hint || "힌트가 없습니다."}
             </div>
+            {hintRef && (
+              <div className="mb-4 text-sm text-gray-600 border-t pt-2">
+                <b>‼️:</b> {hintRef}
+              </div>
+            )}
             <button
               className="absolute top-3 right-4 text-gray-400 text-xl"
               onClick={() => setShowHint(false)}
@@ -585,6 +525,17 @@ export default function PracticeClient() {
           </div>
         </div>
       )}
+
+      <ToastContainer
+        position="bottom-right"
+        hideProgressBar
+        limit={3}
+        toastStyle={{
+          backgroundColor: "#366FFB",
+          fontWeight: 600,
+          color: "#FFFFFF",
+        }}
+      />
     </div>
   );
 }

@@ -18,21 +18,21 @@ export default function MainHomeClient() {
       }
 
       const status = await checkUserStatus(auth.token);
-      console.log("이미 연동 완료된 user: ", status.hasHoldings);
+      //("이미 연동 완료된 user: ", status.hasHoldings);
 
       if (status.hasHoldings) {
         const stockData = await getStock(auth.token);
-        const firstCode = stockData.stocks[0]._id;
-        console.log("주식 조회", firstCode);
+        const firstCode = stockData.stocks[0]?.stock_code._id;
+        //console.log("주식 조회", firstCode);
         if (firstCode) {
           router.push(`/investment/${firstCode}`);
-          console.log("보유한 주식 있음");
+          //console.log("보유한 주식 있음");
         } else {
           router.push("/investment");
-          console.log("조회됐는데 왜 ? ..");
+          //console.log("조회됐는데 왜 ? ..");
         }
       } else {
-        console.log("보유주식 없음");
+        //console.log("보유주식 없음");
         router.push("/investment");
       }
     } catch (err) {
