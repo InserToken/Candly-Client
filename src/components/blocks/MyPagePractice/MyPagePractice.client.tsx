@@ -109,7 +109,7 @@ export default function MyPagePracticeClient() {
       const recentList = [...convertedScores]
         .sort((a, b) => b.date.getTime() - a.date.getTime())
         .slice(0, 5);
-      console.log(recentList);
+      //console.log(recentList);
       setRecentProblemList(recentList);
     });
   }, []);
@@ -229,7 +229,7 @@ export default function MyPagePracticeClient() {
                   <span className="text-sm text-white mt-3">{item.label}</span>
                   <span className="mt-3 relative group cursor-pointer text-gray-400">
                     ⓘ
-                    <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                    <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
                       <b className="text-[#f4f4f4]">{item.explain}</b>
                     </div>
                   </span>

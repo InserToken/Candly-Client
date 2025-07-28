@@ -4,6 +4,6 @@ export async function fetchProblemTypeMeta(problemTypeId: number) {
   );
   if (!res.ok) throw new Error("문제 유형 정보를 불러올 수 없습니다.");
   const data = await res.json();
-  console.log("data", data);
+  //console.log("data", data);
   return data; // { hint, reference, prompting }
 }

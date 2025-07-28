@@ -21,12 +21,12 @@ export default function PracticeRankingClient() {
     const fetchData = async () => {
       const result = await getRankPracProblem(auth.token);
       setProblem(result.data);
-      console.log("내가 푼 문제 조회:", result);
+      //console.log("내가 푼 문제 조회:", result);
     };
 
     const fetchRankingData = async () => {
       const result = await getRankPracScore();
-      console.log("랭킹 조회", result);
+      //console.log("랭킹 조회", result);
       const grouped: {
         [key: string]: {
           name: string;
@@ -47,7 +47,7 @@ export default function PracticeRankingClient() {
         grouped[problemId].push({ name, score, answer, feedback });
       });
 
-      console.log("grouped", grouped);
+      //console.log("grouped", grouped);
       setRankingData(grouped);
     };
 

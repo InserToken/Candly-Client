@@ -129,7 +129,7 @@ export default function PracticeClient() {
           quantEvidence: data.breakdown?.quantEvidence,
           date: new Date().toISOString(),
         };
-        console.log("채점 결과", data);
+        //console.log("채점 결과", data);
         await postPracticeScore(token, practiceScoreData);
         toast.success("채점 및 저장 완료!");
         setFeedback(data.feedback || "피드백 없음.");
@@ -230,12 +230,10 @@ export default function PracticeClient() {
       <main className="flex flex-col lg:flex-row gap-6">
         <section className="flex-1 max-w-[1100px] w-full lg:max-w-[calc(100%-420px)]">
           <div className="text-sm text-gray-300 mb-4">
-            <div className="flex flex-wrap items-center gap-1 mb-5">
+            <div className="flex flex-wrap items-center gap-1 mb-3">
               <button
                 className={`px-3 py-1 rounded-full ${
-                  tab === "chart"
-                    ? "bg-[#2a2a2a] hover:bg-[#5B5B63] text-white"
-                    : "text-gray-400 hover:bg-[#2a2a2a]"
+                  tab === "chart" ? "bg-[#2a2a2a] text-white" : "text-gray-400"
                 }`}
                 onClick={() => setTab("chart")}
               >
@@ -244,8 +242,8 @@ export default function PracticeClient() {
               <button
                 className={`px-3 py-1 rounded-full ${
                   tab === "finance"
-                    ? "bg-[#2a2a2a] hover:bg-[#5B5B63] text-white"
-                    : "text-gray-400 hover:bg-[#2a2a2a]"
+                    ? "bg-[#2a2a2a] text-white"
+                    : "text-gray-400"
                 }`}
                 onClick={() => setTab("finance")}
               >
@@ -313,6 +311,19 @@ export default function PracticeClient() {
                       onClick={() => setShowIndicators((prev) => !prev)}
                     >
                       {showIndicators ? "– 보조지표 접기" : "+ 보조지표 설정"}
+                    </span>
+                    <span className="relative group cursor-pointer text-gray-400">
+                      ⓘ
+                      <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black  text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
+                        <b className="text-[#f4f4f4]">이동평균선: </b> 주가
+                        흐름의 평균 경로를 나타내는 선.
+                        <br />
+                        <b className="text-[#f4f4f4]">볼린저밴드: </b>주가의
+                        변동 범위(위험도)를 띠 형태로 보여주는 지표.
+                        <br />
+                        <b className="text-[#f4f4f4]">RSI: </b>예주가의
+                        과열(과매수)이나 침체(과매도) 상태를 알려주는 지표.
+                      </div>
                     </span>
                   </div>
                 </div>
@@ -412,7 +423,7 @@ export default function PracticeClient() {
                       {input.length} / 300 자
                     </span>
                     <button
-                      className="bg-[#396FFB] hover:bg-blue-500 px-5 py-1.5 rounded text-sm"
+                      className="bg-[#396FFB] px-5 py-1.5 rounded text-sm"
                       onClick={handleGrade}
                       disabled={loading}
                     >
@@ -451,7 +462,7 @@ export default function PracticeClient() {
                   .map((item, idx) => (
                     <div
                       key={idx}
-                      className="bg-[#1b1b1b] hover:bg-[#24242C] rounded-xl p-4 text-sm flex gap-4"
+                      className="bg-[#1b1b1b] rounded-xl p-4 text-sm flex gap-4"
                     >
                       {item.img_url && (
                         <Image

@@ -7,12 +7,13 @@ import {
   dateToString,
   getNextDateString,
   isValidTradingDate,
+  isValidDateString,
+  isBeforeYearLimit,
 } from "@/utils/date";
 import { interpolateBetween } from "@/utils/interpolate";
 import useHolidayStore from "@/stores/useHolidayStore";
 import { useAuthStore } from "@/stores/authStore";
-import { getStock } from "@/services/userStock-service";
-import { Stocks } from "@/types/UserStock";
+import { getStock, checkHasStock } from "@/services/userStock-service";
 import { useRouter } from "next/navigation";
 import FinanceTable from "@/components/charts/FinanceTable";
 import { fetchRealNews } from "@/services/fetchRealNews";
@@ -22,6 +23,8 @@ import { fetchRealChart } from "@/services/fetchRealChart";
 import InvestCandleChart from "@/components/charts/InvestCandleChart";
 import { ChartData } from "@/components/charts/Mixedchart";
 import { getCurrentPrice } from "@/services/getCurrentPrice";
+import { UserStock } from "@/types/UserStock";
+
 export default function InvestmentStockClient() {
   const router = useRouter();
   const auth = useAuthStore((s) => s.auth);
@@ -30,6 +33,7 @@ export default function InvestmentStockClient() {
   }>();
   const [tab, setTab] = useState<"chart" | "finance">("chart");
   // === 차트 부모 width 동적 측정 ===
+
   const chartBoxRef = useRef<HTMLDivElement>(null);
   const [parentWidth, setParentWidth] = useState(780); // 초기값
   const [showLine, setShowLine] = useState({
@@ -40,6 +44,31 @@ export default function InvestmentStockClient() {
     bb: true,
   });
 
+  const [allowed, setAllowed] = useState(false); // 데이터 요청 허용 여부
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    if (!auth || !auth.token) return;
+    setLoading(true);
+    checkHasStock(auth.token, params.stock_code)
+      .then(() => {
+        setAllowed(true); // 통과
+        setLoading(false);
+      })
+      .catch(() => {
+        //console.log("catch");
+        setLoading(false);
+      });
+  }, [auth, params.stock_code, router]);
+
+  useEffect(() => {
+    if (!loading && allowed === false) {
+      const timeout = setTimeout(() => {
+        router.replace("/");
+      }, 1200);
+      return () => clearTimeout(timeout);
+    }
+  }, [allowed, loading, router]);
+
   useEffect(() => {
     function updateWidth() {
       if (chartBoxRef.current) {
@@ -49,7 +78,7 @@ export default function InvestmentStockClient() {
     updateWidth();
     window.addEventListener("resize", updateWidth);
     return () => window.removeEventListener("resize", updateWidth);
-  }, []);
+  }, [allowed, loading]);
 
   const holidaySet = useHolidayStore((state) => state.holidaySet);
 
@@ -65,7 +94,7 @@ export default function InvestmentStockClient() {
   const [prediction, setPrediction] = useState<ChartData[]>([]);
 
   useEffect(() => {
-    if (!auth || !auth.token) {
+    if (!allowed || !auth || !auth.token) {
       return;
     }
     fetchRealInvest(params.stock_code, auth.token).then((data) => {
@@ -76,7 +105,7 @@ export default function InvestmentStockClient() {
       }));
       setPrediction(dotFormatted);
     });
-  }, []);
+  }, [allowed, auth, params.stock_code]);
   //공휴일 받아오기
   useEffect(() => {
     if (holidaySet) {
@@ -86,7 +115,8 @@ export default function InvestmentStockClient() {
   }, [holidaySet]);
 
   // 수정 중인 인덱스 추적
-  const [editIndex, setEditIndex] = useState<number | null>(null);
+  // const [editDate, seteditDate] = useState<number | null>(null);
+  const [editDate, setEditDate] = useState<string | null>(null);
 
   // 실제 차트정보 가져오기
   type PriceItem = {
@@ -100,10 +130,11 @@ export default function InvestmentStockClient() {
   type StockData = { prices: PriceItem[] };
   const [stockData, setStockData] = useState<any>([]);
   useEffect(() => {
+    if (!allowed || !auth || !auth.token) return;
     fetchRealChart(params.stock_code).then((data) => {
       setStockData(data);
     });
-  }, []);
+  }, [allowed, auth, params.stock_code]);
   const dotData = [...prediction];
 
   const initialLatestDate =
@@ -152,26 +183,29 @@ export default function InvestmentStockClient() {
   const lastClose =
     prediction.length > 0
       ? prediction[prediction.length - 1].close
-      : lastCandle?.close ?? 0;
+      : stockData?.length > 0
+      ? stockData[stockData.length - 1].close
+      : 0;
 
   const firstPrediction = prediction[0];
 
   const [inputclose, setInputclose] = useState<number>(lastClose);
+
   //보유주식 가져오기
-  const [stock, setStock] = useState<Stocks[]>([]);
+  const [stock, setStock] = useState<UserStock[]>([]);
   useEffect(() => {
     const fetchData = async () => {
       const token = sessionStorage.getItem("token");
-      if (!token) return;
+      if (!allowed || !token) return;
 
       const result = await getStock(token);
       setStock(result.stocks);
-      console.log("사용자의 보유주식 조회:", result.stocks);
-      console.log("param", params);
+      //console.log("사용자의 보유주식 조회:", result.stocks);
+      //console.log("param", params);
     };
 
     fetchData();
-  }, []);
+  }, [allowed, auth, params.stock_code]);
 
   // 보간
   let interpolatedBetween: ChartData[] = [];
@@ -236,15 +270,26 @@ export default function InvestmentStockClient() {
   };
   const [news, setNews] = useState<NewsItem[]>([]);
   useEffect(() => {
+    if (!allowed || !auth || !auth.token) return;
     fetchRealNews(params.stock_code).then((data) => {
       setNews(data);
     });
-  }, []);
+  }, [allowed, auth, params.stock_code]);
 
   // 오늘날짜 이후만 수정/삭제 가능
   const futurePredictions = prediction.filter((item) => item.date > todayStr);
   //보조지표 버튼
   const [showIndicators, setShowIndicators] = useState(false);
+
+  if (loading) return null;
+
+  if (!allowed) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-gray-400 text-xl">
+        <div>⛔️ 보유하지 않은 종목입니다. 홈으로 이동합니다.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen px-[80px] pt-1">
@@ -270,7 +315,7 @@ export default function InvestmentStockClient() {
         <section className="flex-1 max-w-[1100px] w-full lg:max-w-[calc(100%-420px)]">
           {/* 탭 */}
           <div className="text-sm text-gray-300 mb-4">
-            <div className="flex flex-wrap items-center gap-1 mb-5">
+            <div className="flex flex-wrap items-center gap-1 mb-3">
               <button
                 className={`px-3 py-1 rounded-full ${
                   tab === "chart"
@@ -353,13 +398,30 @@ export default function InvestmentStockClient() {
                     >
                       {showIndicators ? "– 보조지표 접기" : "+ 보조지표 설정"}
                     </span>
+                    <span className="relative group cursor-pointer text-gray-400">
+                      ⓘ
+                      <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black  text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
+                        <b className="text-[#f4f4f4]">이동평균선: </b> 주가
+                        흐름의 평균 경로를 나타내는 선.
+                        <br />
+                        <b className="text-[#f4f4f4]">볼린저밴드: </b>주가의
+                        변동 범위(위험도)를 띠 형태로 보여주는 지표.
+                        <br />
+                        <b className="text-[#f4f4f4]">RSI: </b>예주가의
+                        과열(과매수)이나 침체(과매도) 상태를 알려주는 지표.
+                      </div>
+                    </span>
                   </div>
                 </div>
               )}
             </div>
             {tab === "chart" ? (
               <div
-                className="h-[400px] bg-[#1b1b1b] rounded-lg mb-6 flex items-center justify-center w-full text-gray-400 pb-1 "
+                className={`w-full bg-[#1b1b1b] rounded-lg mb-6 flex overflow-auto ${
+                  tab === "chart"
+                    ? "h-[424px] items-center justify-center"
+                    : "h-[calc(100vh-300px)] flex-col"
+                }`}
                 ref={chartBoxRef}
               >
                 {Array.isArray(stockData) ? (
@@ -392,7 +454,7 @@ export default function InvestmentStockClient() {
               예측 입력
               <span className="relative group cursor-pointer text-gray-400">
                 ⓘ
-                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black  text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black  text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
                   <b className="text-[#f4f4f4]">추가: </b> 날짜와 종가를
                   입력하면 그래프에 예측값이 표시됩니다.
                   <br />
@@ -452,7 +514,7 @@ export default function InvestmentStockClient() {
                             <button
                               className="bg-[#396FFB] hover:bg-blue-500 text-white px-3 py-1 rounded text-sm"
                               onClick={() => {
-                                setEditIndex(idx);
+                                setEditDate(item.date);
                                 setInputDate(item.date);
                                 setInputclose(item.close);
                               }}
@@ -520,14 +582,25 @@ export default function InvestmentStockClient() {
 
                                 setPrediction(newList);
 
-                                if (editIndex === idx) {
-                                  setEditIndex(null);
+                                if (editDate === removed.date) {
+                                  setEditDate(null);
+
                                   if (newList.length > 0) {
-                                    setInputDate(
-                                      getNextDateString(
-                                        newList[newList.length - 1].date
-                                      )
+                                    const sorted = [...newList].sort(
+                                      (a, b) =>
+                                        new Date(a.date).getTime() -
+                                        new Date(b.date).getTime()
                                     );
+
+                                    // 편집한 날짜가 가장 마지막 날짜라면 다음 날짜로 inputDate 설정
+                                    if (
+                                      removed.date ===
+                                      sorted[sorted.length - 1].date
+                                    ) {
+                                      setInputDate(
+                                        getNextDateString(removed.date)
+                                      );
+                                    }
                                   }
                                 }
                               }}
@@ -553,9 +626,9 @@ export default function InvestmentStockClient() {
                           type="text"
                           value={inputDate}
                           onChange={(e) => setInputDate(e.target.value)}
-                          readOnly={editIndex !== null}
+                          readOnly={editDate !== null}
                           className={`bg-[#1b1b1b] border border-[#2a2a2a] rounded px-3 py-1 text-white w-full ${
-                            editIndex !== null ? "cursor-not-allowed" : ""
+                            editDate !== null ? "cursor-not-allowed" : ""
                           }`}
                         />
                       </td>
@@ -573,10 +646,18 @@ export default function InvestmentStockClient() {
                           </button>
                           <input
                             type="text"
-                            value={inputclose}
-                            onChange={(e) =>
-                              setInputclose(Number(e.target.value))
+                            value={
+                              typeof inputclose === "number" &&
+                              !isNaN(inputclose)
+                                ? inputclose
+                                : ""
                             }
+                            onChange={(e) => {
+                              const num = Number(e.target.value);
+                              if (!isNaN(num)) {
+                                setInputclose(num);
+                              }
+                            }}
                             className="bg-[#1b1b1b] border border-[#2a2a2a] rounded px-3 py-1 text-white w-[80px] text-center"
                           />
                           <button
@@ -594,24 +675,21 @@ export default function InvestmentStockClient() {
                       <td>
                         <div className="flex justify-center gap-2">
                           {/* 추가버튼 */}
-                          {editIndex === null ? (
+                          {editDate === null ? (
                             <button
                               className="bg-[#396FFB] hover:bg-blue-500 text-white px-4 py-1.5 rounded text-sm"
                               onClick={() => {
                                 if (!inputDate || !inputclose) return;
-
-                                const datePattern =
-                                  /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
-                                if (!datePattern.test(inputDate)) {
-                                  alert(
-                                    "날짜 형식이 잘못되었습니다. 예: 2025-01-08"
-                                  );
-                                  return;
-                                }
-
                                 const inputDateObj = parseDateString(inputDate);
                                 const today = new Date();
                                 const todayStr = dateToString(today);
+
+                                if (!isValidDateString(inputDate)) {
+                                  alert(
+                                    "날짜 형식이 잘못되었거나 존재하지 않는 날짜입니다."
+                                  );
+                                  return;
+                                }
 
                                 if (inputDate <= todayStr) {
                                   alert(
@@ -620,7 +698,7 @@ export default function InvestmentStockClient() {
                                   return;
                                 }
 
-                                if (inputDateObj.getFullYear() >= 2027) {
+                                if (!isBeforeYearLimit(inputDate, 2026)) {
                                   alert("2026년까지의 날짜만 예측 가능합니다.");
                                   return;
                                 }
@@ -727,18 +805,22 @@ export default function InvestmentStockClient() {
                             <button
                               className="bg-[#396FFB] hover:bg-blue-500 text-white px-4 py-1.5 rounded text-sm "
                               onClick={() => {
-                                const newList = [...prediction];
-                                newList[editIndex] = {
-                                  ...newList[editIndex],
-                                  close: inputclose,
-                                };
-                                setPrediction(newList);
-                                setEditIndex(null);
-                                setInputDate(
-                                  getNextDateString(
-                                    newList[newList.length - 1].date
-                                  )
+                                if (!editDate) return;
+
+                                const newList = prediction.map((item) =>
+                                  item.date === editDate
+                                    ? { ...item, close: inputclose }
+                                    : item
                                 );
+
+                                setPrediction(newList);
+                                setEditDate(null);
+
+                                const lastDate =
+                                  newList.length > 0
+                                    ? newList[newList.length - 1].date
+                                    : todayStr;
+                                setInputDate(getNextDateString(lastDate));
                               }}
                             >
                               수정 저장

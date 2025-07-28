@@ -89,7 +89,7 @@ export default function FinanceTable({
                 <span>PER</span>
                 <span className="relative group cursor-pointer text-gray-400">
                   ⓘ
-                  <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                  <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
                     <b className="text-[#f4f4f4]">
                       현재 주가 대비 주당 순이익 비율로, 주가 수준이 적정한지
                       평가해 보세요.
@@ -111,7 +111,7 @@ export default function FinanceTable({
                 <span>PSR</span>
                 <span className="relative group cursor-pointer text-gray-400">
                   ⓘ
-                  <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                  <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
                     <b className="text-[#f4f4f4]">
                       시가총액 대비 매출액 비율로, 매출 규모 대비 주가 수준을
                       판단할 수 있어요.
@@ -134,7 +134,7 @@ export default function FinanceTable({
                 <span>PBR</span>
                 <span className="relative group cursor-pointer text-gray-400">
                   ⓘ
-                  <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                  <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
                     <b className="text-[#f4f4f4]">
                       주가 대비 순자산 비율로, 기업의 자산가치 대비 주가를
                       확인해 보세요.
@@ -161,7 +161,7 @@ export default function FinanceTable({
                 <span>EPS</span>
                 <span className="relative group cursor-pointer text-gray-400">
                   ⓘ
-                  <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                  <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
                     <b className="text-[#f4f4f4]">
                       주당 순이익으로, 1주당 벌어들인 순이익 규모를 파악할 수
                       있습니다.
@@ -179,7 +179,7 @@ export default function FinanceTable({
                 <span>BPS</span>
                 <span className="relative group cursor-pointer text-gray-400">
                   ⓘ
-                  <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                  <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
                     <b className="text-[#f4f4f4]">
                       주당 순자산으로, 1주당 기업이 보유한 순자산 가치를
                       나타냅니다.
@@ -197,7 +197,7 @@ export default function FinanceTable({
                 <span>ROE</span>
                 <span className="relative group cursor-pointer text-gray-400">
                   ⓘ
-                  <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                  <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
                     <b className="text-[#f4f4f4]">
                       자기자본이익률로, 자본 대비 얼마나 수익을 냈는지 확인해
                       보세요.
@@ -222,7 +222,7 @@ export default function FinanceTable({
               <span>당기순이익</span>
               <span className="relative group cursor-pointer text-gray-400">
                 ⓘ
-                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
                   <b className="text-[#f4f4f4]">
                     최근 4개 분기 합산 순이익으로, 기업의 실제 이익 추세를
                     살펴보세요.
@@ -240,7 +240,7 @@ export default function FinanceTable({
               <span>증감액</span>
               <span className="relative group cursor-pointer text-gray-400">
                 ⓘ
-                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
                   <b className="text-[#f4f4f4]">
                     전분기 대비 순이익 증가액으로, 성장 동력을 한눈에 확인할 수
                     있어요.
@@ -258,7 +258,7 @@ export default function FinanceTable({
               <span>매출액</span>
               <span className="relative group cursor-pointer text-gray-400">
                 ⓘ
-                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
                   <b className="text-[#f4f4f4]">
                     최근 4개 분기 합산 매출로, 매출 규모와 성장 방향을 파악해
                     보세요.
@@ -276,7 +276,7 @@ export default function FinanceTable({
               <span>증감률</span>
               <span className="relative group cursor-pointer text-gray-400">
                 ⓘ
-                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
                   <b className="text-[#f4f4f4]">
                     전분기 대비 순이익 성장률로, 기업의 모멘텀을 확인해 보세요.
                   </b>
@@ -293,7 +293,7 @@ export default function FinanceTable({
               <span>순자산</span>
               <span className="relative group cursor-pointer text-gray-400">
                 ⓘ
-                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
                   <b className="text-[#f4f4f4]">
                     최근 분기 말 기준 순자산으로, 기업의 재무 건전성을 짐작할 수
                     있습니다.
@@ -373,6 +373,9 @@ export default function FinanceTable({
           bar1Label="매출"
           bar2Label="순이익"
           lineLabel="순이익률"
+          bar1Formatter={formatLargeNumber}
+          bar2Formatter={formatLargeNumber}
+          lineFormatter={(v) => formatNumber(v, "%")}
         />
 
         <div className="overflow-x-auto rounded-lg">
@@ -430,7 +433,7 @@ export default function FinanceTable({
                       <span>{label}</span>
                       <span className="relative group cursor-pointer text-gray-400">
                         ⓘ
-                        <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                        <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
                           <b className="text-[#f4f4f4]">{tip}</b>
                         </div>
                       </span>
@@ -499,6 +502,8 @@ export default function FinanceTable({
           lineKey="line"
           bar1Label="영업이익"
           lineLabel="영업이익률"
+          bar1Formatter={formatLargeNumber}
+          lineFormatter={(v) => formatNumber(v, "%")}
         />
 
         <div className="overflow-x-auto rounded-lg">
@@ -551,7 +556,7 @@ export default function FinanceTable({
                       <span>{label}</span>
                       <span className="relative group cursor-pointer text-gray-400">
                         ⓘ
-                        <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                        <div className="absolute bottom-full mb-2 left-0 w-max max-w-xs bg-black text-sm px-3 py-2 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
                           <b className="text-[#f4f4f4]">{tip}</b>
                         </div>
                       </span>

@@ -136,7 +136,7 @@ export default function MyPageInvestmentClient() {
 
   return (
     <div>
-      <p className="text-2xl font-semibold mb-6">실전투자 히스토리</p>
+      <p className="text-2xl font-semibold mb-6">실전예측 히스토리</p>
 
       <div className="flex items-center gap-4 mb-8">
         <div className="h-20 w-55 bg-[#16161A] rounded-lg text-center flex items-baseline gap-1.5 justify-center pt-4">

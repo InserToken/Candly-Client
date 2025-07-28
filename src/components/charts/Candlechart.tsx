@@ -708,7 +708,7 @@ export default function CandleChart({
             const vol = candle.volume ?? 0;
             const isRising = candle.close > candle.open;
             const barY = getVolumeY(vol) + VOLUME_TOP_PADDING;
-            const barHeight = VOLUME_HEIGHT - barY;
+            const barHeight = Math.max(0, VOLUME_HEIGHT - barY);
             const highlight = tooltip?.show && tooltip.idx === i;
             return (
               <rect
@@ -959,6 +959,12 @@ export default function CandleChart({
           <div>저: {tooltip.data.low.toLocaleString()}</div>
           <div>종: {tooltip.data.close.toLocaleString()}</div>
           <div>거래량: {tooltip.data.volume.toLocaleString()}</div>
+          <div>
+            RSI:{" "}
+            {typeof rsi_visible[tooltip.idx] === "number"
+              ? rsi_visible[tooltip.idx].toFixed(2)
+              : "-"}
+          </div>
           {/* ====== 뉴스 영역 추가!! ====== */}
           {tooltipNews.length > 0 && (
             <div style={{ marginTop: 8 }}>

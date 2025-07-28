@@ -44,7 +44,7 @@ export default function SignupClient() {
       return;
     }
 
-    console.log("회원가입 성공 : ", data);
+    //console.log("회원가입 성공 : ", data);
 
     toast.success("회원가입 완료! 로그인으로 이동합니다.", {
       onClose: () => {
