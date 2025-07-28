@@ -36,7 +36,7 @@ export default function MainHomeClient() {
         router.push("/investment");
       }
     } catch (err) {
-      console.error("실전투자 이동 중 오류:", err);
+      console.error("실전예측 이동 중 오류:", err);
       router.push("/investment");
     }
   };
