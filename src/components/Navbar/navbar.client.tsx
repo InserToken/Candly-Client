@@ -163,12 +163,13 @@ export default function Navbar() {
       </ul>
 
       {/* 로그인/로그아웃 버튼 */}
+
       <div className="ml-auto pr-5">
         {mounted ? (
           auth?.token ? (
             <button
               onClick={handleLogout}
-              className="text-sm text-[#E2E2E2] hover:text-white transition pl-5"
+              className="text-sm text-[#E2E2E2] hover:text-white transition"
             >
               로그아웃
             </button>
