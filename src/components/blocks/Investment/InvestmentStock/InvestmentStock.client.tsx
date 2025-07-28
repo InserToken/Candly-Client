@@ -55,7 +55,7 @@ export default function InvestmentStockClient() {
         setLoading(false);
       })
       .catch(() => {
-        console.log("catch");
+        //console.log("catch");
         setLoading(false);
       });
   }, [auth, params.stock_code, router]);
@@ -200,8 +200,8 @@ export default function InvestmentStockClient() {
 
       const result = await getStock(token);
       setStock(result.stocks);
-      console.log("사용자의 보유주식 조회:", result.stocks);
-      console.log("param", params);
+      //console.log("사용자의 보유주식 조회:", result.stocks);
+      //console.log("param", params);
     };
 
     fetchData();

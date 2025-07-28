@@ -41,7 +41,7 @@ export default function LoginClient() {
   };
 
   useEffect(() => {
-    console.log("auth가 스토어에 저장됨:", getAuth);
+    //console.log("auth가 스토어에 저장됨:", getAuth);
   }, [getAuth]);
 
   return (
