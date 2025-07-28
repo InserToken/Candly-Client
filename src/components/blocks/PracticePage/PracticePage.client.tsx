@@ -416,6 +416,7 @@ export default function PracticeClient() {
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="답변을 입력하세요"
                     maxLength={300}
+                    disabled={isAnswered}
                     className="w-full h-32 p-4 rounded border border-gray-600 bg-transparent resize-none focus:outline-none"
                   />
                   <div className="flex float-right items-center mt-2 gap-4">
@@ -425,7 +426,7 @@ export default function PracticeClient() {
                     <button
                       className="bg-[#396FFB] px-5 py-1.5 rounded text-sm"
                       onClick={handleGrade}
-                      disabled={loading}
+                      disabled={loading || isAnswered}
                     >
                       {loading ? "채점 중..." : "제출"}
                     </button>
