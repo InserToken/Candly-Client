@@ -37,12 +37,12 @@ export default function Navbar() {
       }
 
       const status = await checkUserStatus(auth.token);
-      console.log("이미 연동 완료된 user: ", status.hasHoldings);
+      //("이미 연동 완료된 user: ", status.hasHoldings);
 
       if (status.hasHoldings) {
         const stockData = await getStock(auth.token);
         const firstCode = stockData.stocks[0]?.stock_code._id;
-        console.log("주식 조회", firstCode);
+        //console.log("주식 조회", firstCode);
         if (firstCode) {
           router.push(`/investment/${firstCode}`);
         } else {

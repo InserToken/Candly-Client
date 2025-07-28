@@ -17,7 +17,7 @@ export default function RealRankingClient() {
     const fetchData = async () => {
       const result = await getStock(auth.token);
 
-      console.log("사용자의 보유주식 조회:", result.stocks);
+      //console.log("사용자의 보유주식 조회:", result.stocks);
       setStock(result.stocks);
     };
 

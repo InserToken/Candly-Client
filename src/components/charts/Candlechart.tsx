@@ -708,7 +708,7 @@ export default function CandleChart({
             const vol = candle.volume ?? 0;
             const isRising = candle.close > candle.open;
             const barY = getVolumeY(vol) + VOLUME_TOP_PADDING;
-            const barHeight = VOLUME_HEIGHT - barY;
+            const barHeight = Math.max(0, VOLUME_HEIGHT - barY);
             const highlight = tooltip?.show && tooltip.idx === i;
             return (
               <rect

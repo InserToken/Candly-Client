@@ -16,7 +16,7 @@ export async function postStock(token: string) {
       throw new Error(error.message || "연동불가");
     }
     const data = await res.json();
-    console.log("service -> data.output1", data.output1);
+    //console.log("service -> data.output1", data.output1);
 
     return data.output1 || [];
   } catch (err: any) {
@@ -63,7 +63,7 @@ export async function getStock(token: string) {
     throw new Error(data.message || "보유 주식 조회 실패");
   }
 
-  console.log("getStock", data);
+  //console.log("getStock", data);
   return data;
 }
 

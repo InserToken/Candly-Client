@@ -129,7 +129,7 @@ export default function PracticeClient() {
           quantEvidence: data.breakdown?.quantEvidence,
           date: new Date().toISOString(),
         };
-        console.log("채점 결과", data);
+        //console.log("채점 결과", data);
         await postPracticeScore(token, practiceScoreData);
         toast.success("채점 및 저장 완료!");
         setFeedback(data.feedback || "피드백 없음.");

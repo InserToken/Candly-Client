@@ -16,7 +16,7 @@ export async function postPracticeScore(
   token: string | null,
   data: PracticeScore
 ) {
-  console.log("호출됨");
+  //console.log("호출됨");
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}/api/practicescores`,
     {

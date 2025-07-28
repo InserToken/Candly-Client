@@ -109,7 +109,7 @@ export default function MyPagePracticeClient() {
       const recentList = [...convertedScores]
         .sort((a, b) => b.date.getTime() - a.date.getTime())
         .slice(0, 5);
-      console.log(recentList);
+      //console.log(recentList);
       setRecentProblemList(recentList);
     });
   }, []);
