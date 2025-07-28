@@ -52,7 +52,7 @@ export default function MyPagePracticeClient() {
         (acc, cur) => acc + (cur.score ?? 0),
         0
       );
-      setAvgScore(scoreList.length == 0 ? 0 : sum / scoreList.length);
+      setAvgScore(scoreList.length === 0 ? 0 : parseFloat((sum / scoreList.length).toFixed(1)));
       // 항목별 만점 기준
       const maxScores = {
         logic: 15,
