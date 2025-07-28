@@ -168,7 +168,7 @@ export default function Navbar() {
           auth?.token ? (
             <button
               onClick={handleLogout}
-              className="text-sm text-[#E2E2E2] hover:text-white transition"
+              className="text-sm text-[#E2E2E2] hover:text-white transition pl-5"
             >
               로그아웃
             </button>
