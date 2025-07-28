@@ -56,7 +56,7 @@ export default function PracticeClient() {
   //   if (!params.problemId) return;
   //   fetchMyPracticeAnswer(params.problemId).then((result) => {
   //     if (result) {
-  //       console.log("이미 푼 문제!", result); // 🔥 여기에 찍힘!
+  //       console.log("이미 푼 문제!", result);
   //     } else {
   //       console.log("아직 푼 적 없는 문제입니다.");
   //     }
@@ -111,25 +111,35 @@ export default function PracticeClient() {
         setLoading(false);
         return;
       }
+
       setGradeResult(data);
 
       try {
         const token =
           sessionStorage.getItem("token") ||
           localStorage.getItem("accessToken");
+        // breakdown 점수 직접 합산
+        const breakdown = data.breakdown || {};
+        const logic = Number(breakdown.logic ?? 0);
+        const technical = Number(breakdown.technical ?? 0);
+        const macroEconomy = Number(breakdown.macroEconomy ?? 0);
+        const marketIssues = Number(breakdown.marketIssues ?? 0);
+        const quantEvidence = Number(breakdown.quantEvidence ?? 0);
+        const score =
+          logic + technical + macroEconomy + marketIssues + quantEvidence;
+
         const practiceScoreData = {
           problem_id: params.problemId,
           answer: input,
-          score: data.score,
+          score, // breakdown 다섯 항목 합산 점수!
           feedback: data.feedback,
-          logic: data.breakdown?.logic,
-          technical: data.breakdown?.technical,
-          macroEconomy: data.breakdown?.macroEconomy,
-          marketIssues: data.breakdown?.marketIssues,
-          quantEvidence: data.breakdown?.quantEvidence,
+          logic,
+          technical,
+          macroEconomy,
+          marketIssues,
+          quantEvidence,
           date: new Date().toISOString(),
         };
-        //console.log("채점 결과", data);
         await postPracticeScore(token, practiceScoreData);
         toast.success("채점 및 저장 완료!");
         setFeedback(data.feedback || "피드백 없음.");
