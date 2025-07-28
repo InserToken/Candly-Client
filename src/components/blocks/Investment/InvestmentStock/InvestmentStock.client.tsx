@@ -393,7 +393,7 @@ export default function InvestmentStockClient() {
                       </>
                     )}
                     <span
-                      className="px-1 cursor-pointer text-gray-400 hover:bg-gray-800 rounded-sm"
+                      className="cursor-pointer text-gray-400 hover:bg-gray-800 rounded-sm"
                       onClick={() => setShowIndicators((prev) => !prev)}
                     >
                       {showIndicators ? "– 보조지표 접기" : "+ 보조지표 설정"}
