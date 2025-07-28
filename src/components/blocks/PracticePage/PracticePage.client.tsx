@@ -317,7 +317,7 @@ export default function PracticeClient() {
                     )}
 
                     <span
-                      className="px-1 cursor-pointer text-gray-400 hover:bg-gray-800 rounded-sm"
+                      className="cursor-pointer text-gray-400 hover:bg-gray-800 rounded-sm"
                       onClick={() => setShowIndicators((prev) => !prev)}
                     >
                       {showIndicators ? "– 보조지표 접기" : "+ 보조지표 설정"}
@@ -426,6 +426,7 @@ export default function PracticeClient() {
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="답변을 입력하세요"
                     maxLength={300}
+                    disabled={isAnswered}
                     className="w-full h-32 p-4 rounded border border-gray-600 bg-transparent resize-none focus:outline-none"
                   />
                   <div className="flex float-right items-center mt-2 gap-4">
@@ -435,7 +436,7 @@ export default function PracticeClient() {
                     <button
                       className="bg-[#396FFB] px-5 py-1.5 rounded text-sm"
                       onClick={handleGrade}
-                      disabled={loading}
+                      disabled={loading || isAnswered}
                     >
                       {loading ? "채점 중..." : "제출"}
                     </button>
