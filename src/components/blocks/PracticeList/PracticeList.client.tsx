@@ -109,7 +109,7 @@ export default function PracticeListClient() {
               <li key={problem._id}>
                 <Link href={`/practice/${problem._id}`}>
                   <div className="group p-4 bg-[#23232b] pl-4 rounded-lg hover:bg-[#396FFB] cursor-pointer flex items-center gap-3">
-                    <span>{(page - 1) * 20 + idx + 1}. </span>
+                    <span>{(page - 1) * 15 + idx + 1}. </span>
                     {problem.stock_code.logo && (
                       <Image
                         src={problem.stock_code.logo}
