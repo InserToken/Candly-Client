@@ -6,6 +6,7 @@ import Link from "next/link";
 import { checkUserStatus, getStock } from "@/services/userStock-service";
 import { useAuthStore } from "@/stores/authStore";
 import Image from "next/image";
+import { TutorialOverlay } from "../blocks/Tutorial/TutorialPopup.client";
 
 const menuItems = [
   { label: "홈", href: "/" },
@@ -21,6 +22,11 @@ export default function Navbar() {
   const auth = useAuthStore((s) => s.auth);
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const loginRequiredPaths = ["/", "/practice", "/ranking", "/mypage"];
+  const [showTutorial, setShowTutorial] = useState(false);
+  const handleCloseTutorial = () => {
+    localStorage.setItem("hideTutorial", "true");
+    setShowTutorial(false);
+  };
 
   // hydration mismatch 방지용
   const [mounted, setMounted] = useState(false);
@@ -162,9 +168,17 @@ export default function Navbar() {
         })}
       </ul>
 
-      {/* 로그인/로그아웃 버튼 */}
+      {/* 튜토리얼, 로그인/로그아웃 버튼 */}
 
       <div className="ml-auto pr-5">
+        <button
+          onClick={() => {
+            setShowTutorial(true);
+          }}
+          className="text-sm px-4 text-[#E2E2E2] hover:text-white"
+        >
+          튜토리얼
+        </button>
         {mounted ? (
           auth?.token ? (
             <button
@@ -186,6 +200,7 @@ export default function Navbar() {
           <div className="w-[64px] h-[20px]" />
         )}
       </div>
+      {showTutorial && <TutorialOverlay onClose={handleCloseTutorial} />}
     </nav>
   );
 }
