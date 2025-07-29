@@ -385,14 +385,32 @@ export default function InvestCandleChart({
     visibleCandles > 1 ? chartWidth / (visibleCandles - 1) : chartWidth;
   const candleWidth = Math.min(40, candleSpacing * 0.7, 24);
 
+  // function getLinePoints(
+  //   arr: (number | null)[],
+  //   candleSpacing: number,
+  //   getY: (v: number) => number
+  // ) {
+  //   return arr
+  //     .map((val, i) =>
+  //       typeof val === "number" && !isNaN(val)
+  //         ? `${i * candleSpacing},${getY(val)}`
+  //         : null
+  //     )
+  //     .filter(Boolean)
+  //     .join(" ");
+  // }
   function getLinePoints(
     arr: (number | null)[],
     candleSpacing: number,
-    getY: (v: number) => number
+    getY: (v: number) => number,
+    slicedData: Candle[]
   ) {
     return arr
       .map((val, i) =>
-        typeof val === "number" && !isNaN(val)
+        typeof val === "number" &&
+        !isNaN(val) &&
+        slicedData[i] &&
+        !isDotOnlyCandle(slicedData[i])
           ? `${i * candleSpacing},${getY(val)}`
           : null
       )
@@ -400,24 +418,72 @@ export default function InvestCandleChart({
       .join(" ");
   }
 
-  const ma5Points = getLinePoints(ma5_visible, candleSpacing, getY);
-  const ma20Points = getLinePoints(ma20_visible, candleSpacing, getY);
-  const ma60Points = getLinePoints(ma60_visible, candleSpacing, getY);
-  const ma120Points = getLinePoints(ma120_visible, candleSpacing, getY);
+  // 캔들이 정상적인 날인지 확인하는 유틸 함수
+  function isDotOnlyCandle(candle: Candle) {
+    return (
+      candle.open === candle.close &&
+      candle.high === candle.close &&
+      candle.low === candle.close &&
+      candle.volume === 0
+    );
+  }
+
+  // const ma5Points = getLinePoints(ma5_visible, candleSpacing, getY);
+  // const ma20Points = getLinePoints(ma20_visible, candleSpacing, getY);
+  // const ma60Points = getLinePoints(ma60_visible, candleSpacing, getY);
+  // const ma120Points = getLinePoints(ma120_visible, candleSpacing, getY);
+  // const bb_upper_points = getLinePoints(
+  //   bb_visible.map((b) => b?.upper),
+  //   candleSpacing,
+  //   getY
+  // );
+  // const bb_middle_points = getLinePoints(
+  //   bb_visible.map((b) => b?.middle),
+  //   candleSpacing,
+  //   getY
+  // );
+  // const bb_lower_points = getLinePoints(
+  //   bb_visible.map((b) => b?.lower),
+  //   candleSpacing,
+  //   getY
+  // );
+  const ma5Points = getLinePoints(ma5_visible, candleSpacing, getY, slicedData);
+  const ma20Points = getLinePoints(
+    ma20_visible,
+    candleSpacing,
+    getY,
+    slicedData
+  );
+  const ma60Points = getLinePoints(
+    ma60_visible,
+    candleSpacing,
+    getY,
+    slicedData
+  );
+  const ma120Points = getLinePoints(
+    ma120_visible,
+    candleSpacing,
+    getY,
+    slicedData
+  );
+
   const bb_upper_points = getLinePoints(
     bb_visible.map((b) => b?.upper),
     candleSpacing,
-    getY
+    getY,
+    slicedData
   );
   const bb_middle_points = getLinePoints(
     bb_visible.map((b) => b?.middle),
     candleSpacing,
-    getY
+    getY,
+    slicedData
   );
   const bb_lower_points = getLinePoints(
     bb_visible.map((b) => b?.lower),
     candleSpacing,
-    getY
+    getY,
+    slicedData
   );
 
   const chartRef = useRef<HTMLDivElement>(null);
@@ -481,7 +547,13 @@ export default function InvestCandleChart({
     const lowerPoints: string[] = [];
 
     bb_visible.forEach((bb, i) => {
-      if (bb?.upper && bb?.lower) {
+      const candle = slicedData[i];
+      if (
+        bb?.upper &&
+        bb?.lower &&
+        candle && // candle 존재 확인
+        !isDotOnlyCandle(candle) // dot 전용 데이터 제외
+      ) {
         const x = i * candleSpacing;
         upperPoints.push(`${x},${getY(bb.upper)}`);
         lowerPoints.push(`${x},${getY(bb.lower)}`);
@@ -490,12 +562,11 @@ export default function InvestCandleChart({
 
     if (upperPoints.length === 0) return "";
 
-    // 상단선을 그리고, 하단선을 역순으로 연결해서 닫힌 영역 만들기
     const pathData = [
-      `M ${upperPoints[0]}`, // 시작점으로 이동
-      `L ${upperPoints.slice(1).join(" L ")}`, // 상단선 그리기
-      `L ${lowerPoints.slice().reverse().join(" L ")}`, // 하단선을 역순으로 그리기
-      "Z", // path 닫기
+      `M ${upperPoints[0]}`,
+      `L ${upperPoints.slice(1).join(" L ")}`,
+      `L ${lowerPoints.slice().reverse().join(" L ")}`,
+      "Z",
     ].join(" ");
 
     return pathData;
@@ -504,7 +575,7 @@ export default function InvestCandleChart({
   // --- 렌더 ---
   return (
     <div
-      className="flex flex-col"
+      className="flex flex-col "
       style={{
         width: "100%",
         maxWidth: w,
@@ -921,12 +992,13 @@ export default function InvestCandleChart({
             strokeWidth="2"
             points={rsi_visible
               .map((val, i) =>
-                typeof val === "number" && isFinite(val)
+                typeof val === "number" &&
+                isFinite(val) &&
+                !isDotOnlyCandle(slicedData[i])
                   ? `${i * candleSpacing},${(1 - val / 100) * RSI_HEIGHT}`
                   : null
               )
               .filter((v): v is string => v !== null)
-
               .join(" ")}
             opacity={0.96}
           />
@@ -1011,7 +1083,7 @@ export default function InvestCandleChart({
                     : {todayPrice.toLocaleString()}
                   </div>
                   <div style={{ marginTop: 4 }}>
-                    <span style={{ color: "#396FFB", fontWeight: 600 }}>
+                    <span style={{ color: "#C9DF00", fontWeight: 600 }}>
                       예측값
                     </span>
                     : {dot.close.toLocaleString()}
@@ -1027,7 +1099,7 @@ export default function InvestCandleChart({
             ) {
               return (
                 <div>
-                  <span style={{ color: "#396FFB", fontWeight: 600 }}>
+                  <span style={{ color: "#C9DF00", fontWeight: 600 }}>
                     예측값
                   </span>
                   : {dot.close.toLocaleString()}
@@ -1052,12 +1124,12 @@ export default function InvestCandleChart({
             if (dot?.close) {
               rows.push(
                 <div key="pred" style={{ marginTop: 6 }}>
-                  <span style={{ color: "#396FFB", fontWeight: 600 }}>
+                  <span style={{ color: "#C9DF00", fontWeight: 600 }}>
                     예측값
                   </span>
                   : {dot.close.toLocaleString()}
                 </div>,
-                <div key="diff" className="text-[#d23e3e] font-bold">
+                <div key="diff" className="text-[#e75480] font-bold">
                   오차: {(dot.close - tooltip.data.close).toFixed(2)} (
                   {(
                     ((dot.close - tooltip.data.close) / tooltip.data.close) *

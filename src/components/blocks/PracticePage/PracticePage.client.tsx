@@ -56,7 +56,7 @@ export default function PracticeClient() {
   //   if (!params.problemId) return;
   //   fetchMyPracticeAnswer(params.problemId).then((result) => {
   //     if (result) {
-  //       console.log("이미 푼 문제!", result); // 🔥 여기에 찍힘!
+  //       console.log("이미 푼 문제!", result);
   //     } else {
   //       console.log("아직 푼 적 없는 문제입니다.");
   //     }
@@ -111,35 +111,45 @@ export default function PracticeClient() {
         setLoading(false);
         return;
       }
+
       setGradeResult(data);
 
       try {
         const token =
           sessionStorage.getItem("token") ||
           localStorage.getItem("accessToken");
+        // breakdown 점수 직접 합산
+        const breakdown = data.breakdown || {};
+        const logic = Number(breakdown.logic ?? 0);
+        const technical = Number(breakdown.technical ?? 0);
+        const macroEconomy = Number(breakdown.macroEconomy ?? 0);
+        const marketIssues = Number(breakdown.marketIssues ?? 0);
+        const quantEvidence = Number(breakdown.quantEvidence ?? 0);
+        const score =
+          logic + technical + macroEconomy + marketIssues + quantEvidence;
+
         const practiceScoreData = {
           problem_id: params.problemId,
           answer: input,
-          score: data.score,
+          score, // breakdown 다섯 항목 합산 점수!
           feedback: data.feedback,
-          logic: data.breakdown?.logic,
-          technical: data.breakdown?.technical,
-          macroEconomy: data.breakdown?.macroEconomy,
-          marketIssues: data.breakdown?.marketIssues,
-          quantEvidence: data.breakdown?.quantEvidence,
+          logic,
+          technical,
+          macroEconomy,
+          marketIssues,
+          quantEvidence,
           date: new Date().toISOString(),
         };
-        //console.log("채점 결과", data);
         await postPracticeScore(token, practiceScoreData);
         toast.success("채점 및 저장 완료!");
         setFeedback(data.feedback || "피드백 없음.");
         setShowFeedback(true);
         setIsAnswered(true); // <- 차트 오버레이 해제
       } catch {
-        toast.error("채점은 완료되었으나 저장에 실패했습니다.");
+        toast.error("잠시 후 다시 시도해주세요");
       }
     } catch (e: any) {
-      toast.error(e.message || "채점 실패");
+      toast.error("잠시 후 다시 시도해주세요");
     } finally {
       setLoading(false);
     }
@@ -307,7 +317,7 @@ export default function PracticeClient() {
                     )}
 
                     <span
-                      className="px-1 cursor-pointer text-gray-400 hover:bg-gray-800 rounded-sm"
+                      className="cursor-pointer text-gray-400 hover:bg-gray-800 rounded-sm"
                       onClick={() => setShowIndicators((prev) => !prev)}
                     >
                       {showIndicators ? "– 보조지표 접기" : "+ 보조지표 설정"}
@@ -416,6 +426,7 @@ export default function PracticeClient() {
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="답변을 입력하세요"
                     maxLength={300}
+                    disabled={isAnswered}
                     className="w-full h-32 p-4 rounded border border-gray-600 bg-transparent resize-none focus:outline-none"
                   />
                   <div className="flex float-right items-center mt-2 gap-4">
@@ -425,7 +436,7 @@ export default function PracticeClient() {
                     <button
                       className="bg-[#396FFB] px-5 py-1.5 rounded text-sm"
                       onClick={handleGrade}
-                      disabled={loading}
+                      disabled={loading || isAnswered}
                     >
                       {loading ? "채점 중..." : "제출"}
                     </button>

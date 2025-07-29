@@ -101,8 +101,20 @@ export default function MyPageInvestmentClient() {
         });
 
         const validScores = stockResult.stocks
-          .map((item: any) => item.cumulative_score)
-          .filter((score: any) => typeof score === "number");
+          .map((item: any) => {
+            const predictCount =
+              investResult.find(
+                (s: any) =>
+                  s.stock_code === item.stock_code?._id ||
+                  s.stock_id === item._id
+              )?.scores?.length ?? 0;
+
+            return predictCount > 0 && typeof item.cumulative_score === "number"
+              ? item.cumulative_score
+              : null;
+          })
+          .filter((score: any) => score !== null);
+
         const avg =
           validScores.length > 0
             ? Math.round(
@@ -124,7 +136,7 @@ export default function MyPageInvestmentClient() {
 
   return (
     <div>
-      <p className="text-2xl font-semibold mb-6">실전투자 히스토리</p>
+      <p className="text-2xl font-semibold mb-6">실전예측 히스토리</p>
 
       <div className="flex items-center gap-4 mb-8">
         <div className="h-20 w-55 bg-[#16161A] rounded-lg text-center flex items-baseline gap-1.5 justify-center pt-4">

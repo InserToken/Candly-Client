@@ -28,32 +28,25 @@ export default function LoadingPage() {
       const wait = elapsed < minDelay ? minDelay - elapsed : 0;
 
       setTimeout(() => {
-        //("✅ getStock result:", result);
-
         if ("message" in result) {
           setStatus("error");
           setErrorMessage(result.message);
           return;
         }
 
-        const rawStocks = Array.isArray(result)
-          ? result
-          : Array.isArray(result.output1)
-          ? result.output1
-          : null;
-
-        if (!rawStocks) {
+        if (!result) {
           setStatus("error");
           setErrorMessage("응답 형식 오류");
           return;
         }
 
-        const mapped = rawStocks.map(
+        const mapped = result.map(
           (item: { pdno: string; prdt_name: string }) => ({
             stock_code: item.pdno,
             company: item.prdt_name,
           })
         );
+        // console.log("map", mapped);
 
         setStocks(mapped);
         setStatus("done");
@@ -66,6 +59,7 @@ export default function LoadingPage() {
   const handleChart = () => {
     if (stocks.length > 0) {
       const firstCode = stocks[0].stock_code;
+      // console.log("stocks", stocks[0].stock_code);
       router.replace(`/investment/${firstCode}`);
     }
   };
