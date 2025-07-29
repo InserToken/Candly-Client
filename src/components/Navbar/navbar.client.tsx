@@ -75,6 +75,7 @@ export default function Navbar() {
       : "text-[#E2E2E2] hover:text-white");
 
   return (
+
     <nav className="h-[98px] flex items-center px-8 pl-10 fixed bg-inherit w-full z-20 text-nowrap">
       {/* 로고 & 홈 이동 */}
       <button
