@@ -146,10 +146,10 @@ export default function PracticeClient() {
         setShowFeedback(true);
         setIsAnswered(true); // <- 차트 오버레이 해제
       } catch {
-        toast.error("채점은 완료되었으나 저장에 실패했습니다.");
+        toast.error("잠시 후 다시 시도해주세요");
       }
     } catch (e: any) {
-      toast.error(e.message || "채점 실패");
+      toast.error(e.message || "잠시 후 다시 시도해주세요요");
     } finally {
       setLoading(false);
     }

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import MainHomeClient from "../MainHome/MainHome.client";
 import { useRouter } from "next/navigation";
-function TutorialOverlay({ onClose }) {
+export function TutorialOverlay({ onClose }) {
   const [index, setIndex] = useState(0);
   const images = [
     "/tuto1.png",

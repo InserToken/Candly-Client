@@ -6,6 +6,7 @@ import Link from "next/link";
 import { checkUserStatus, getStock } from "@/services/userStock-service";
 import { useAuthStore } from "@/stores/authStore";
 import Image from "next/image";
+import { TutorialOverlay } from "../blocks/Tutorial/TutorialPopup.client";
 
 const menuItems = [
   { label: "홈", href: "/" },
@@ -21,6 +22,11 @@ export default function Navbar() {
   const auth = useAuthStore((s) => s.auth);
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const loginRequiredPaths = ["/", "/practice", "/ranking", "/mypage"];
+  const [showTutorial, setShowTutorial] = useState(false);
+  const handleCloseTutorial = () => {
+    localStorage.setItem("hideTutorial", "true");
+    setShowTutorial(false);
+  };
 
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -63,7 +69,8 @@ export default function Navbar() {
       : "text-[#E2E2E2] hover:text-white");
 
   return (
-    <nav className="h-[98px] flex items-center px-8 pl-10 fixed bg-inherit w-full z-20">
+
+    <nav className="h-[98px] flex items-center px-8 pl-10 fixed bg-inherit w-full z-20 text-nowrap">
       {/* 로고 & 홈 이동 */}
       <button
         onClick={() => router.push(auth?.token ? "/" : "/auth/login")}
@@ -108,6 +115,14 @@ export default function Navbar() {
 
       {/* 오른쪽 버튼 (데스크탑 전용) */}
       <div className="ml-auto hidden md:flex gap-4 items-center pr-5">
+        <button
+          onClick={() => {
+            setShowTutorial(true);
+          }}
+          className="text-sm px-4 text-[#E2E2E2] hover:text-white"
+        >
+          튜토리얼
+        </button>
         {auth?.token ? (
           <button
             onClick={handleLogout}
@@ -158,6 +173,14 @@ export default function Navbar() {
               </button>
             );
           })}
+          {/* <button
+            onClick={() => {
+              setShowTutorial(true);
+            }}
+            className="text-left text-base text-[#E2E2E2] hover:text-white"
+          >
+            튜토리얼
+          </button> */}
           {auth?.token ? (
             <button
               onClick={handleLogout}
@@ -178,6 +201,7 @@ export default function Navbar() {
           )}
         </div>
       )}
+      {showTutorial && <TutorialOverlay onClose={handleCloseTutorial} />}
     </nav>
   );
 }
