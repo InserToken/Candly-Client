@@ -28,8 +28,9 @@ export default function Navbar() {
     setShowTutorial(false);
   };
 
-  // hydration mismatch 방지용
   const [mounted, setMounted] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -37,28 +38,13 @@ export default function Navbar() {
 
   const handleInvestClick = async () => {
     try {
-      if (!auth?.token) {
-        console.warn("로그인 필요");
-        return router.push("/auth/login");
-      }
+      if (!auth?.token) return router.push("/auth/login");
 
       const status = await checkUserStatus(auth.token);
-      //("이미 연동 완료된 user: ", status.hasHoldings);
-
-      if (status.hasHoldings) {
-        const stockData = await getStock(auth.token);
-        const firstCode = stockData.stocks[0]?.stock_code._id;
-        //console.log("주식 조회", firstCode);
-        if (firstCode) {
-          router.push(`/investment/${firstCode}`);
-        } else {
-          router.push("/investment");
-        }
-      } else {
-        router.push("/investment");
-      }
+      const stockData = await getStock(auth.token);
+      const firstCode = stockData.stocks[0]?.stock_code._id;
+      router.push(firstCode ? `/investment/${firstCode}` : "/investment");
     } catch (err) {
-      console.error("실전예측 이동 중 오류:", err);
       router.push("/investment");
     }
   };
@@ -66,9 +52,7 @@ export default function Navbar() {
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-    } catch (e) {
-      console.warn("서버 로그아웃 실패");
-    }
+    } catch {}
     sessionStorage.removeItem("token");
     clearAuth();
     router.replace("/auth/login");
@@ -78,16 +62,23 @@ export default function Navbar() {
     router.push("/auth/login");
   };
 
+  const handleTutorialOpen = () => {
+    localStorage.setItem("hideTutorial", "false");
+    window.dispatchEvent(new Event("open-tutorial"));
+    setMenuOpen(false); // 모바일일 경우 닫아줌
+  };
+
+  const navButtonClass = (isActive: boolean) =>
+    "text-base transition-colors cursor-pointer " +
+    (isActive
+      ? "text-[#396FFB] hover:text-blue-500 font-semibold"
+      : "text-[#E2E2E2] hover:text-white");
+
   return (
-    <nav className="h-[98px] flex items-center px-8 pl-10 whitespace-nowrap fixed bg-inherit w-screen z-20">
+    <nav className="h-[98px] flex items-center px-8 pl-10 fixed bg-inherit w-full z-20 text-nowrap">
+      {/* 로고 & 홈 이동 */}
       <button
-        onClick={() => {
-          if (!auth?.token) {
-            router.push("/auth/login");
-          } else {
-            router.push("/");
-          }
-        }}
+        onClick={() => router.push(auth?.token ? "/" : "/auth/login")}
         className="flex items-center pr-2.5 bg-transparent border-none cursor-pointer"
       >
         <Image
@@ -99,78 +90,36 @@ export default function Navbar() {
         />
         <div className="text-2xl pr-20">Candly</div>
       </button>
-      <ul className="flex gap-15">
+
+      {/* 데스크탑 메뉴 */}
+      <ul className="hidden md:flex gap-15">
         {menuItems.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(`${item.href}/`);
           const isLoginRequired = loginRequiredPaths.includes(item.href);
 
-          if (item.dynamic) {
-            return (
-              <li key={item.href}>
-                <button
-                  onClick={handleInvestClick}
-                  className={
-                    "text-base transition-colors cursor-pointer " +
-                    (isActive
-                      ? "text-[#396FFB] hover:text-blue-500 font-semibold"
-                      : "text-[#E2E2E2] hover:text-white")
-                  }
-                >
-                  {item.label}
-                </button>
-              </li>
-            );
-          }
-          // 로그인 필요한 메뉴 (홈, 연습문제, 랭킹, 마이페이지)
-          if (isLoginRequired) {
-            return (
-              <li key={item.href}>
-                <button
-                  onClick={() => {
-                    if (!auth?.token) {
-                      router.push("/auth/login");
-                    } else {
-                      router.push(item.href);
-                    }
-                  }}
-                  className={
-                    "text-base transition-colors cursor-pointer " +
-                    (isActive
-                      ? "text-[#396FFB] hover:text-blue-500 font-semibold"
-                      : "text-[#E2E2E2] hover:text-white")
-                  }
-                  type="button"
-                >
-                  {item.label}
-                </button>
-              </li>
-            );
-          }
+          const onClick = item.dynamic
+            ? handleInvestClick
+            : () => {
+                if (!auth?.token && isLoginRequired) {
+                  router.push("/auth/login");
+                } else {
+                  router.push(item.href);
+                }
+              };
 
-          // 나머지(로그인 필요없는 메뉴) (실제로 위에서 다 처리됨)
           return (
             <li key={item.href}>
-              <Link href={item.href}>
-                <span
-                  className={
-                    "text-base cursor-pointer transition-colors " +
-                    (isActive
-                      ? "text-[#396FFB] font-semibold"
-                      : "text-[#E2E2E2] hover:text-white")
-                  }
-                >
-                  {item.label}
-                </span>
-              </Link>
+              <button onClick={onClick} className={navButtonClass(isActive)}>
+                {item.label}
+              </button>
             </li>
           );
         })}
       </ul>
 
-      {/* 튜토리얼, 로그인/로그아웃 버튼 */}
-
-      <div className="ml-auto pr-5">
+      {/* 오른쪽 버튼 (데스크탑 전용) */}
+      <div className="ml-auto hidden md:flex gap-4 items-center pr-5">
         <button
           onClick={() => {
             setShowTutorial(true);
@@ -179,27 +128,84 @@ export default function Navbar() {
         >
           튜토리얼
         </button>
-        {mounted ? (
-          auth?.token ? (
+        {auth?.token ? (
+          <button
+            onClick={handleLogout}
+            className="text-sm text-[#E2E2E2] hover:text-white transition"
+          >
+            로그아웃
+          </button>
+        ) : (
+          <button
+            onClick={handleLoginClick}
+            className="text-sm text-[#E2E2E2] hover:text-white transition"
+          >
+            로그인
+          </button>
+        )}
+      </div>
+
+      {/* 모바일 햄버거 버튼 */}
+      <button
+        onClick={() => setMenuOpen(!menuOpen)}
+        className="ml-auto md:hidden text-white text-xl"
+      >
+        ☰
+      </button>
+
+      {/* 모바일 메뉴 */}
+      {menuOpen && (
+        <div className="absolute top-[98px] left-0 w-full bg-black border-t border-neutral-700 px-5 py-4 flex flex-col gap-4 md:hidden z-40">
+          {menuItems.map((item) => {
+            const isLoginRequired = loginRequiredPaths.includes(item.href);
+            const onClick = item.dynamic
+              ? handleInvestClick
+              : () => {
+                  if (!auth?.token && isLoginRequired) {
+                    router.push("/auth/login");
+                  } else {
+                    router.push(item.href);
+                  }
+                  setMenuOpen(false);
+                };
+            return (
+              <button
+                key={item.href}
+                onClick={onClick}
+                className="text-left text-base text-[#E2E2E2] hover:text-white"
+              >
+                {item.label}
+              </button>
+            );
+          })}
+          {/* <button
+            onClick={() => {
+              setShowTutorial(true);
+            }}
+            className="text-left text-base text-[#E2E2E2] hover:text-white"
+          >
+            튜토리얼
+          </button> */}
+          {auth?.token ? (
             <button
               onClick={handleLogout}
-              className="text-sm text-[#E2E2E2] hover:text-white transition"
+              className="text-left text-base text-[#E2E2E2] hover:text-white"
             >
               로그아웃
             </button>
           ) : (
             <button
-              onClick={handleLoginClick}
-              className="text-sm text-[#E2E2E2] hover:text-white transition"
+              onClick={() => {
+                router.push("/auth/login");
+                setMenuOpen(false);
+              }}
+              className="text-left text-base text-[#E2E2E2] hover:text-white"
             >
               로그인
             </button>
-          )
-        ) : (
-          // 서버에서 렌더링되는 placeholder (같은 구조 유지)
-          <div className="w-[64px] h-[20px]" />
-        )}
-      </div>
+          )}
+        </div>
+      )}
       {showTutorial && <TutorialOverlay onClose={handleCloseTutorial} />}
     </nav>
   );
