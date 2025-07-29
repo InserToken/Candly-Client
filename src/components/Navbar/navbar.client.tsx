@@ -62,12 +62,6 @@ export default function Navbar() {
     router.push("/auth/login");
   };
 
-  const handleTutorialOpen = () => {
-    localStorage.setItem("hideTutorial", "false");
-    window.dispatchEvent(new Event("open-tutorial"));
-    setMenuOpen(false); // 모바일일 경우 닫아줌
-  };
-
   const navButtonClass = (isActive: boolean) =>
     "text-base transition-colors cursor-pointer " +
     (isActive
