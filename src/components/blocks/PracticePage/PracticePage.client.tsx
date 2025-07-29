@@ -149,7 +149,7 @@ export default function PracticeClient() {
         toast.error("잠시 후 다시 시도해주세요");
       }
     } catch (e: any) {
-      toast.error(e.message || "잠시 후 다시 시도해주세요요");
+      toast.error("잠시 후 다시 시도해주세요");
     } finally {
       setLoading(false);
     }
